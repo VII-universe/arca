@@ -51,7 +51,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
   if (!editor) return null;
 
   return (
-    <div className="flex items-center gap-0.5 pb-4 mb-2 border-b border-white/[0.06]">
+    <div className="flex items-center gap-0.5 pb-3 mb-4 border-b border-border/40">
       <ToolbarButton
         title="Bold"
         isActive={editor.isActive("bold")}

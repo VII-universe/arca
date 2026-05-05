@@ -113,15 +113,15 @@ export default async function EditArcaPage({
       {/* ── Scrollable canvas ─────────────────────────────────────────── */}
       <div className="flex flex-1">
         {/* Main column */}
-        <main className="flex-1 flex flex-col min-w-0 divide-y divide-border/50">
+        <main className="flex-1 flex flex-col min-w-0 divide-y divide-border/40">
 
           {/* 1. Writing surface */}
-          <section className="px-8 pt-10 pb-8 md:px-16 lg:px-24 min-h-[40vh]">
+          <section className="px-6 pt-10 pb-10 md:px-10 lg:px-16 min-h-[44vh] flex flex-col justify-center">
             <ContentEditor packId={pack.id} initialContent={initialContent} />
           </section>
 
           {/* 2. Media Vault */}
-          <section className="px-8 py-8 md:px-16 lg:px-24 space-y-5">
+          <section className="px-6 py-8 md:px-10 lg:px-16 space-y-5">
             <SectionHeader
               label="Media Vault"
               description={
@@ -131,8 +131,8 @@ export default async function EditArcaPage({
               }
             />
             <MediaUploader packId={pack.id} userId={user.id} />
-            <div className="space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+            <div className="space-y-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
                 Attached files
               </p>
               <Suspense fallback={<GalleryPlaceholder />}>
@@ -142,7 +142,7 @@ export default async function EditArcaPage({
           </section>
 
           {/* 3. Recipients */}
-          <section className="px-8 py-8 md:px-16 lg:px-24 space-y-5">
+          <section className="px-6 py-8 md:px-10 lg:px-16 space-y-5">
             <SectionHeader
               label="Recipients"
               description="Who should receive this Arca when it is triggered?"
@@ -154,7 +154,7 @@ export default async function EditArcaPage({
           </section>
 
           {/* 4. Delivery Trigger */}
-          <section className="px-8 py-8 md:px-16 lg:px-24 space-y-5">
+          <section className="px-6 py-8 md:px-10 lg:px-16 space-y-5">
             <SectionHeader
               label="Delivery Trigger"
               description="When should this Arca be released to your recipients?"
@@ -167,7 +167,7 @@ export default async function EditArcaPage({
           </section>
 
           {/* 5. Activate */}
-          <section className="px-8 py-8 md:px-16 lg:px-24">
+          <section className="px-6 py-8 md:px-10 lg:px-16">
             <ActivatePanel
               packId={pack.id}
               packStatus={pack.status}
@@ -178,7 +178,7 @@ export default async function EditArcaPage({
         </main>
 
         {/* Prompts sidebar (lg+) */}
-        <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 border-l border-border/60 px-5 py-8 sticky top-[49px] self-start max-h-[calc(100vh-49px)] overflow-y-auto">
+        <aside className="hidden lg:flex flex-col w-64 xl:w-72 shrink-0 border-l border-border/50 px-5 py-7 sticky top-[49px] self-start max-h-[calc(100vh-49px)] overflow-y-auto bg-muted/[0.03]">
           <ArcaPrompts packType={pack.type} />
         </aside>
       </div>
@@ -230,11 +230,9 @@ function SectionHeader({
   description: string;
 }) {
   return (
-    <div className="space-y-0.5">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-        {label}
-      </p>
-      <p className="text-xs text-muted-foreground/60">{description}</p>
+    <div className="space-y-1">
+      <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+      <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
     </div>
   );
 }

@@ -264,13 +264,13 @@ export default function MediaUploader({ packId, userId }: Props) {
         onDrop={onDrop}
         onClick={() => !isBlocked && inputRef.current?.click()}
         className={[
-          "relative rounded-xl border transition-all duration-200 overflow-hidden",
+          "relative rounded-xl border-2 border-dashed transition-all duration-200 overflow-hidden",
           isBlocked
-            ? "cursor-default border-neutral-700"
-            : "cursor-pointer hover:border-neutral-600 hover:bg-neutral-900/40",
+            ? "cursor-default border-border/40 bg-muted/10"
+            : "cursor-pointer hover:border-border hover:bg-muted/20",
           isDragging
-            ? "border-neutral-500 bg-neutral-900/60 scale-[1.01]"
-            : "border-dashed border-neutral-800 bg-neutral-900/20",
+            ? "border-primary/50 bg-primary/5 scale-[1.01]"
+            : "border-border/50 bg-muted/10",
         ].join(" ")}
       >
         <input
@@ -284,41 +284,50 @@ export default function MediaUploader({ packId, userId }: Props) {
 
         {/* Idle / drag state */}
         {(state.phase === "idle" || state.phase === "validating") && (
-          <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-            <div className="text-2xl text-neutral-700 select-none">
-              {isDragging ? "↓" : "↑"}
+          <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+            <div className={[
+              "flex size-10 items-center justify-center rounded-full border transition-colors duration-200",
+              isDragging
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border/60 bg-muted/30 text-muted-foreground/50",
+            ].join(" ")}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
             </div>
-            <p className="text-sm text-neutral-500">
-              {isDragging ? "Drop to upload" : "Drag a file here, or click to browse"}
-            </p>
-            <p className="text-[11px] text-neutral-700">
-              Images · Video · Audio · PDF · Word — max 50 MB
-            </p>
+            <div>
+              <p className="text-sm font-medium text-foreground/80">
+                {isDragging ? "Drop to upload" : "Drag & drop or click to browse"}
+              </p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                Images · Video · Audio · PDF · Word — max 50 MB
+              </p>
+            </div>
           </div>
         )}
 
         {/* Uploading state */}
         {state.phase === "uploading" && (
-          <div className="px-6 py-6 space-y-4">
+          <div className="px-6 py-7 space-y-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-neutral-300 truncate">{state.filename}</p>
+              <p className="text-sm text-foreground truncate font-medium">{state.filename}</p>
               <div className="flex items-center gap-3 shrink-0">
-                <span className="text-xs font-mono text-neutral-500 tabular-nums">
+                <span className="text-xs font-mono text-muted-foreground tabular-nums">
                   {state.progress}%
                 </span>
                 <button
                   onClick={(e) => { e.stopPropagation(); cancel(); }}
-                  className="text-[10px] text-neutral-700 hover:text-red-400 transition-colors"
+                  className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
                 >
                   Cancel
                 </button>
               </div>
             </div>
-
-            {/* Progress bar */}
-            <div className="h-1 rounded-full bg-neutral-800 overflow-hidden">
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full bg-neutral-200 rounded-full transition-all duration-150"
+                className="h-full bg-primary rounded-full transition-all duration-150"
                 style={{ width: `${state.progress}%` }}
               />
             </div>
@@ -327,20 +336,20 @@ export default function MediaUploader({ packId, userId }: Props) {
 
         {/* Done state */}
         {state.phase === "done" && (
-          <div className="flex items-center gap-3 px-6 py-5">
-            <span className="text-emerald-500 text-sm">✓</span>
-            <p className="text-sm text-emerald-400 truncate">{state.filename} uploaded</p>
+          <div className="flex items-center gap-3 px-6 py-7">
+            <span className="flex size-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500 text-xs font-bold">✓</span>
+            <p className="text-sm text-emerald-500 font-medium truncate">{state.filename} uploaded</p>
           </div>
         )}
       </div>
 
-      {/* Error message (sits outside the drop zone so it's always readable) */}
+      {/* Error message */}
       {state.phase === "error" && (
-        <div className="flex items-start justify-between gap-3 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-3">
-          <p className="text-sm text-red-400 leading-snug">{state.message}</p>
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
+          <p className="text-sm text-destructive leading-snug">{state.message}</p>
           <button
             onClick={() => setState({ phase: "idle" })}
-            className="shrink-0 text-xs text-red-700 hover:text-red-400 transition-colors mt-0.5"
+            className="shrink-0 text-xs text-destructive/60 hover:text-destructive transition-colors mt-0.5"
           >
             Dismiss
           </button>

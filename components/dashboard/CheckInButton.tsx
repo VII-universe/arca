@@ -33,8 +33,8 @@ export default function CheckInButton({
   const displayDate = checkedInAt ?? lastActiveAt;
 
   return (
-    <div className="flex items-center justify-between gap-4">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+      <p className="text-xs text-muted-foreground shrink-0">
         Last confirmed:{" "}
         <span className="text-foreground font-medium">
           {formatRelative(displayDate)}
@@ -44,9 +44,8 @@ export default function CheckInButton({
       <Button
         onClick={handleCheckIn}
         disabled={isPending}
-        variant="outline"
         size="sm"
-        className="shrink-0 gap-2 rounded-full border-border/60 bg-transparent hover:bg-accent hover:border-border transition-all duration-300"
+        className="shrink-0 gap-2 rounded-full"
       >
         <Activity className={`size-3.5 ${isPending ? "animate-pulse" : ""}`} />
         {isPending ? "Confirming…" : "I'm here"}

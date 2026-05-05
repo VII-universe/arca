@@ -65,24 +65,20 @@ export default function ArcaPrompts({ packType }: { packType: "EMOTIONAL" | "PRA
   const prompts = packType === "EMOTIONAL" ? EMOTIONAL_PROMPTS : PRACTICAL_PROMPTS;
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
 
-  const visible = prompts.filter((_, i) => !dismissed.has(i));
-
   return (
     <div className="flex flex-col gap-1 h-full">
-      <div className="mb-4">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-600">
-          Writing Prompts
-        </p>
-        <p className="mt-1 text-xs text-neutral-600">
+      <div className="mb-5">
+        <p className="text-xs font-semibold text-foreground">Writing prompts</p>
+        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
           {packType === "EMOTIONAL"
             ? "Questions to draw out what matters most."
             : "Details your recipient will need — be precise."}
         </p>
       </div>
 
-      <div className="space-y-3 overflow-y-auto flex-1 pr-1">
-        {visible.length === 0 && (
-          <p className="text-xs text-neutral-700 italic">
+      <div className="space-y-2.5 overflow-y-auto flex-1 pr-0.5">
+        {dismissed.size === prompts.length && (
+          <p className="text-xs text-muted-foreground/60 italic py-2">
             All prompts dismissed. You know what to write.
           </p>
         )}
@@ -102,7 +98,7 @@ export default function ArcaPrompts({ packType }: { packType: "EMOTIONAL" | "PRA
       {dismissed.size > 0 && (
         <button
           onClick={() => setDismissed(new Set())}
-          className="mt-3 text-[10px] text-neutral-700 hover:text-neutral-500 transition-colors text-left"
+          className="mt-3 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors text-left"
         >
           Restore {dismissed.size} dismissed prompt{dismissed.size > 1 ? "s" : ""}
         </button>
@@ -120,30 +116,33 @@ function PromptCard({
   packType: "EMOTIONAL" | "PRACTICAL";
   onDismiss: () => void;
 }) {
-  const accent =
+  const borderAccent =
     packType === "EMOTIONAL"
-      ? "border-rose-900/60 hover:border-rose-800/80"
-      : "border-blue-900/60 hover:border-blue-800/80";
-  const dot =
-    packType === "EMOTIONAL" ? "bg-rose-700" : "bg-blue-700";
+      ? "border-l-violet-400/40"
+      : "border-l-sky-400/40";
+  const bgAccent =
+    packType === "EMOTIONAL"
+      ? "bg-violet-400/[0.04]"
+      : "bg-sky-400/[0.04]";
 
   return (
     <div
-      className={`group relative rounded-lg border bg-neutral-900/60 p-3.5 transition-colors ${accent}`}
+      className={`group relative rounded-r-lg border border-border/30 border-l-4 ${borderAccent} ${bgAccent} px-3.5 py-3 transition-colors hover:border-border/50`}
     >
       <button
         onClick={onDismiss}
         aria-label="Dismiss prompt"
-        className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity text-neutral-700 hover:text-neutral-400 text-xs leading-none"
+        className="absolute top-2 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/40 hover:text-muted-foreground text-xs leading-none"
       >
         ✕
       </button>
-      <div className="flex gap-2.5">
-        <div className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
-        <div className="space-y-1.5">
-          <p className="text-sm text-neutral-300 leading-snug">{prompt.question}</p>
-          <p className="text-xs text-neutral-600 leading-snug italic">{prompt.hint}</p>
-        </div>
+      <div className="space-y-1.5 pr-4">
+        <p className="text-xs font-medium text-foreground/90 leading-relaxed">
+          {prompt.question}
+        </p>
+        <p className="text-[11px] text-muted-foreground/70 leading-relaxed italic">
+          {prompt.hint}
+        </p>
       </div>
     </div>
   );

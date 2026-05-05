@@ -19,11 +19,7 @@ import GracePeriodBanner, {
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Dashboard — ARCA" };
@@ -40,41 +36,41 @@ const STATUS_CONFIG: Record<PackStatus, {
 }> = {
   DRAFT: {
     label: "Draft",
-    dot: "bg-zinc-600",
-    badge: "border-zinc-800 bg-zinc-900/60 text-zinc-500",
+    dot: "bg-zinc-500",
+    badge: "border-zinc-700/60 bg-zinc-800/40 text-zinc-400",
   },
   ACTIVE: {
     label: "Active",
     dot: "bg-emerald-500",
-    badge: "border-emerald-900/60 bg-emerald-950/40 text-emerald-400",
+    badge: "border-emerald-800/60 bg-emerald-950/40 text-emerald-400",
     pulse: true,
   },
   GRACE_PERIOD: {
     label: "Grace Period",
     dot: "bg-amber-500",
-    badge: "border-amber-900/60 bg-amber-950/40 text-amber-400",
+    badge: "border-amber-800/60 bg-amber-950/40 text-amber-400",
     pulse: true,
   },
   TRIGGERED: {
     label: "Triggered",
     dot: "bg-orange-500",
-    badge: "border-orange-900/60 bg-orange-950/40 text-orange-400",
+    badge: "border-orange-800/60 bg-orange-950/40 text-orange-400",
   },
   DELIVERED: {
     label: "Delivered",
     dot: "bg-blue-500",
-    badge: "border-blue-900/60 bg-blue-950/40 text-blue-400",
+    badge: "border-blue-800/60 bg-blue-950/40 text-blue-400",
   },
   ARCHIVED: {
     label: "Archived",
-    dot: "bg-zinc-700",
-    badge: "border-zinc-800 bg-zinc-900/40 text-zinc-600",
+    dot: "bg-zinc-600",
+    badge: "border-zinc-700/40 bg-zinc-800/30 text-zinc-500",
   },
 };
 
 const TYPE_CONFIG = {
-  EMOTIONAL: { icon: "✦", color: "text-rose-500/70", label: "Emotional" },
-  PRACTICAL: { icon: "⬡", color: "text-blue-500/70", label: "Practical" },
+  EMOTIONAL: { icon: "✦", color: "text-rose-400/80", label: "Emotional" },
+  PRACTICAL: { icon: "⬡", color: "text-sky-400/80", label: "Practical" },
 };
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -146,7 +142,7 @@ export default async function DashboardPage() {
 
       {/* ── Top bar ────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto max-w-3xl px-6 md:px-8 py-3.5 flex items-center justify-between">
+        <div className="mx-auto max-w-5xl px-6 md:px-8 py-3.5 flex items-center justify-between">
           <Link
             href="/"
             className="text-sm font-semibold tracking-[0.18em] uppercase text-muted-foreground hover:text-foreground transition-colors duration-300"
@@ -154,7 +150,7 @@ export default async function DashboardPage() {
             ARCA
           </Link>
           <div className="flex items-center gap-2">
-            <span className="hidden sm:block text-xs text-muted-foreground/60">
+            <span className="hidden sm:block text-xs text-muted-foreground/50">
               {prismaUser.email}
             </span>
             <ThemeSwitcher />
@@ -172,76 +168,77 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-10 md:px-8 space-y-6">
+      <main className="mx-auto max-w-5xl px-6 py-10 md:px-8 space-y-8">
 
         {/* ── Grace period alerts ────────────────────────────────────── */}
         {gracePacks.length > 0 && <GracePeriodBanner packs={gracePacks} />}
 
         {/* ── Greeting ───────────────────────────────────────────────── */}
         <div>
-          <h1 className="font-serif text-2xl text-foreground">
+          <h1 className="font-serif text-3xl text-foreground">
             Good to see you, {firstName}.
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1.5">
             {activePacks > 0
               ? `${activePacks} ${activePacks === 1 ? "Arca" : "Arcas"} sealed and monitoring.`
-              : "Everything is waiting for you."}
+              : "Nothing sealed yet — create your first Arca below."}
           </p>
         </div>
 
         {/* ── Stats row ──────────────────────────────────────────────── */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-4">
           <StatCard
-            icon={<Shield className="size-3.5 text-emerald-500" />}
+            icon={<Shield className="size-4 text-emerald-500" />}
             value={packs.filter((p) => p.status === "ACTIVE").length}
             label="Active"
+            accent="text-emerald-500"
           />
           <StatCard
-            icon={<Fingerprint className="size-3.5 text-zinc-500" />}
+            icon={<Fingerprint className="size-4 text-muted-foreground" />}
             value={packs.length}
             label="Total"
+            accent="text-foreground"
           />
           <StatCard
-            icon={<Zap className="size-3.5 text-orange-500" />}
+            icon={<Zap className="size-4 text-sky-500" />}
             value={packs.filter((p) => p.status === "TRIGGERED" || p.status === "DELIVERED").length}
             label="Delivered"
+            accent="text-sky-500"
           />
         </div>
 
-        {/* ── Check-in panel ─────────────────────────────────────────── */}
-        <Card className="border-border/60 bg-card/40 backdrop-blur-md">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="relative flex size-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-40" />
-                  <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
-                </span>
-                <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-                  Presence monitoring
-                </span>
-              </div>
+        {/* ── Presence monitoring banner ─────────────────────────────── */}
+        <div className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-md px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <span className="relative flex size-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-50" />
+                <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
+              </span>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Confirming your presence resets all inactivity timers and keeps
-              your Arcas sealed.
-            </p>
-            <CheckInButton lastActiveAt={prismaUser.lastActiveAt} />
-          </CardContent>
-        </Card>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Presence monitoring</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                Confirm you're here to reset all inactivity timers and keep your Arcas sealed.
+              </p>
+            </div>
+          </div>
+          <CheckInButton lastActiveAt={prismaUser.lastActiveAt} />
+        </div>
 
         {/* ── Pack list ───────────────────────────────────────────────── */}
-        <section className="space-y-3">
+        <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-              Your Arcas
-            </h2>
-            <Button asChild variant="ghost" size="xs" className="rounded-full gap-1.5 text-muted-foreground hover:text-foreground">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Your Arcas</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {packs.length > 0 ? `${packs.length} message ${packs.length === 1 ? "pack" : "packs"}` : "No packs yet"}
+              </p>
+            </div>
+            <Button asChild size="sm" className="rounded-full gap-2">
               <Link href="/dashboard/arca/new">
-                <Plus className="size-3" />
-                New
+                <Plus className="size-3.5" />
+                New Arca
               </Link>
             </Button>
           </div>
@@ -249,7 +246,7 @@ export default async function DashboardPage() {
           {packs.length === 0 ? (
             <EmptyState />
           ) : (
-            <ul className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {packs.map((pack) => {
                 const status = pack.status as PackStatus;
                 const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.DRAFT;
@@ -257,42 +254,19 @@ export default async function DashboardPage() {
                 const triggerSummary = getTriggerSummary(pack.triggerCondition);
 
                 return (
-                  <li key={pack.id}>
-                    <Link href={`/dashboard/arca/${pack.id}/edit`}>
-                      <Card className="group border-border/50 bg-white/[0.03] backdrop-blur-md hover:bg-white/[0.06] hover:border-border/80 transition-all duration-500 cursor-pointer">
-                        <CardContent className="flex items-center gap-4 px-5 py-4">
-                          {/* Type icon */}
-                          <span className={cn("shrink-0 text-sm", type.color)}>
+                  <Link key={pack.id} href={`/dashboard/arca/${pack.id}/edit`}>
+                    <Card className="group h-full border-border/50 bg-card/40 backdrop-blur-md hover:bg-card/70 hover:border-border/80 transition-all duration-300 cursor-pointer">
+                      <CardContent className="flex flex-col gap-4 px-6 py-5 h-full">
+
+                        {/* Top row: type icon + status badge */}
+                        <div className="flex items-start justify-between gap-3">
+                          <span className={cn("text-xl shrink-0 mt-0.5", type.color)}>
                             {type.icon}
                           </span>
-
-                          {/* Info */}
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <p className="text-sm font-medium text-foreground truncate group-hover:text-foreground/90 transition-colors">
-                              {pack.title}
-                            </p>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] text-muted-foreground">
-                                {pack._count.recipients}{" "}
-                                {pack._count.recipients === 1 ? "recipient" : "recipients"}
-                              </span>
-                              {triggerSummary && (
-                                <>
-                                  <span className="text-border">·</span>
-                                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                    <Clock className="size-2.5 shrink-0" />
-                                    {triggerSummary}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Status badge */}
                           <Badge
                             variant="outline"
                             className={cn(
-                              "shrink-0 gap-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wide py-0.5",
+                              "shrink-0 gap-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wide px-2.5 py-0.5",
                               cfg.badge
                             )}
                           >
@@ -305,15 +279,43 @@ export default async function DashboardPage() {
                             />
                             {cfg.label}
                           </Badge>
+                        </div>
 
-                          <ChevronRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors duration-300 shrink-0" />
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  </li>
+                        {/* Title + meta */}
+                        <div className="flex-1 space-y-1.5">
+                          <p className="text-sm font-semibold text-foreground leading-snug group-hover:text-foreground/90 transition-colors">
+                            {pack.title}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                            <span className="text-[11px] text-muted-foreground">
+                              {pack._count.recipients}{" "}
+                              {pack._count.recipients === 1 ? "recipient" : "recipients"}
+                            </span>
+                            {triggerSummary && (
+                              <>
+                                <span className="text-border select-none">·</span>
+                                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                  <Clock className="size-2.5 shrink-0" />
+                                  {triggerSummary}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-between pt-3 border-t border-border/40">
+                          <span className="text-[11px] text-muted-foreground/60 uppercase tracking-widest font-medium">
+                            {type.label}
+                          </span>
+                          <ChevronRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 );
               })}
-            </ul>
+            </div>
           )}
         </section>
       </main>
@@ -327,21 +329,21 @@ function StatCard({
   icon,
   value,
   label,
+  accent,
 }: {
   icon: React.ReactNode;
   value: number;
   label: string;
+  accent: string;
 }) {
   return (
-    <Card className="border-border/50 bg-white/[0.03] backdrop-blur-sm">
-      <CardContent className="px-4 py-3 space-y-1.5">
-        <div className="flex items-center gap-1.5">
+    <Card className="border-border/50 bg-card/40 backdrop-blur-sm">
+      <CardContent className="px-5 py-4 space-y-3">
+        <div className="flex items-center gap-2">
           {icon}
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
-            {label}
-          </span>
+          <span className="text-xs text-muted-foreground font-medium">{label}</span>
         </div>
-        <p className="text-2xl font-semibold text-foreground tabular-nums">{value}</p>
+        <p className={cn("text-3xl font-semibold tabular-nums", accent)}>{value}</p>
       </CardContent>
     </Card>
   );
@@ -349,20 +351,20 @@ function StatCard({
 
 function EmptyState() {
   return (
-    <Card className="border-border/40 bg-white/[0.02] backdrop-blur-sm">
-      <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center space-y-4">
-        <div className="flex size-12 items-center justify-center rounded-full border border-border/60 bg-muted/20">
-          <ArchiveX className="size-5 text-muted-foreground/60" />
+    <Card className="border-border/40 border-dashed bg-card/20">
+      <CardContent className="flex flex-col items-center justify-center py-20 px-8 text-center space-y-5">
+        <div className="flex size-14 items-center justify-center rounded-full border border-border/60 bg-muted/20">
+          <ArchiveX className="size-6 text-muted-foreground/50" />
         </div>
-        <div className="space-y-1">
-          <p className="font-serif text-lg italic text-muted-foreground">
+        <div className="space-y-1.5">
+          <p className="font-serif text-xl italic text-muted-foreground">
             Nothing sealed yet.
           </p>
-          <p className="text-xs text-muted-foreground/60">
+          <p className="text-sm text-muted-foreground/60 max-w-xs">
             Create your first Arca — a message sealed until the moment it matters.
           </p>
         </div>
-        <Button asChild size="sm" className="rounded-full mt-2 gap-2">
+        <Button asChild size="sm" className="rounded-full gap-2">
           <Link href="/dashboard/arca/new">
             <Plus className="size-3.5" />
             Create your first Arca
