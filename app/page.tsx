@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
 
       {/* ── Navigation ──────────────────────────────────────────────── */}
       <nav className="flex items-center justify-between px-6 py-5 md:px-12 border-b border-border/50">

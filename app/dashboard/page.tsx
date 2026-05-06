@@ -138,7 +138,7 @@ export default async function DashboardPage() {
   const activePacks = packs.filter((p) => p.status === "ACTIVE").length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
 
       {/* ── Top bar ────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-md">

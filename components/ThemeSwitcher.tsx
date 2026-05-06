@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import { useTheme } from "@/contexts/theme-context";
 import { Sun, Moon, Palette, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,15 +10,51 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useVibe, type Vibe } from "@/contexts/vibe-context";
+import { useTheme } from "@/contexts/theme-context";
+import { useVibe, type Vibe, GRADIENTS, PHOTOS } from "@/contexts/vibe-context";
 import { cn } from "@/lib/utils";
 
-const VIBES: { value: Vibe; label: string; preview: string }[] = [
-  { value: "minimal", label: "Minimal",  preview: "bg-zinc-950" },
-  { value: "ocean",   label: "Ocean",    preview: "bg-blue-900" },
-  { value: "sunset",  label: "Sunset",   preview: "bg-rose-900" },
-  { value: "forest",  label: "Forest",   preview: "bg-emerald-900" },
+// ─── Scene catalogue ──────────────────────────────────────────────────────────
+
+const SCENES: {
+  id: Vibe;
+  label: string;
+  type: "gradient" | "photo" | "minimal";
+}[] = [
+  { id: "minimal",   label: "Minimal",   type: "minimal" },
+  { id: "midnight",  label: "Midnight",  type: "gradient" },
+  { id: "ocean",     label: "Ocean",     type: "gradient" },
+  { id: "sunset",    label: "Sunset",    type: "gradient" },
+  { id: "ember",     label: "Ember",     type: "gradient" },
+  { id: "aurora",    label: "Aurora",    type: "gradient" },
+  { id: "forest",    label: "Forest",    type: "photo" },
+  { id: "mountains", label: "Mountains", type: "photo" },
+  { id: "stars",     label: "Stars",     type: "photo" },
+  { id: "sakura",    label: "Sakura",    type: "photo" },
 ];
+
+// Minimal preview — dark dot grid
+const MINIMAL_PREVIEW =
+  "radial-gradient(circle,#3f3f46 1px,transparent 1px) 0 0/16px 16px,#09090b";
+
+function getPreviewStyle(scene: (typeof SCENES)[0]): React.CSSProperties {
+  if (scene.type === "minimal") {
+    return { background: MINIMAL_PREVIEW };
+  }
+  if (scene.type === "gradient" && GRADIENTS[scene.id]) {
+    return { backgroundImage: GRADIENTS[scene.id] };
+  }
+  if (scene.type === "photo" && PHOTOS[scene.id]) {
+    return {
+      backgroundImage: `url(${PHOTOS[scene.id]})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    };
+  }
+  return { background: "#09090b" };
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
@@ -29,14 +64,7 @@ export function ThemeSwitcher() {
   function handleUrlCommit() {
     const val = urlInputRef.current?.value.trim() ?? "";
     setCustomImageUrl(val);
-    if (!val) {
-      // When URL is cleared, fall back to minimal
-      setVibe("minimal");
-    }
-  }
-
-  function handleUrlKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") handleUrlCommit();
+    if (!val) setVibe("minimal");
   }
 
   return (
@@ -53,107 +81,116 @@ export function ThemeSwitcher() {
         </Button>
       </DropdownMenuTrigger>
 
-      {/* KEY FIX: z-[100] + solid background + strong shadow so it always sits on top */}
       <DropdownMenuContent
         align="end"
         sideOffset={8}
         className={cn(
-          "z-[100] w-64 p-2",
-          // Solid, opaque background — no more bleed-through on image vibes
-          "bg-background border border-border/80 shadow-2xl backdrop-blur-xl",
+          "z-[100] w-[260px] p-3 space-y-3",
+          // Solid, opaque — never transparent even over image vibes
+          "bg-popover border border-border shadow-2xl",
         )}
       >
-        {/* ── Light / Dark / System ─────────────────────────────────── */}
-        <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-semibold px-1 pb-1">
-          Theme
-        </DropdownMenuLabel>
-
-        <div className="flex gap-1 mb-1">
-          {(["light", "dark"] as const).map((t) => {
-            const Icon = t === "light" ? Sun : Moon;
-            return (
-              <button
-                key={t}
-                onClick={() => setTheme(t)}
-                className={cn(
-                  "flex flex-1 flex-col items-center gap-1.5 rounded-lg px-2 py-2 text-[10px] capitalize transition-colors",
-                  theme === t
-                    ? "bg-accent text-foreground font-semibold"
-                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                )}
-              >
-                <Icon className="size-3.5" />
-                {t}
-              </button>
-            );
-          })}
+        {/* ── Light / Dark ──────────────────────────────────────── */}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+            Color scheme
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {(["light", "dark"] as const).map((t) => {
+              const Icon = t === "light" ? Sun : Moon;
+              const active = theme === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-all",
+                    active
+                      ? "bg-foreground text-background shadow-sm"
+                      : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 border border-border/50"
+                  )}
+                >
+                  <Icon className="size-3.5" />
+                  {t === "light" ? "Light" : "Dark"}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="-mx-3" />
 
-        {/* ── Background vibes ──────────────────────────────────────── */}
-        <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-semibold px-1 pb-1 pt-1">
-          Background
-        </DropdownMenuLabel>
-
-        <div className="grid grid-cols-2 gap-1 mb-1">
-          {VIBES.map((v) => (
-            <button
-              key={v.value}
-              onClick={() => setVibe(v.value)}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs transition-colors",
-                vibe === v.value && vibe !== "custom"
-                  ? "bg-accent text-foreground font-medium"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-              )}
-            >
-              <span className={cn("size-3 rounded-full shrink-0 border border-white/10", v.preview)} />
-              {v.label}
-            </button>
-          ))}
+        {/* ── Scene grid ────────────────────────────────────────── */}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+            Background scene
+          </p>
+          <div className="grid grid-cols-5 gap-1.5">
+            {SCENES.map((scene) => {
+              const active = vibe === scene.id && vibe !== "custom";
+              return (
+                <button
+                  key={scene.id}
+                  onClick={() => setVibe(scene.id)}
+                  title={scene.label}
+                  style={getPreviewStyle(scene)}
+                  className={cn(
+                    "relative aspect-video rounded-lg overflow-hidden transition-all duration-150",
+                    "ring-offset-background ring-offset-1",
+                    active
+                      ? "ring-2 ring-foreground scale-[1.08] shadow-md"
+                      : "opacity-70 hover:opacity-100 hover:scale-[1.04]"
+                  )}
+                >
+                  {/* Overlay for photos so the label is readable */}
+                  {scene.type === "photo" && (
+                    <div className="absolute inset-0 bg-black/30" />
+                  )}
+                  <span className="absolute inset-x-0 bottom-0 text-[6px] text-white/90 text-center pb-0.5 leading-none font-medium truncate px-0.5">
+                    {scene.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="-mx-3" />
 
-        {/* ── Custom image URL ──────────────────────────────────────── */}
-        <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-semibold px-1 pb-1 pt-1 flex items-center gap-1.5">
-          <ImageIcon className="size-3" />
-          Custom image URL
-        </DropdownMenuLabel>
-
-        <div className="px-1 pb-1 space-y-1.5">
+        {/* ── Custom image URL ──────────────────────────────────── */}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
+            <ImageIcon className="size-3" />
+            Custom image URL
+          </p>
           <input
             ref={urlInputRef}
             type="url"
             defaultValue={customImageUrl}
             placeholder="https://images.unsplash.com/…"
             onBlur={handleUrlCommit}
-            onKeyDown={handleUrlKeyDown}
+            onKeyDown={(e) => e.key === "Enter" && handleUrlCommit()}
             className={cn(
-              "w-full rounded-md border px-2.5 py-1.5 text-[11px]",
-              "bg-background border-border text-foreground placeholder:text-muted-foreground/40",
-              "outline-none focus:border-ring focus:ring-1 focus:ring-ring/50",
-              "transition-colors",
-              vibe === "custom" && customImageUrl
-                ? "border-ring/60"
-                : "border-border",
+              "w-full rounded-lg border px-2.5 py-2 text-[11px]",
+              "bg-background border-border text-foreground placeholder:text-muted-foreground/50",
+              "outline-none focus:ring-1 focus:ring-ring/60 transition-colors",
+              vibe === "custom" && customImageUrl && "border-ring/60"
             )}
           />
-          <p className="text-[10px] text-muted-foreground/50 leading-snug px-0.5">
-            Paste any image URL. Press Enter or click away to apply.
-            {vibe === "custom" && customImageUrl && (
-              <button
-                onClick={() => {
-                  if (urlInputRef.current) urlInputRef.current.value = "";
-                  setCustomImageUrl("");
-                  setVibe("minimal");
-                }}
-                className="ml-1 underline hover:text-muted-foreground transition-colors"
-              >
-                Clear
-              </button>
-            )}
+          {vibe === "custom" && customImageUrl && (
+            <button
+              onClick={() => {
+                if (urlInputRef.current) urlInputRef.current.value = "";
+                setCustomImageUrl("");
+                setVibe("minimal");
+              }}
+              className="mt-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ✕ Clear custom image
+            </button>
+          )}
+          <p className="mt-1 text-[10px] text-muted-foreground/60 leading-snug">
+            Press Enter or click away to apply.
           </p>
         </div>
       </DropdownMenuContent>

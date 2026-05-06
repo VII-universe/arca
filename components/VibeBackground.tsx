@@ -1,58 +1,54 @@
 "use client";
 
-import { useEffect } from "react";
-import { useVibe } from "@/contexts/vibe-context";
+import { useVibe, GRADIENTS, PHOTOS } from "@/contexts/vibe-context";
 
-const FOREST_URL =
-  "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80&auto=format&fit=crop";
-
-const GRADIENTS: Record<string, string> = {
-  ocean:
-    "linear-gradient(135deg, #0f172a 0%, #0c4a6e 40%, #0f2744 70%, #0a0f1e 100%)",
-  sunset:
-    "linear-gradient(135deg, #0f0a1e 0%, #7c1d3b 35%, #9a3412 65%, #1a0a00 100%)",
-};
+// ─── Component ────────────────────────────────────────────────────────────────
+// KEY FIX: renders the background as a fixed -z-20 div instead of mutating
+// body.style. This means page containers no longer need to be transparent —
+// any element WITHOUT a background will naturally show the fixed layer below.
 
 export function VibeBackground() {
   const { vibe, customImageUrl } = useVibe();
 
-  useEffect(() => {
-    const body = document.body;
-    const reset = () => {
-      body.style.backgroundImage = "";
-      body.style.backgroundSize = "";
-      body.style.backgroundPosition = "";
-      body.style.backgroundAttachment = "";
-      body.style.backgroundRepeat = "";
-    };
+  const isPhoto = vibe in PHOTOS || (vibe === "custom" && !!customImageUrl);
+  const isGradient = vibe in GRADIENTS;
 
-    reset();
-
-    if (vibe === "custom" && customImageUrl) {
-      body.style.backgroundImage = `url(${customImageUrl})`;
-      body.style.backgroundSize = "cover";
-      body.style.backgroundPosition = "center";
-      body.style.backgroundAttachment = "fixed";
-      body.style.backgroundRepeat = "no-repeat";
-    } else if (vibe === "ocean" || vibe === "sunset") {
-      body.style.backgroundImage = GRADIENTS[vibe];
-    } else if (vibe === "forest") {
-      body.style.backgroundImage = `url(${FOREST_URL})`;
-      body.style.backgroundSize = "cover";
-      body.style.backgroundPosition = "center";
-      body.style.backgroundAttachment = "fixed";
-      body.style.backgroundRepeat = "no-repeat";
-    }
-
-    return reset;
-  }, [vibe, customImageUrl]);
-
-  const isImageBackground =
-    vibe === "forest" || (vibe === "custom" && !!customImageUrl);
+  // Build inline style for the background div
+  const bgStyle: React.CSSProperties = {};
+  if (vibe === "custom" && customImageUrl) {
+    bgStyle.backgroundImage = `url(${customImageUrl})`;
+    bgStyle.backgroundSize = "cover";
+    bgStyle.backgroundPosition = "center";
+    bgStyle.backgroundRepeat = "no-repeat";
+  } else if (PHOTOS[vibe]) {
+    bgStyle.backgroundImage = `url(${PHOTOS[vibe]})`;
+    bgStyle.backgroundSize = "cover";
+    bgStyle.backgroundPosition = "center";
+    bgStyle.backgroundRepeat = "no-repeat";
+  } else if (GRADIENTS[vibe]) {
+    bgStyle.backgroundImage = GRADIENTS[vibe];
+  }
 
   return (
     <>
-      {/* Minimal: subtle ambient blobs */}
+      {/* ── The actual background layer (behind everything) ─────── */}
+      {(isPhoto || isGradient) && (
+        <div
+          className="fixed inset-0 -z-20"
+          style={bgStyle}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ── Dark scrim for photos (improves text readability) ────── */}
+      {isPhoto && (
+        <div
+          className="fixed inset-0 -z-10 bg-black/55"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ── Ambient blobs for the default minimal vibe ───────────── */}
       {vibe === "minimal" && (
         <div
           className="fixed inset-0 overflow-hidden pointer-events-none -z-10"
@@ -62,14 +58,6 @@ export function VibeBackground() {
           <div className="ambient-blob-2 absolute -bottom-48 -right-24 w-[700px] h-[700px] rounded-full bg-violet-800/[0.10] blur-[160px]" />
           <div className="ambient-blob-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-blue-900/[0.08] blur-[140px]" />
         </div>
-      )}
-
-      {/* Image backgrounds: strong dark overlay so text on un-papered surfaces stays readable */}
-      {isImageBackground && (
-        <div
-          className="fixed inset-0 pointer-events-none -z-10 bg-black/60"
-          aria-hidden="true"
-        />
       )}
     </>
   );
