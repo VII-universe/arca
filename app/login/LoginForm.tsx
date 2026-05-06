@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
@@ -12,6 +12,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export default function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
 
@@ -41,8 +42,6 @@ export default function LoginForm() {
           email,
           password,
           options: {
-            // Supabase will redirect here after email confirmation.
-            // The callback route handles session + Prisma sync.
             emailRedirectTo: `${window.location.origin}/api/auth/callback`,
           },
         });
@@ -61,18 +60,18 @@ export default function LoginForm() {
 
         if (error) throw error;
 
-        // Sync the user to Prisma on every login (handles the case where
-        // the Prisma row was somehow deleted, or email changed in Supabase).
-        await fetch("/api/auth/sync-user", { method: "POST" });
+        // Sync the user to Prisma — fire and forget, dashboard does its own upsert too
+        fetch("/api/auth/sync-user", { method: "POST" }).catch(() => {});
 
-        // Supabase sets the session cookie; Next.js router picks it up.
-        window.location.href = "/dashboard";
+        // router.push triggers a soft Next.js navigation so the session cookie
+        // is available to the proxy before the new page request goes out.
+        router.push("/dashboard");
+        router.refresh();
       }
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Something went wrong.";
       setStatus({ type: "error", message });
-    } finally {
       setLoading(false);
     }
   }
@@ -133,7 +132,6 @@ export default function LoginForm() {
           )}
         </div>
 
-        {/* Status message */}
         {status && (
           <div
             className={`rounded-lg px-3 py-2.5 text-sm ${

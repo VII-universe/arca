@@ -4,9 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const PROTECTED_PATHS = ["/dashboard"];
 const AUTH_PATHS = ["/login"];
 // These paths are fully public — no auth check, no Supabase client needed.
-// Recipients are unauthenticated guests. An expired owner session would throw
-// AuthSessionMissingError if we called getUser() here, breaking living links.
-const PUBLIC_PREFIXES = ["/arca/", "/api/auth/", "/api/cron/"];
+const PUBLIC_PREFIXES = ["/arca/", "/api/auth/", "/api/cron/", "/api/health"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,9 +16,17 @@ export async function proxy(request: NextRequest) {
 
   let supabaseResponse = NextResponse.next({ request });
 
+  // Defensive: if Supabase env vars are missing, fail open (redirect to login)
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    console.error("[proxy] Supabase env vars missing");
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
       cookies: {
         getAll() {
@@ -39,10 +45,17 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: Do not add logic between createServerClient and getUser().
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getUser() validates the JWT with the Supabase server — wrap in try-catch
+  // so a network error or SDK bug doesn't bubble up as an unhandled crash
+  // (which would show Vercel's generic "This page couldn't load" error).
+  let user: { id: string } | null = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (err) {
+    console.error("[proxy] getUser threw:", err);
+    // Fail safe: treat as unauthenticated — redirect to login for protected routes
+  }
 
   // Redirect unauthenticated users away from protected routes
   if (!user && PROTECTED_PATHS.some((p) => pathname.startsWith(p))) {
@@ -63,7 +76,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and static files
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
