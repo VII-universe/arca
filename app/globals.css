@@ -105,3 +105,24 @@
   pointer-events: none;
   height: 0;
 }
+
+/* ── Shared form input base ──────────────────────────────────────────────── */
+
+.input-base {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background-color: color-mix(in oklab, var(--background) 90%, transparent);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input-base::placeholder {
+  color: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+}
+.input-base:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--ring) 25%, transparent);
+}

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Sparkles,
   ChevronDown,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ContentEditor from "./ContentEditor";
@@ -18,6 +19,7 @@ import ActivatePanel from "./ActivatePanel";
 import RecipientSheet from "./sheets/RecipientSheet";
 import TriggerSheet from "./sheets/TriggerSheet";
 import MediaSheet from "./sheets/MediaSheet";
+import ChapterSheet, { type ChapterData } from "./sheets/ChapterSheet";
 import { updatePackTitle } from "@/app/actions/arca";
 import type { RecipientData } from "./RecipientManager";
 import type { TriggerData } from "./TriggerSettings";
@@ -28,6 +30,7 @@ import type { MediaItem } from "./MediaGalleryClient";
 export interface ArcaEditorProps {
   packId: string;
   userId: string;
+  initialChapters: ChapterData[];
   packType: "EMOTIONAL" | "PRACTICAL";
   packStatus: string;
   initialTitle: string;
@@ -35,6 +38,17 @@ export interface ArcaEditorProps {
   initialRecipients: RecipientData[];
   initialTrigger: TriggerData | null;
   initialMediaItems: MediaItem[];
+}
+
+function chapterSummary(chapters: ChapterData[]) {
+  if (chapters.length === 0)
+    return { title: "No chapters", sub: "Add parts that unlock over time" };
+  return {
+    title: `${chapters.length} chapter${chapters.length > 1 ? "s" : ""}`,
+    sub: chapters.some((c) => c.unlockDelayDays || c.unlockDate)
+      ? "Some chapters have delayed delivery"
+      : "All unlock immediately",
+  };
 }
 
 // ─── Summary helpers ──────────────────────────────────────────────────────────
@@ -97,6 +111,7 @@ export default function ArcaEditor({
   initialRecipients,
   initialTrigger,
   initialMediaItems,
+  initialChapters,
 }: ArcaEditorProps) {
   const router = useRouter();
 
@@ -104,6 +119,7 @@ export default function ArcaEditor({
   const [recipientOpen, setRecipientOpen] = useState(false);
   const [triggerOpen, setTriggerOpen] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
+  const [chapterOpen, setChapterOpen] = useState(false);
   const [promptsOpen, setPromptsOpen] = useState(false);
 
   // ── Title auto-save ─────────────────────────────────────────────────────────
@@ -140,6 +156,7 @@ export default function ArcaEditor({
   const rs = recipientSummary(initialRecipients);
   const ts = triggerSummary(initialTrigger);
   const ms = mediaSummary(initialMediaItems);
+  const cs = chapterSummary(initialChapters);
 
   const typeAccent = packType === "EMOTIONAL" ? "text-rose-400" : "text-blue-400";
   const typeIcon = packType === "EMOTIONAL" ? "✦" : "⬡";
@@ -257,6 +274,15 @@ export default function ArcaEditor({
                 onClick={() => setMediaOpen(true)}
               />
 
+              {/* Chapters card */}
+              <SummaryCard
+                icon={<BookOpen className="size-3.5" />}
+                title={cs.title}
+                subtitle={cs.sub}
+                filled={initialChapters.length > 0}
+                onClick={() => setChapterOpen(true)}
+              />
+
               {/* Divider */}
               <div className="h-px bg-border/30 mx-1 my-3" />
 
@@ -294,6 +320,12 @@ export default function ArcaEditor({
         initialItems={initialMediaItems}
         open={mediaOpen}
         onOpenChange={closeAndRefresh(setMediaOpen)}
+      />
+      <ChapterSheet
+        packId={packId}
+        initialChapters={initialChapters}
+        open={chapterOpen}
+        onOpenChange={closeAndRefresh(setChapterOpen)}
       />
     </>
   );

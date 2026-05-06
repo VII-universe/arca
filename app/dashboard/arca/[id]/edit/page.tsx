@@ -97,6 +97,24 @@ export default async function EditArcaPage({
     )
   ).filter(Boolean) as MediaItem[];
 
+  // Fetch chapters
+  const rawChapters = await prisma.chapter.findMany({
+    where: { messagePackId: id },
+    orderBy: { order: "asc" },
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      order: true,
+      unlockDate: true,
+      unlockDelayDays: true,
+    },
+  });
+  const chaptersForClient = rawChapters.map((c) => ({
+    ...c,
+    unlockDate: c.unlockDate ? new Date(c.unlockDate) : null,
+  }));
+
   // Serialize trigger dates for client components
   const triggerForClient = pack.triggerCondition
     ? {
@@ -121,6 +139,7 @@ export default async function EditArcaPage({
     initialRecipients: pack.recipients,
     initialTrigger: triggerForClient,
     initialMediaItems: mediaItems,
+    initialChapters: chaptersForClient,
   };
 
   return <ArcaEditor {...props} />;

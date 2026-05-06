@@ -117,11 +117,52 @@ model MessagePack {
 
   contents         MessageContent[]
   recipients       Recipient[]
+  chapters         Chapter[]
+  journalEntries   RecipientJournal[]
   // Nullable until the user configures a delivery trigger
   triggerCondition TriggerCondition?
 
   @@index([ownerId])
   @@index([status]) // background jobs filter by status (e.g. find all GRACE_PERIOD packs)
+}
+
+// ---------------------------------------------------------------------------
+// Chapter  (Drip Delivery — parts of the Arca that unlock at different times)
+// ---------------------------------------------------------------------------
+
+model Chapter {
+  id      String @id @default(cuid())
+  title   String
+  content String @default("") // HTML from editor
+  order   Int    @default(0)
+
+  // Unlock condition — exactly one of the three is set, or none (= immediate)
+  unlockDate      DateTime? // absolute calendar date
+  unlockDelayDays Int?      // N days after the main trigger fires
+
+  messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
+  messagePackId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([messagePackId, order])
+}
+
+// ---------------------------------------------------------------------------
+// RecipientJournal  (Private grief journal attached to a living-link Arca)
+// ---------------------------------------------------------------------------
+
+model RecipientJournal {
+  id      String @id @default(cuid())
+  content String // freeform text
+
+  messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
+  messagePackId String
+
+  createdAt DateTime @default(now())
+
+  @@index([messagePackId])
 }
 
 // ---------------------------------------------------------------------------

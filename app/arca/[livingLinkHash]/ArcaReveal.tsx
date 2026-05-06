@@ -9,11 +9,20 @@ export interface RevealContent {
   signedUrl: string | null;
 }
 
+export interface RevealChapter {
+  id: string;
+  title: string;
+  content: string;
+  isUnlocked: boolean;
+  daysRemaining?: number;
+}
+
 interface Props {
   ownerName: string;
   packType: "EMOTIONAL" | "PRACTICAL";
   createdAt: Date;
   contents: RevealContent[];
+  chapters?: RevealChapter[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -45,11 +54,14 @@ export default function ArcaReveal({
   packType,
   createdAt,
   contents,
+  chapters = [],
 }: Props) {
   const textItem = contents.find((c) => c.type === "TEXT");
   const mediaItems = contents.filter(
     (c) => c.type !== "TEXT" && c.s3FileKey
   );
+  const unlockedChapters = chapters.filter((c) => c.isUnlocked);
+  const lockedChapters = chapters.filter((c) => !c.isUnlocked);
 
   const accentColor =
     packType === "EMOTIONAL" ? "text-rose-500" : "text-blue-500";
@@ -106,6 +118,58 @@ export default function ArcaReveal({
                 <MediaBlock key={item.id} item={item} />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── Chapters ─────────────────────────────────────────────────── */}
+        {(unlockedChapters.length > 0 || lockedChapters.length > 0) && (
+          <div className="mt-16 space-y-10 border-t border-border/50 pt-12">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/40">
+              Chapters
+            </p>
+
+            {/* Unlocked chapters */}
+            {unlockedChapters.map((chapter) => (
+              <article key={chapter.id} className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-border/30" />
+                  <h2 className="font-serif text-lg font-normal text-foreground/80 shrink-0 px-1">
+                    {chapter.title}
+                  </h2>
+                  <div className="h-px flex-1 bg-border/30" />
+                </div>
+                {chapter.content && (
+                  <div
+                    className="prose prose-invert prose-base max-w-none prose-p:font-light prose-p:leading-[1.85] prose-p:text-zinc-300"
+                    dangerouslySetInnerHTML={{ __html: chapter.content }}
+                  />
+                )}
+              </article>
+            ))}
+
+            {/* Locked chapters — show as sealed cards */}
+            {lockedChapters.length > 0 && (
+              <div className="space-y-3">
+                {lockedChapters.map((chapter) => (
+                  <div
+                    key={chapter.id}
+                    className="flex items-center gap-4 rounded-2xl border border-border/30 bg-muted/20 backdrop-blur-sm px-5 py-4"
+                  >
+                    <span className="text-muted-foreground/40 text-lg select-none">◈</span>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground/70">
+                        {chapter.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground/40 mt-0.5">
+                        {chapter.daysRemaining !== undefined
+                          ? `Unlocks in ${chapter.daysRemaining} day${chapter.daysRemaining === 1 ? "" : "s"}`
+                          : "Not yet unlocked"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
