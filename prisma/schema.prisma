@@ -30,10 +30,16 @@ enum PackType {
 enum PackStatus {
   DRAFT
   ACTIVE
-  GRACE_PERIOD // trigger fired; waiting for executor confirmation or grace window to expire
-  TRIGGERED    // grace period passed; delivery pipeline running
+  GRACE_PERIOD                // inactivity hit, no guardians — user is notified directly
+  PENDING_GUARDIAN_APPROVAL   // inactivity hit, guardians are being consulted
+  TRIGGERED                   // delivery pipeline running
   DELIVERED
   ARCHIVED
+}
+
+enum GuardianActionType {
+  CONFIRM_ALIVE // Guardian says user is fine — reset inactivity timer
+  RELEASE       // Guardian authorises immediate delivery
 }
 
 enum ContentType {
@@ -83,8 +89,13 @@ model User {
   // Indexed because this comparison runs on every cron tick across all users.
   lastActiveAt DateTime @default(now())
 
+  // Unique secret used in the heartbeat webhook URL.
+  // Defaults to a UUID so existing rows are populated automatically by the DB.
+  webhookSecret String @unique @default(uuid())
+
   messagePacks  MessagePack[]
   activityLogs  ActivityLog[]
+  guardians     Guardian[]
 
   // Executor rows where this user is the pack owner
   ownedExecutors    Executor[] @relation("ExecutorOwner")
@@ -92,6 +103,7 @@ model User {
   assignedExecutors Executor[] @relation("ExecutorKeymaster")
 
   @@index([lastActiveAt]) // primary target for the inactivity cron job
+  @@index([webhookSecret]) // heartbeat route looks up by this
 }
 
 // ---------------------------------------------------------------------------
@@ -119,6 +131,7 @@ model MessagePack {
   recipients       Recipient[]
   chapters         Chapter[]
   journalEntries   RecipientJournal[]
+  guardianTokens   GuardianToken[]
   // Nullable until the user configures a delivery trigger
   triggerCondition TriggerCondition?
 
@@ -309,4 +322,47 @@ model ActivityLog {
 
   @@index([userId, timestamp]) // user timeline queries: "show me my activity"
   @@index([timestamp])         // global admin / compliance audit queries
+}
+
+// ---------------------------------------------------------------------------
+// Guardian  (Trusted contacts consulted before triggering delivery)
+// ---------------------------------------------------------------------------
+
+model Guardian {
+  id    String @id @default(cuid())
+  name  String
+  email String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  createdAt DateTime @default(now())
+
+  tokens GuardianToken[]
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// GuardianToken  (Single-use action links sent to guardians via email)
+// ---------------------------------------------------------------------------
+
+model GuardianToken {
+  id    String @id @default(cuid())
+  token String @unique @default(cuid())
+
+  guardian   Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  guardianId String
+
+  messagePack   MessagePack @relation(fields: [packId], references: [id], onDelete: Cascade)
+  packId        String
+
+  action    GuardianActionType
+  usedAt    DateTime?
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([packId])
 }

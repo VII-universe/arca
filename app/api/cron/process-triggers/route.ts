@@ -5,6 +5,7 @@ import { resend, FROM_EMAIL, APP_URL } from "@/lib/resend";
 import { PackStatus, TriggerStatus } from "@/lib/prisma/generated";
 import { GracePeriodWarningEmail } from "@/emails/GracePeriodWarningEmail";
 import { ArcaDeliveryEmail } from "@/emails/ArcaDeliveryEmail";
+import { GuardianAlertEmail } from "@/emails/GuardianAlertEmail";
 
 // ─── Auth guard ───────────────────────────────────────────────────────────────
 
@@ -88,8 +89,9 @@ export async function GET(request: NextRequest) {
 
   const results = {
     sweepA: { found: 0, triggered: 0, emails_sent: 0, error: null as string | null },
-    sweepB: { found: 0, entered_grace: 0, emails_sent: 0, error: null as string | null },
+    sweepB: { found: 0, entered_grace: 0, guardian_approval: 0, emails_sent: 0, error: null as string | null },
     sweepC: { found: 0, triggered: 0, emails_sent: 0, error: null as string | null },
+    sweepD: { found: 0, triggered: 0, emails_sent: 0, error: null as string | null },
   };
 
   // ── Sweep A: SPECIFIC_DATE time capsules past their delivery date ─────────
@@ -162,7 +164,7 @@ export async function GET(request: NextRequest) {
     console.error("[cron/sweepA]", err);
   }
 
-  // ── Sweep B: INACTIVITY dead-man switch → GRACE_PERIOD ───────────────────
+  // ── Sweep B: INACTIVITY dead-man switch → GRACE_PERIOD or PENDING_GUARDIAN_APPROVAL ──
 
   try {
     const inactivityPacks = await prisma.messagePack.findMany({
@@ -176,7 +178,15 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         title: true,
-        owner: { select: { email: true, name: true, lastActiveAt: true } },
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            lastActiveAt: true,
+            guardians: { select: { id: true, name: true, email: true } },
+          },
+        },
         triggerCondition: {
           select: { id: true, inactivityDaysLimit: true, gracePeriodDays: true },
         },
@@ -185,36 +195,95 @@ export async function GET(request: NextRequest) {
 
     results.sweepB.found = inactivityPacks.length;
 
-    const toEnterGrace = inactivityPacks.filter((pack) => {
+    const toActivate = inactivityPacks.filter((pack) => {
       const limit = pack.triggerCondition?.inactivityDaysLimit;
       if (!limit || !pack.owner) return false;
       return daysSince(pack.owner.lastActiveAt, now) >= limit;
     });
 
-    if (toEnterGrace.length > 0) {
-      const packIds = toEnterGrace.map((p) => p.id);
-      const triggerIds = toEnterGrace
-        .map((p) => p.triggerCondition?.id)
-        .filter((id): id is string => !!id);
+    for (const pack of toActivate) {
+      const guardians = pack.owner?.guardians ?? [];
+      const triggerCondId = pack.triggerCondition?.id;
+      if (!triggerCondId) continue;
 
-      await prisma.$transaction(async (tx) => {
-        await tx.messagePack.updateMany({
-          where: { id: { in: packIds } },
-          data: { status: PackStatus.GRACE_PERIOD },
+      if (guardians.length > 0) {
+        // Guardians exist: enter PENDING_GUARDIAN_APPROVAL and send them action emails
+        await prisma.$transaction(async (tx) => {
+          await tx.messagePack.update({
+            where: { id: pack.id },
+            data: { status: PackStatus.PENDING_GUARDIAN_APPROVAL },
+          });
+          await tx.triggerCondition.update({
+            where: { id: triggerCondId },
+            data: { status: TriggerStatus.IN_GRACE_PERIOD, triggeredAt: now },
+          });
         });
-        await tx.triggerCondition.updateMany({
-          where: { id: { in: triggerIds } },
-          data: {
-            status: TriggerStatus.IN_GRACE_PERIOD,
-            triggeredAt: now,
-          },
+
+        results.sweepB.guardian_approval++;
+
+        const expiresAt = new Date(now.getTime() + 72 * 60 * 60 * 1000); // 72 h
+        for (const guardian of guardians) {
+          try {
+            const [confirmToken, releaseToken] = await prisma.$transaction([
+              prisma.guardianToken.create({
+                data: {
+                  guardianId: guardian.id,
+                  packId: pack.id,
+                  action: "CONFIRM_ALIVE",
+                  expiresAt,
+                },
+              }),
+              prisma.guardianToken.create({
+                data: {
+                  guardianId: guardian.id,
+                  packId: pack.id,
+                  action: "RELEASE",
+                  expiresAt,
+                },
+              }),
+            ]);
+
+            const html = await render(
+              GuardianAlertEmail({
+                guardianName: guardian.name,
+                ownerName: pack.owner?.name ?? "the owner",
+                packTitle: pack.title,
+                confirmAliveUrl: `${APP_URL}/api/guardians/action?token=${confirmToken.token}`,
+                releaseUrl: `${APP_URL}/api/guardians/action?token=${releaseToken.token}`,
+                expiresInHours: 72,
+              })
+            );
+
+            const { error } = await resend.emails.send({
+              from: FROM_EMAIL,
+              to: guardian.email,
+              subject: `${pack.owner?.name ?? "Someone"} may need your help — Guardian action required`,
+              html,
+            });
+            if (error) throw new Error(error.message);
+            results.sweepB.emails_sent++;
+          } catch (emailErr) {
+            console.error(
+              `[cron/sweepB] Failed to send guardian email to ${guardian.email} for pack ${pack.id}:`,
+              emailErr
+            );
+          }
+        }
+      } else {
+        // No guardians: fall back to normal GRACE_PERIOD
+        await prisma.$transaction(async (tx) => {
+          await tx.messagePack.update({
+            where: { id: pack.id },
+            data: { status: PackStatus.GRACE_PERIOD },
+          });
+          await tx.triggerCondition.update({
+            where: { id: triggerCondId },
+            data: { status: TriggerStatus.IN_GRACE_PERIOD, triggeredAt: now },
+          });
         });
-      });
 
-      results.sweepB.entered_grace = toEnterGrace.length;
+        results.sweepB.entered_grace++;
 
-      // Send grace period warning to each pack owner — failures do not affect DB state
-      for (const pack of toEnterGrace) {
         if (!pack.owner?.email) continue;
         const daysLeft = pack.triggerCondition?.gracePeriodDays ?? 14;
         try {
@@ -310,6 +379,79 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     results.sweepC.error = err instanceof Error ? err.message : "Unknown error";
     console.error("[cron/sweepC]", err);
+  }
+
+  // ── Sweep D: PENDING_GUARDIAN_APPROVAL timeout → TRIGGERED ──────────────────
+  // If no guardian responded within the grace period, deliver anyway.
+
+  try {
+    const pendingGuardianPacks = await prisma.messagePack.findMany({
+      where: {
+        status: PackStatus.PENDING_GUARDIAN_APPROVAL,
+        triggerCondition: { status: TriggerStatus.IN_GRACE_PERIOD },
+      },
+      select: {
+        id: true,
+        livingLinkHash: true,
+        owner: { select: { name: true } },
+        triggerCondition: {
+          select: { id: true, triggeredAt: true, gracePeriodDays: true },
+        },
+        recipients: { select: { name: true, email: true } },
+      },
+    });
+
+    results.sweepD.found = pendingGuardianPacks.length;
+
+    const timedOut = pendingGuardianPacks.filter((pack) => {
+      const { triggeredAt, gracePeriodDays } = pack.triggerCondition ?? {};
+      if (!triggeredAt || gracePeriodDays == null) return false;
+      return daysSince(triggeredAt, now) >= gracePeriodDays;
+    });
+
+    if (timedOut.length > 0) {
+      const packIds = timedOut.map((p) => p.id);
+      const triggerIds = timedOut
+        .map((p) => p.triggerCondition?.id)
+        .filter((id): id is string => !!id);
+
+      await prisma.$transaction(async (tx) => {
+        await tx.messagePack.updateMany({
+          where: { id: { in: packIds } },
+          data: { status: PackStatus.TRIGGERED },
+        });
+        await tx.triggerCondition.updateMany({
+          where: { id: { in: triggerIds } },
+          data: { status: TriggerStatus.EXECUTED },
+        });
+      });
+
+      results.sweepD.triggered = timedOut.length;
+
+      for (const pack of timedOut) {
+        const ownerName = pack.owner?.name ?? "Someone";
+        for (const recipient of pack.recipients) {
+          if (!recipient.email) continue;
+          try {
+            await sendArcaDelivery({
+              toEmail: recipient.email,
+              recipientName: recipient.name,
+              ownerName,
+              livingLinkHash: pack.livingLinkHash,
+            });
+            results.sweepD.emails_sent++;
+          } catch (emailErr) {
+            console.error(
+              `[cron/sweepD] Failed to send delivery email to ${recipient.email} for pack ${pack.id}:`,
+              emailErr
+            );
+          }
+        }
+      }
+    }
+  } catch (err) {
+    results.sweepD.error = err instanceof Error ? err.message : "Unknown error";
+    console.error("[cron/sweepD]", err);
   }
 
   const hasErrors = Object.values(results).some((s) => s.error);

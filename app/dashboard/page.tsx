@@ -16,6 +16,8 @@ import CheckInButton from "@/components/dashboard/CheckInButton";
 import GracePeriodBanner, {
   type GracePack,
 } from "@/components/dashboard/GracePeriodBanner";
+import GuardianManager from "@/components/dashboard/GuardianManager";
+import HeartbeatWidget from "@/components/dashboard/HeartbeatWidget";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,7 @@ export const metadata = { title: "Dashboard — ARCA" };
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
-type PackStatus = "DRAFT" | "ACTIVE" | "GRACE_PERIOD" | "TRIGGERED" | "DELIVERED" | "ARCHIVED";
+type PackStatus = "DRAFT" | "ACTIVE" | "GRACE_PERIOD" | "PENDING_GUARDIAN_APPROVAL" | "TRIGGERED" | "DELIVERED" | "ARCHIVED";
 
 const STATUS_CONFIG: Record<PackStatus, {
   label: string;
@@ -49,6 +51,12 @@ const STATUS_CONFIG: Record<PackStatus, {
     label: "Grace Period",
     dot: "bg-amber-500",
     badge: "border-amber-800/60 bg-amber-950/40 text-amber-400",
+    pulse: true,
+  },
+  PENDING_GUARDIAN_APPROVAL: {
+    label: "Awaiting Guardians",
+    dot: "bg-violet-500",
+    badge: "border-violet-800/60 bg-violet-950/40 text-violet-400",
     pulse: true,
   },
   TRIGGERED: {
@@ -96,7 +104,14 @@ export default async function DashboardPage() {
           "User",
         lastActiveAt: new Date(),
       },
-      select: { id: true, email: true, name: true, lastActiveAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        lastActiveAt: true,
+        webhookSecret: true,
+        guardians: { select: { id: true, name: true, email: true }, orderBy: { createdAt: "asc" } },
+      },
     }),
     prisma.messagePack.findMany({
       where: { ownerId: authUser.id },
@@ -224,6 +239,15 @@ export default async function DashboardPage() {
             </div>
           </div>
           <CheckInButton lastActiveAt={prismaUser.lastActiveAt} />
+        </div>
+
+        {/* ── Guardians + Heartbeat ──────────────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <GuardianManager initialGuardians={prismaUser.guardians} />
+          <HeartbeatWidget
+            webhookSecret={prismaUser.webhookSecret ?? ""}
+            appUrl={process.env.NEXT_PUBLIC_SITE_URL ?? "https://arca-navy.vercel.app"}
+          />
         </div>
 
         {/* ── Pack grid — "Create New" always first ───────────────────── */}
