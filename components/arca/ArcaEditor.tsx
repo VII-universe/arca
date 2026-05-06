@@ -41,6 +41,8 @@ export interface ArcaEditorProps {
   initialRecipients: RecipientData[];
   initialTrigger: TriggerData | null;
   initialMediaItems: MediaItem[];
+  initialCategoryId: string | null;
+  categories: { id: string; name: string; color: string | null }[];
 }
 
 function chapterSummary(chapters: ChapterData[]) {
@@ -116,9 +118,24 @@ export default function ArcaEditor({
   initialTrigger,
   initialMediaItems,
   initialChapters,
+  initialCategoryId,
+  categories,
 }: ArcaEditorProps) {
   const router = useRouter();
   const { open: openUpgrade } = useUpgradeModal();
+
+  // ── Category ─────────────────────────────────────────────────────────────────
+  const [categoryId, setCategoryId] = useState<string | null>(initialCategoryId);
+  const [, startCatSave] = useTransition();
+
+  function handleCategoryChange(val: string) {
+    const next = val === "__none__" ? null : val;
+    setCategoryId(next);
+    startCatSave(async () => {
+      const { assignCategory } = await import("@/app/actions/categories");
+      await assignCategory(packId, next);
+    });
+  }
 
   // ── Sheets ──────────────────────────────────────────────────────────────────
   const [recipientOpen, setRecipientOpen] = useState(false);
@@ -296,6 +313,31 @@ export default function ArcaEditor({
                   feature="Drip chapter delivery"
                   onUpgrade={openUpgrade}
                 />
+              )}
+
+              {/* Divider */}
+              <div className="h-px bg-border/30 mx-1 my-3" />
+
+              {/* Category selector */}
+              {categories.length > 0 && (
+                <div className="px-1 space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground/40 px-1">
+                    Category
+                  </p>
+                  <select
+                    value={categoryId ?? "__none__"}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className={cn(
+                      "w-full rounded-xl border border-border/40 bg-muted/20 px-3 py-2 text-xs text-foreground",
+                      "focus:outline-none focus:border-foreground/30 transition-colors cursor-pointer"
+                    )}
+                  >
+                    <option value="__none__">No category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
               )}
 
               {/* Divider */}

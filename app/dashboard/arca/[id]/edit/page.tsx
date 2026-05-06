@@ -59,6 +59,8 @@ export default async function EditArcaPage({
           challengeQuestion: true,
         },
       },
+      categoryId: true,
+      category: { select: { id: true, name: true, color: true } },
       triggerCondition: {
         select: {
           type: true,
@@ -71,6 +73,12 @@ export default async function EditArcaPage({
   });
 
   if (!pack) notFound();
+
+  const userCategories = await prisma.category.findMany({
+    where: { userId: authUser.id },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true, color: true },
+  });
 
   // Fetch media + generate signed URLs server-side (admin client bypasses RLS)
   const rawMedia = await prisma.messageContent.findMany({
@@ -145,6 +153,8 @@ export default async function EditArcaPage({
     initialTrigger: triggerForClient,
     initialMediaItems: mediaItems,
     initialChapters: chaptersForClient,
+    initialCategoryId: pack.categoryId,
+    categories: userCategories,
   };
 
   return <ArcaEditor {...props} />;

@@ -102,6 +102,7 @@ model User {
   messagePacks  MessagePack[]
   activityLogs  ActivityLog[]
   guardians     Guardian[]
+  categories    Category[]
 
   // Executor rows where this user is the pack owner
   ownedExecutors    Executor[] @relation("ExecutorOwner")
@@ -129,8 +130,12 @@ model MessagePack {
   status PackStatus @default(DRAFT)
 
   // Pro features
-  isEncrypted     Boolean @default(false)
+  isEncrypted      Boolean @default(false)
   physicalDelivery Boolean @default(false)
+
+  // Optional category grouping
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -147,7 +152,27 @@ model MessagePack {
   triggerCondition TriggerCondition?
 
   @@index([ownerId])
+  @@index([categoryId])
   @@index([status]) // background jobs filter by status (e.g. find all GRACE_PERIOD packs)
+}
+
+// ---------------------------------------------------------------------------
+// Category  (User-defined labels for organising Arcas)
+// ---------------------------------------------------------------------------
+
+model Category {
+  id     String  @id @default(cuid())
+  name   String
+  color  String? // tailwind colour key e.g. "rose", "sky", "violet"
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  messagePacks MessagePack[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ---------------------------------------------------------------------------

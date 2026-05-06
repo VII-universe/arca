@@ -1,16 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  ArchiveX,
-  ChevronRight,
-  Plus,
   Shield,
   Zap,
-  Clock,
   Fingerprint,
   Sparkles,
   Crown,
-  Lock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
@@ -22,68 +17,16 @@ import GracePeriodBanner, {
 } from "@/components/dashboard/GracePeriodBanner";
 import GuardianManager from "@/components/dashboard/GuardianManager";
 import HeartbeatWidget from "@/components/dashboard/HeartbeatWidget";
+import ArcasDashboard from "@/components/dashboard/arcas/ArcasDashboard";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import type { PackSummary } from "@/components/dashboard/arcas/shared";
 
 export const metadata = { title: "Dashboard — ARCA" };
 
 // ── Status config ─────────────────────────────────────────────────────────────
-
-type PackStatus = "DRAFT" | "ACTIVE" | "GRACE_PERIOD" | "PENDING_GUARDIAN_APPROVAL" | "TRIGGERED" | "DELIVERED" | "ARCHIVED";
-
-const STATUS_CONFIG: Record<PackStatus, {
-  label: string;
-  dot: string;
-  badge: string;
-  pulse?: boolean;
-}> = {
-  DRAFT: {
-    label: "Draft",
-    dot: "bg-zinc-500",
-    badge: "border-zinc-700/60 bg-zinc-800/40 text-zinc-400",
-  },
-  ACTIVE: {
-    label: "Active",
-    dot: "bg-emerald-500",
-    badge: "border-emerald-800/60 bg-emerald-950/40 text-emerald-400",
-    pulse: true,
-  },
-  GRACE_PERIOD: {
-    label: "Grace Period",
-    dot: "bg-amber-500",
-    badge: "border-amber-800/60 bg-amber-950/40 text-amber-400",
-    pulse: true,
-  },
-  PENDING_GUARDIAN_APPROVAL: {
-    label: "Awaiting Guardians",
-    dot: "bg-violet-500",
-    badge: "border-violet-800/60 bg-violet-950/40 text-violet-400",
-    pulse: true,
-  },
-  TRIGGERED: {
-    label: "Triggered",
-    dot: "bg-orange-500",
-    badge: "border-orange-800/60 bg-orange-950/40 text-orange-400",
-  },
-  DELIVERED: {
-    label: "Delivered",
-    dot: "bg-blue-500",
-    badge: "border-blue-800/60 bg-blue-950/40 text-blue-400",
-  },
-  ARCHIVED: {
-    label: "Archived",
-    dot: "bg-zinc-600",
-    badge: "border-zinc-700/40 bg-zinc-800/30 text-zinc-500",
-  },
-};
-
-const TYPE_CONFIG = {
-  EMOTIONAL: { icon: "✦", color: "text-rose-400/80", label: "Emotional" },
-  PRACTICAL: { icon: "⬡", color: "text-sky-400/80", label: "Practical" },
-};
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
@@ -95,7 +38,7 @@ export default async function DashboardPage() {
 
   if (!authUser) redirect("/login");
 
-  const [prismaUser, packs] = await Promise.all([
+  const [prismaUser, packs, categories] = await Promise.all([
     resolveUser(authUser),
     prisma.messagePack.findMany({
       where: { ownerId: authUser.id },
@@ -106,7 +49,12 @@ export default async function DashboardPage() {
         type: true,
         status: true,
         createdAt: true,
-        _count: { select: { contents: true, recipients: true } },
+        categoryId: true,
+        category: { select: { id: true, name: true, color: true } },
+        recipients: {
+          select: { id: true, name: true, email: true },
+          orderBy: { createdAt: "asc" },
+        },
         triggerCondition: {
           select: {
             type: true,
@@ -117,6 +65,11 @@ export default async function DashboardPage() {
           },
         },
       },
+    }),
+    prisma.category.findMany({
+      where: { userId: authUser.id },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, name: true, color: true },
     }),
   ]);
 
@@ -253,138 +206,13 @@ export default async function DashboardPage() {
           />
         </div>
 
-        {/* ── Pack grid — "Create New" always first ───────────────────── */}
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/40">
-            Your Arcas
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-            {/* ── Create New card (locked if free user is at limit) ── */}
-            {atPackLimit ? (
-              <Link href="/dashboard/billing" className="group">
-                <div className={cn(
-                  "h-full min-h-[160px] rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer",
-                  "flex flex-col items-center justify-center gap-3 p-6 text-center",
-                  "border-violet-500/20 hover:border-violet-500/40",
-                  "bg-transparent hover:bg-violet-500/[0.03]",
-                )}>
-                  <div className="rounded-full p-3 bg-violet-500/10 group-hover:bg-violet-500/20 transition-all duration-300">
-                    <Lock className="size-5 text-violet-400/60 group-hover:text-violet-400 transition-colors duration-300" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-violet-300/60 group-hover:text-violet-300 transition-colors duration-200">
-                      Unlock more Arcas
-                    </p>
-                    <p className="text-xs text-muted-foreground/50 mt-0.5">
-                      Free plan · 1 Arca max
-                    </p>
-                    <p className="text-[11px] text-violet-400/60 mt-1.5 flex items-center justify-center gap-1">
-                      <Sparkles className="size-3" />
-                      Upgrade to Pro
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ) : (
-              <Link href="/dashboard/arca/new" className="group">
-                <div className={cn(
-                  "h-full min-h-[160px] rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer",
-                  "flex flex-col items-center justify-center gap-3 p-6 text-center",
-                  "border-border/30 hover:border-primary/40",
-                  "bg-transparent hover:bg-primary/[0.03]",
-                  "hover:shadow-lg hover:shadow-primary/5",
-                  "hover:scale-[1.015]",
-                )}>
-                  <div className={cn(
-                    "rounded-full p-3 transition-all duration-300",
-                    "bg-muted/60 group-hover:bg-primary/10",
-                  )}>
-                    <Plus className="size-5 text-muted-foreground/50 group-hover:text-primary transition-colors duration-300" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors duration-200">
-                      Write a new message
-                    </p>
-                    <p className="text-xs text-muted-foreground/50 mt-0.5">
-                      Time capsule or legacy vault
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            )}
-
-            {packs.map((pack) => {
-                const status = pack.status as PackStatus;
-                const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.DRAFT;
-                const type = TYPE_CONFIG[pack.type as keyof typeof TYPE_CONFIG];
-                const triggerSummary = getTriggerSummary(pack.triggerCondition);
-
-                return (
-                  <Link key={pack.id} href={`/dashboard/arca/${pack.id}/edit`}>
-                    <Card className="group h-full border-border/50 bg-card/40 backdrop-blur-md hover:bg-card/70 hover:border-border/80 transition-all duration-300 cursor-pointer">
-                      <CardContent className="flex flex-col gap-4 px-6 py-5 h-full">
-
-                        {/* Top row: type icon + status badge */}
-                        <div className="flex items-start justify-between gap-3">
-                          <span className={cn("text-xl shrink-0 mt-0.5", type.color)}>
-                            {type.icon}
-                          </span>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "shrink-0 gap-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wide px-2.5 py-0.5",
-                              cfg.badge
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                "inline-block size-1.5 rounded-full shrink-0",
-                                cfg.dot,
-                                cfg.pulse && "animate-pulse"
-                              )}
-                            />
-                            {cfg.label}
-                          </Badge>
-                        </div>
-
-                        {/* Title + meta */}
-                        <div className="flex-1 space-y-1.5">
-                          <p className="text-sm font-semibold text-foreground leading-snug group-hover:text-foreground/90 transition-colors">
-                            {pack.title}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                            <span className="text-[11px] text-muted-foreground">
-                              {pack._count.recipients}{" "}
-                              {pack._count.recipients === 1 ? "recipient" : "recipients"}
-                            </span>
-                            {triggerSummary && (
-                              <>
-                                <span className="text-border select-none">·</span>
-                                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                  <Clock className="size-2.5 shrink-0" />
-                                  {triggerSummary}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="flex items-center justify-between pt-3 border-t border-border/40">
-                          <span className="text-[11px] text-muted-foreground/60 uppercase tracking-widest font-medium">
-                            {type.label}
-                          </span>
-                          <ChevronRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-          </div>
-        </section>
+        {/* ── Arcas (tabbed: By Person / By Category) ─────────────── */}
+        <ArcasDashboard
+          packs={packs as PackSummary[]}
+          categories={categories}
+          atPackLimit={atPackLimit}
+          isPro={isPro}
+        />
       </main>
     </div>
   );
@@ -414,54 +242,4 @@ function StatCard({
       </CardContent>
     </Card>
   );
-}
-
-function EmptyState() {
-  return (
-    <Card className="border-border/40 border-dashed bg-card/20">
-      <CardContent className="flex flex-col items-center justify-center py-20 px-8 text-center space-y-5">
-        <div className="flex size-14 items-center justify-center rounded-full border border-border/60 bg-muted/20">
-          <ArchiveX className="size-6 text-muted-foreground/50" />
-        </div>
-        <div className="space-y-1.5">
-          <p className="font-serif text-xl italic text-muted-foreground">
-            Nothing sealed yet.
-          </p>
-          <p className="text-sm text-muted-foreground/60 max-w-xs">
-            Create your first Arca — a message sealed until the moment it matters.
-          </p>
-        </div>
-        <Button asChild size="sm" className="rounded-full gap-2">
-          <Link href="/dashboard/arca/new">
-            <Plus className="size-3.5" />
-            Create your first Arca
-          </Link>
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function getTriggerSummary(
-  trigger: {
-    type: string;
-    executeAtDate: Date | null;
-    inactivityDaysLimit: number | null;
-  } | null
-): string | null {
-  if (!trigger) return null;
-  if (trigger.type === "SPECIFIC_DATE" && trigger.executeAtDate) {
-    return `Delivers ${trigger.executeAtDate.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    })}`;
-  }
-  if (trigger.type === "INACTIVITY" && trigger.inactivityDaysLimit) {
-    return `Triggers after ${trigger.inactivityDaysLimit}d of silence`;
-  }
-  if (trigger.type === "MANUAL_EMERGENCY") return "Manual trigger";
-  return null;
 }
