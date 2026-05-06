@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma/client";
 import { redirect } from "next/navigation";
+import { resolveUser, hasProAccess, FREE_LIMITS } from "@/lib/auth/user";
 import NewArcaForm from "./NewArcaForm";
 
 export const metadata = { title: "New Arca — ARCA" };
@@ -8,9 +10,15 @@ export const metadata = { title: "New Arca — ARCA" };
 export default async function NewArcaPage() {
   const supabase = await createClient();
   const {
-    data: { user },
+    data: { user: authUser },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!authUser) redirect("/login");
+
+  const resolvedUser = await resolveUser(authUser);
+  if (!hasProAccess(resolvedUser)) {
+    const packCount = await prisma.messagePack.count({ where: { ownerId: authUser.id } });
+    if (packCount >= FREE_LIMITS.maxPacks) redirect("/dashboard/billing");
+  }
 
   return (
     <main className="min-h-screen px-4 py-12">

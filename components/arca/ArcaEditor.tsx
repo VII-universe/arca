@@ -11,6 +11,7 @@ import {
   Sparkles,
   ChevronDown,
   BookOpen,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ContentEditor from "./ContentEditor";
@@ -21,6 +22,7 @@ import TriggerSheet from "./sheets/TriggerSheet";
 import MediaSheet from "./sheets/MediaSheet";
 import ChapterSheet, { type ChapterData } from "./sheets/ChapterSheet";
 import { updatePackTitle } from "@/app/actions/arca";
+import { useUpgradeModal } from "@/components/billing/UpgradeModal";
 import type { RecipientData } from "./RecipientManager";
 import type { TriggerData } from "./TriggerSettings";
 import type { MediaItem } from "./MediaGalleryClient";
@@ -30,6 +32,7 @@ import type { MediaItem } from "./MediaGalleryClient";
 export interface ArcaEditorProps {
   packId: string;
   userId: string;
+  isPro: boolean;
   initialChapters: ChapterData[];
   packType: "EMOTIONAL" | "PRACTICAL";
   packStatus: string;
@@ -104,6 +107,7 @@ function mediaSummary(items: MediaItem[]) {
 export default function ArcaEditor({
   packId,
   userId,
+  isPro,
   packType,
   packStatus,
   initialTitle,
@@ -114,6 +118,7 @@ export default function ArcaEditor({
   initialChapters,
 }: ArcaEditorProps) {
   const router = useRouter();
+  const { open: openUpgrade } = useUpgradeModal();
 
   // ── Sheets ──────────────────────────────────────────────────────────────────
   const [recipientOpen, setRecipientOpen] = useState(false);
@@ -265,7 +270,7 @@ export default function ArcaEditor({
                 onClick={() => setTriggerOpen(true)}
               />
 
-              {/* Media card */}
+              {/* Media card — video recording is Pro */}
               <SummaryCard
                 icon={<Paperclip className="size-3.5" />}
                 title={ms.title}
@@ -274,14 +279,24 @@ export default function ArcaEditor({
                 onClick={() => setMediaOpen(true)}
               />
 
-              {/* Chapters card */}
-              <SummaryCard
-                icon={<BookOpen className="size-3.5" />}
-                title={cs.title}
-                subtitle={cs.sub}
-                filled={initialChapters.length > 0}
-                onClick={() => setChapterOpen(true)}
-              />
+              {/* Chapters card — drip delivery is Pro */}
+              {isPro ? (
+                <SummaryCard
+                  icon={<BookOpen className="size-3.5" />}
+                  title={cs.title}
+                  subtitle={cs.sub}
+                  filled={initialChapters.length > 0}
+                  onClick={() => setChapterOpen(true)}
+                />
+              ) : (
+                <LockedCard
+                  icon={<BookOpen className="size-3.5" />}
+                  title="Drip Chapters"
+                  subtitle="Parts that unlock over time"
+                  feature="Drip chapter delivery"
+                  onUpgrade={openUpgrade}
+                />
+              )}
 
               {/* Divider */}
               <div className="h-px bg-border/30 mx-1 my-3" />
@@ -328,6 +343,49 @@ export default function ArcaEditor({
         onOpenChange={closeAndRefresh(setChapterOpen)}
       />
     </>
+  );
+}
+
+// ─── Locked card (Pro gate) ───────────────────────────────────────────────────
+
+function LockedCard({
+  icon,
+  title,
+  subtitle,
+  feature,
+  onUpgrade,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  feature: string;
+  onUpgrade: (feature?: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onUpgrade(feature)}
+      className={cn(
+        "w-full text-left rounded-xl p-3 flex items-start gap-2.5 group transition-all duration-150",
+        "border border-dashed border-violet-500/20 hover:border-violet-500/40",
+        "hover:bg-violet-500/[0.04]"
+      )}
+    >
+      <div className="mt-0.5 shrink-0 rounded-md p-1 text-muted-foreground/30">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium leading-snug truncate text-muted-foreground/40 group-hover:text-violet-300/70 transition-colors">
+          {title}
+        </p>
+        <p className="text-[10px] text-muted-foreground/30 truncate mt-0.5 leading-snug">
+          {subtitle}
+        </p>
+      </div>
+      <span className="mt-0.5 shrink-0 flex items-center gap-1 text-[9px] font-semibold tracking-widest uppercase text-violet-400/50 group-hover:text-violet-400 transition-colors">
+        <Lock className="size-2.5" />
+        Pro
+      </span>
+    </button>
   );
 }
 

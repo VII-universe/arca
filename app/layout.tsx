@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { VibeProvider } from "@/contexts/vibe-context";
 import { VibeBackground } from "@/components/VibeBackground";
+import { UpgradeModalProvider } from "@/components/billing/UpgradeModal";
 import "./globals.css";
 
 const inter = Inter({
@@ -35,9 +36,11 @@ export default function RootLayout({
       <body className="bg-background text-foreground antialiased font-sans">
         <ThemeProvider defaultTheme="dark">
           <VibeProvider>
-            <VibeBackground />
-            {children}
-            <Toaster position="bottom-right" richColors />
+            <UpgradeModalProvider>
+              <VibeBackground />
+              {children}
+              <Toaster position="bottom-right" richColors />
+            </UpgradeModalProvider>
           </VibeProvider>
         </ThemeProvider>
       </body>

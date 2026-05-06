@@ -93,6 +93,12 @@ model User {
   // Defaults to a UUID so existing rows are populated automatically by the DB.
   webhookSecret String @unique @default(uuid())
 
+  // Monetization
+  role                   String  @default("USER")   // "USER" | "ADMIN"
+  isPremium              Boolean @default(false)
+  stripeCustomerId       String?
+  stripeSubscriptionId   String?
+
   messagePacks  MessagePack[]
   activityLogs  ActivityLog[]
   guardians     Guardian[]
@@ -104,6 +110,7 @@ model User {
 
   @@index([lastActiveAt]) // primary target for the inactivity cron job
   @@index([webhookSecret]) // heartbeat route looks up by this
+  @@index([stripeCustomerId])
 }
 
 // ---------------------------------------------------------------------------
@@ -120,6 +127,10 @@ model MessagePack {
   title  String
   type   PackType
   status PackStatus @default(DRAFT)
+
+  // Pro features
+  isEncrypted     Boolean @default(false)
+  physicalDelivery Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

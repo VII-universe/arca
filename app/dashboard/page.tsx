@@ -8,9 +8,13 @@ import {
   Zap,
   Clock,
   Fingerprint,
+  Sparkles,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { resolveUser, hasProAccess, FREE_LIMITS } from "@/lib/auth/user";
 import { signOut } from "@/app/actions/auth";
 import CheckInButton from "@/components/dashboard/CheckInButton";
 import GracePeriodBanner, {
@@ -92,27 +96,7 @@ export default async function DashboardPage() {
   if (!authUser) redirect("/login");
 
   const [prismaUser, packs] = await Promise.all([
-    prisma.user.upsert({
-      where: { id: authUser.id },
-      update: {},
-      create: {
-        id: authUser.id,
-        email: authUser.email ?? "",
-        name:
-          authUser.user_metadata?.full_name ??
-          authUser.email?.split("@")[0] ??
-          "User",
-        lastActiveAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        lastActiveAt: true,
-        webhookSecret: true,
-        guardians: { select: { id: true, name: true, email: true }, orderBy: { createdAt: "asc" } },
-      },
-    }),
+    resolveUser(authUser),
     prisma.messagePack.findMany({
       where: { ownerId: authUser.id },
       orderBy: { createdAt: "desc" },
@@ -151,6 +135,8 @@ export default async function DashboardPage() {
 
   const firstName = prismaUser.name?.split(" ")[0] ?? "there";
   const activePacks = packs.filter((p) => p.status === "ACTIVE").length;
+  const isPro = hasProAccess(prismaUser);
+  const atPackLimit = !isPro && packs.length >= FREE_LIMITS.maxPacks;
 
   return (
     <div className="min-h-screen">
@@ -168,6 +154,23 @@ export default async function DashboardPage() {
             <span className="hidden sm:block text-xs text-muted-foreground/50">
               {prismaUser.email}
             </span>
+            {isPro ? (
+              <Link
+                href="/dashboard/billing"
+                className="hidden sm:inline-flex items-center gap-1 rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-violet-300 hover:bg-violet-500/20 transition-colors"
+              >
+                <Crown className="size-3" />
+                {prismaUser.role === "ADMIN" ? "ADMIN" : "PRO"}
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard/billing"
+                className="hidden sm:inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/30 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-muted-foreground hover:border-violet-500/40 hover:text-violet-300 hover:bg-violet-500/10 transition-all"
+              >
+                <Sparkles className="size-3" />
+                Upgrade
+              </Link>
+            )}
             <ThemeSwitcher />
             <form action={signOut}>
               <Button
@@ -258,32 +261,59 @@ export default async function DashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-            {/* ── Create New card (always first, most prominent) ────── */}
-            <Link href="/dashboard/arca/new" className="group">
-              <div className={cn(
-                "h-full min-h-[160px] rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer",
-                "flex flex-col items-center justify-center gap-3 p-6 text-center",
-                "border-border/30 hover:border-primary/40",
-                "bg-transparent hover:bg-primary/[0.03]",
-                "hover:shadow-lg hover:shadow-primary/5",
-                "hover:scale-[1.015]",
-              )}>
+            {/* ── Create New card (locked if free user is at limit) ── */}
+            {atPackLimit ? (
+              <Link href="/dashboard/billing" className="group">
                 <div className={cn(
-                  "rounded-full p-3 transition-all duration-300",
-                  "bg-muted/60 group-hover:bg-primary/10",
+                  "h-full min-h-[160px] rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer",
+                  "flex flex-col items-center justify-center gap-3 p-6 text-center",
+                  "border-violet-500/20 hover:border-violet-500/40",
+                  "bg-transparent hover:bg-violet-500/[0.03]",
                 )}>
-                  <Plus className="size-5 text-muted-foreground/50 group-hover:text-primary transition-colors duration-300" />
+                  <div className="rounded-full p-3 bg-violet-500/10 group-hover:bg-violet-500/20 transition-all duration-300">
+                    <Lock className="size-5 text-violet-400/60 group-hover:text-violet-400 transition-colors duration-300" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-violet-300/60 group-hover:text-violet-300 transition-colors duration-200">
+                      Unlock more Arcas
+                    </p>
+                    <p className="text-xs text-muted-foreground/50 mt-0.5">
+                      Free plan · 1 Arca max
+                    </p>
+                    <p className="text-[11px] text-violet-400/60 mt-1.5 flex items-center justify-center gap-1">
+                      <Sparkles className="size-3" />
+                      Upgrade to Pro
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors duration-200">
-                    Write a new message
-                  </p>
-                  <p className="text-xs text-muted-foreground/50 mt-0.5">
-                    Time capsule or legacy vault
-                  </p>
+              </Link>
+            ) : (
+              <Link href="/dashboard/arca/new" className="group">
+                <div className={cn(
+                  "h-full min-h-[160px] rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer",
+                  "flex flex-col items-center justify-center gap-3 p-6 text-center",
+                  "border-border/30 hover:border-primary/40",
+                  "bg-transparent hover:bg-primary/[0.03]",
+                  "hover:shadow-lg hover:shadow-primary/5",
+                  "hover:scale-[1.015]",
+                )}>
+                  <div className={cn(
+                    "rounded-full p-3 transition-all duration-300",
+                    "bg-muted/60 group-hover:bg-primary/10",
+                  )}>
+                    <Plus className="size-5 text-muted-foreground/50 group-hover:text-primary transition-colors duration-300" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors duration-200">
+                      Write a new message
+                    </p>
+                    <p className="text-xs text-muted-foreground/50 mt-0.5">
+                      Time capsule or legacy vault
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            )}
 
             {packs.map((pack) => {
                 const status = pack.status as PackStatus;

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ContentType } from "@/lib/prisma/generated";
+import { resolveUser, hasProAccess } from "@/lib/auth/user";
 import ArcaEditor, { type ArcaEditorProps } from "@/components/arca/ArcaEditor";
 import type { MediaItem } from "@/components/arca/MediaGalleryClient";
 
@@ -28,13 +29,16 @@ export default async function EditArcaPage({
 
   const supabase = await createClient();
   const {
-    data: { user },
+    data: { user: authUser },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!authUser) redirect("/login");
+
+  const resolvedUser = await resolveUser(authUser);
+  const isPro = hasProAccess(resolvedUser);
 
   // Single Prisma round-trip for everything
   const pack = await prisma.messagePack.findUnique({
-    where: { id, ownerId: user.id },
+    where: { id, ownerId: authUser.id },
     select: {
       id: true,
       title: true,
@@ -131,7 +135,8 @@ export default async function EditArcaPage({
 
   const props: ArcaEditorProps = {
     packId: pack.id,
-    userId: user.id,
+    userId: authUser.id,
+    isPro,
     packType: pack.type,
     packStatus: pack.status,
     initialTitle: pack.title,
