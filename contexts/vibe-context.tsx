@@ -8,26 +8,34 @@ import {
   type ReactNode,
 } from "react";
 
-export type Vibe = "minimal" | "ocean" | "sunset" | "forest";
+export type Vibe = "minimal" | "ocean" | "sunset" | "forest" | "custom";
 
-const VALID_VIBES: Vibe[] = ["minimal", "ocean", "sunset", "forest"];
+const VALID_VIBES: Vibe[] = ["minimal", "ocean", "sunset", "forest", "custom"];
 
 interface VibeContextValue {
   vibe: Vibe;
   setVibe: (v: Vibe) => void;
+  customImageUrl: string;
+  setCustomImageUrl: (url: string) => void;
 }
 
 const VibeContext = createContext<VibeContextValue>({
   vibe: "minimal",
   setVibe: () => {},
+  customImageUrl: "",
+  setCustomImageUrl: () => {},
 });
 
 export function VibeProvider({ children }: { children: ReactNode }) {
   const [vibe, setVibeState] = useState<Vibe>("minimal");
+  const [customImageUrl, setCustomImageUrlState] = useState("");
 
   useEffect(() => {
-    const stored = localStorage.getItem("arca-vibe") as Vibe | null;
-    if (stored && VALID_VIBES.includes(stored)) setVibeState(stored);
+    const storedVibe = localStorage.getItem("arca-vibe") as Vibe | null;
+    if (storedVibe && VALID_VIBES.includes(storedVibe)) setVibeState(storedVibe);
+
+    const storedUrl = localStorage.getItem("arca-custom-image") ?? "";
+    setCustomImageUrlState(storedUrl);
   }, []);
 
   const setVibe = (v: Vibe) => {
@@ -35,8 +43,18 @@ export function VibeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("arca-vibe", v);
   };
 
+  const setCustomImageUrl = (url: string) => {
+    setCustomImageUrlState(url);
+    localStorage.setItem("arca-custom-image", url);
+    // Automatically switch to "custom" vibe when a URL is pasted
+    if (url) {
+      setVibeState("custom");
+      localStorage.setItem("arca-vibe", "custom");
+    }
+  };
+
   return (
-    <VibeContext.Provider value={{ vibe, setVibe }}>
+    <VibeContext.Provider value={{ vibe, setVibe, customImageUrl, setCustomImageUrl }}>
       {children}
     </VibeContext.Provider>
   );

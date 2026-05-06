@@ -1,10 +1,3 @@
-"use client";
-
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-
-export function ThemeProvider({
-  children,
-  ...props
-}: React.ComponentProps<typeof NextThemesProvider>) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
-}
+// Re-exports the React-19-safe AppThemeProvider under the familiar name.
+// Replaced next-themes ThemeProvider — no more <script> injection warnings.
+export { AppThemeProvider as ThemeProvider } from "@/contexts/theme-context";

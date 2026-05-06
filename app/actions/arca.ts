@@ -154,3 +154,31 @@ export async function deleteMedia(
 
   return { ok: true };
 }
+
+// ─── updatePackTitle ───────────────────────────────────────────────────────────
+export async function updatePackTitle(
+  packId: string,
+  title: string
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const trimmed = title.trim();
+  if (!trimmed) return { error: "Title cannot be empty" };
+
+  const pack = await prisma.messagePack.findUnique({
+    where: { id: packId, ownerId: user.id },
+    select: { id: true },
+  });
+  if (!pack) return { error: "Pack not found" };
+
+  await prisma.messagePack.update({
+    where: { id: packId },
+    data: { title: trimmed },
+  });
+
+  return { ok: true };
+}

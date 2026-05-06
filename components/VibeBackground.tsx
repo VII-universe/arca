@@ -6,7 +6,7 @@ import { useVibe } from "@/contexts/vibe-context";
 const FOREST_URL =
   "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80&auto=format&fit=crop";
 
-const GRADIENTS = {
+const GRADIENTS: Record<string, string> = {
   ocean:
     "linear-gradient(135deg, #0f172a 0%, #0c4a6e 40%, #0f2744 70%, #0a0f1e 100%)",
   sunset:
@@ -14,32 +14,41 @@ const GRADIENTS = {
 };
 
 export function VibeBackground() {
-  const { vibe } = useVibe();
+  const { vibe, customImageUrl } = useVibe();
 
-  // Apply gradient / image directly to body so it persists under fixed headers
   useEffect(() => {
     const body = document.body;
-    body.style.backgroundImage = "";
-    body.style.backgroundSize = "";
-    body.style.backgroundPosition = "";
-    body.style.backgroundAttachment = "";
+    const reset = () => {
+      body.style.backgroundImage = "";
+      body.style.backgroundSize = "";
+      body.style.backgroundPosition = "";
+      body.style.backgroundAttachment = "";
+      body.style.backgroundRepeat = "";
+    };
 
-    if (vibe === "ocean" || vibe === "sunset") {
+    reset();
+
+    if (vibe === "custom" && customImageUrl) {
+      body.style.backgroundImage = `url(${customImageUrl})`;
+      body.style.backgroundSize = "cover";
+      body.style.backgroundPosition = "center";
+      body.style.backgroundAttachment = "fixed";
+      body.style.backgroundRepeat = "no-repeat";
+    } else if (vibe === "ocean" || vibe === "sunset") {
       body.style.backgroundImage = GRADIENTS[vibe];
     } else if (vibe === "forest") {
       body.style.backgroundImage = `url(${FOREST_URL})`;
       body.style.backgroundSize = "cover";
       body.style.backgroundPosition = "center";
       body.style.backgroundAttachment = "fixed";
+      body.style.backgroundRepeat = "no-repeat";
     }
 
-    return () => {
-      body.style.backgroundImage = "";
-      body.style.backgroundSize = "";
-      body.style.backgroundPosition = "";
-      body.style.backgroundAttachment = "";
-    };
-  }, [vibe]);
+    return reset;
+  }, [vibe, customImageUrl]);
+
+  const isImageBackground =
+    vibe === "forest" || (vibe === "custom" && !!customImageUrl);
 
   return (
     <>
@@ -55,10 +64,10 @@ export function VibeBackground() {
         </div>
       )}
 
-      {/* Forest: semi-transparent overlay so text stays readable */}
-      {vibe === "forest" && (
+      {/* Image backgrounds: strong dark overlay so text on un-papered surfaces stays readable */}
+      {isImageBackground && (
         <div
-          className="fixed inset-0 pointer-events-none -z-10 bg-black/50"
+          className="fixed inset-0 pointer-events-none -z-10 bg-black/60"
           aria-hidden="true"
         />
       )}

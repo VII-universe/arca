@@ -226,28 +226,42 @@ export default async function DashboardPage() {
           <CheckInButton lastActiveAt={prismaUser.lastActiveAt} />
         </div>
 
-        {/* ── Pack list ───────────────────────────────────────────────── */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">Your Arcas</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {packs.length > 0 ? `${packs.length} message ${packs.length === 1 ? "pack" : "packs"}` : "No packs yet"}
-              </p>
-            </div>
-            <Button asChild size="sm" className="rounded-full gap-2">
-              <Link href="/dashboard/arca/new">
-                <Plus className="size-3.5" />
-                New Arca
-              </Link>
-            </Button>
-          </div>
+        {/* ── Pack grid — "Create New" always first ───────────────────── */}
+        <section className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/40">
+            Your Arcas
+          </h2>
 
-          {packs.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {packs.map((pack) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* ── Create New card (always first, most prominent) ────── */}
+            <Link href="/dashboard/arca/new" className="group">
+              <div className={cn(
+                "h-full min-h-[160px] rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer",
+                "flex flex-col items-center justify-center gap-3 p-6 text-center",
+                "border-border/30 hover:border-primary/40",
+                "bg-transparent hover:bg-primary/[0.03]",
+                "hover:shadow-lg hover:shadow-primary/5",
+                "hover:scale-[1.015]",
+              )}>
+                <div className={cn(
+                  "rounded-full p-3 transition-all duration-300",
+                  "bg-muted/60 group-hover:bg-primary/10",
+                )}>
+                  <Plus className="size-5 text-muted-foreground/50 group-hover:text-primary transition-colors duration-300" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors duration-200">
+                    Write a new message
+                  </p>
+                  <p className="text-xs text-muted-foreground/50 mt-0.5">
+                    Time capsule or legacy vault
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {packs.map((pack) => {
                 const status = pack.status as PackStatus;
                 const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.DRAFT;
                 const type = TYPE_CONFIG[pack.type as keyof typeof TYPE_CONFIG];
@@ -315,8 +329,7 @@ export default async function DashboardPage() {
                   </Link>
                 );
               })}
-            </div>
-          )}
+          </div>
         </section>
       </main>
     </div>

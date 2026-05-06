@@ -31,9 +31,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased font-sans">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <ThemeProvider defaultTheme="dark">
           <VibeProvider>
             <VibeBackground />
             {children}

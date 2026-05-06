@@ -61,18 +61,14 @@ export default function ContentEditor({ packId, initialContent }: Props) {
   }, [status, save]);
 
   return (
-    <div className="flex flex-col max-w-2xl mx-auto w-full">
-      {/* Paper surface */}
-      <div className="rounded-2xl border border-border/50 bg-card/30 shadow-sm overflow-hidden">
-        <div className="px-8 pt-7 pb-6 md:px-12 md:pt-9 md:pb-8">
-          <RichTextEditor content={initialContent} onChange={handleChange} />
-        </div>
-        <div className="flex items-center justify-between px-8 md:px-12 py-3 border-t border-border/30 bg-muted/10">
-          <span className="text-xs text-muted-foreground/50 tabular-nums">
-            {wordCount} {wordCount === 1 ? "word" : "words"}
-          </span>
-          <SaveStatusIndicator status={status} />
-        </div>
+    <div className="flex flex-col w-full">
+      {/* The editor lives inside a Paper container in the page — no nested card needed */}
+      <RichTextEditor content={initialContent} onChange={handleChange} />
+      <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/30">
+        <span className="text-xs text-muted-foreground/50 tabular-nums">
+          {wordCount} {wordCount === 1 ? "word" : "words"}
+        </span>
+        <SaveStatusIndicator status={status} />
       </div>
     </div>
   );
