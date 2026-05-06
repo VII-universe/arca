@@ -193,7 +193,7 @@ export default function ArcaEditor({
               />
 
               {/* TipTap editor — borderless, full-bleed writing surface */}
-              <ContentEditor packId={packId} initialContent={initialContent} />
+              <ContentEditor packId={packId} userId={userId} initialContent={initialContent} />
             </div>
           </main>
 

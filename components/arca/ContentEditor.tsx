@@ -8,6 +8,7 @@ type SaveStatus = "idle" | "unsaved" | "saving" | "saved" | "error";
 
 interface Props {
   packId: string;
+  userId: string;
   initialContent: string;
 }
 
@@ -17,7 +18,7 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-export default function ContentEditor({ packId, initialContent }: Props) {
+export default function ContentEditor({ packId, userId, initialContent }: Props) {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [wordCount, setWordCount] = useState(() => {
     const text = stripHtml(initialContent);
@@ -63,7 +64,12 @@ export default function ContentEditor({ packId, initialContent }: Props) {
   return (
     <div className="flex flex-col w-full">
       {/* The editor lives inside a Paper container in the page — no nested card needed */}
-      <RichTextEditor content={initialContent} onChange={handleChange} />
+      <RichTextEditor
+        content={initialContent}
+        onChange={handleChange}
+        packId={packId}
+        userId={userId}
+      />
       <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/30">
         <span className="text-xs text-muted-foreground/50 tabular-nums">
           {wordCount} {wordCount === 1 ? "word" : "words"}
