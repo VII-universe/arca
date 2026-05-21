@@ -99,7 +99,7 @@ export default async function VaultPage() {
   return (
     <>
       <Topbar />
-      <div className="arca-inner arca-fade-in">
+      <div className="arca-inner arca-fade-in" style={{ color: "var(--ink)" }}>
         <div className="arca-row arca-between" style={{ marginBottom: 8 }}>
           <div>
             <div className="arca-kicker">Schránka</div>
@@ -135,22 +135,22 @@ export default async function VaultPage() {
 
               return (
                 <Link key={p.id} href={`/dashboard/vault/${p.id}`} style={{ textDecoration: "none" }}>
-                  <div className="arca-recip">
+                  <div className="arca-recip" style={{ color: "var(--ink)" }}>
                     <span className={`arca-avatar lg ${tone}`}>{init}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 550, fontSize: 14.5 }}>{p.name}</div>
-                      <div className="arca-sub" style={{ fontSize: 12, marginTop: 2 }}>
+                      <div style={{ fontWeight: 550, fontSize: 14.5, color: "var(--ink)" }}>{p.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
                         {p.email ?? "Bez e-mailu"}
                         {nextDate && ` · nejbližší ${nextDate.toLocaleDateString("cs-CZ", { day: "numeric", month: "short" })}`}
                       </div>
-                      <div className="arca-row" style={{ gap: 6, marginTop: 8 }}>
+                      <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                         <span className="arca-tag">{p.packs.length} {p.packs.length === 1 ? "zpráva" : p.packs.length < 5 ? "zprávy" : "zpráv"}</span>
                         {activePacks > 0 && <span className="arca-tag clay">{activePacks} aktivní</span>}
                       </div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
                       <span style={{ fontFamily: "var(--f-serif)", fontSize: 24, color: "var(--ink)", lineHeight: 1 }}>{p.packs.length}</span>
-                      <span className="arca-mono" style={{ color: "var(--muted)" }}>zpráv</span>
+                      <span style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--muted)" }}>zpráv</span>
                     </div>
                     <ChevronRight />
                   </div>

@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createPack } from "@/app/actions/arca";
+import { createPackFull } from "@/app/actions/arca";
 import AppearanceButton from "@/components/layout/AppearanceButton";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -226,8 +226,8 @@ export default function ComposeWizard({ recipients, isPro }: Props) {
     formData.set("draft", isDraft ? "1" : "0");
 
     startTransition(async () => {
-      // createPack redirects internally — just call it
-      await createPack(null, formData);
+      // createPackFull saves all data and redirects to vault
+      await createPackFull(null, formData);
     });
   }
 

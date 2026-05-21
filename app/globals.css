@@ -202,6 +202,8 @@ html[data-arca-dark="true"][data-accent="ink"]   { --accent:#B8AFA0; --accent-so
 html[data-arca-dark="true"] body { background: #15120F; }
 
 /* ── ARCA shell layout ────────────────────────────────────────────── */
+/* Reset Tailwind dark-mode text colour — ARCA controls its own palette */
+.arca-app, .arca-app * { box-sizing: border-box; }
 .arca-app {
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -209,7 +211,7 @@ html[data-arca-dark="true"] body { background: #15120F; }
   width: 100%;
   background: var(--bg);
   font-family: var(--f-sans);
-  color: var(--ink);
+  color: var(--ink) !important;   /* beat Tailwind body text-foreground */
   font-size: 14px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
