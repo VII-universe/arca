@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import { resolveUser, hasProAccess } from "@/lib/auth/user";
 import AppearanceButton from "@/components/layout/AppearanceButton";
 
 export const metadata = { title: "Přehled — ARCA" };
@@ -50,8 +49,15 @@ export default async function DashboardPage() {
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
 
-  const [resolvedUser, packs, guardians] = await Promise.all([
-    resolveUser(authUser),
+  const ADMIN_EMAILS = new Set(["jakubfidler@centrum.cz", "fidlerjalub@gmail.com"]);
+  const email = authUser.email ?? "";
+  const isAdminEmail = ADMIN_EMAILS.has(email.toLowerCase());
+
+  const [dbUser, packs, guardians] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: authUser.id },
+      select: { name: true, isPremium: true, role: true, lastActiveAt: true },
+    }),
     prisma.messagePack.findMany({
       where: { ownerId: authUser.id },
       orderBy: { updatedAt: "desc" },
@@ -69,8 +75,8 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const firstName = resolvedUser.name?.split(" ")[0] ?? "příteli";
-  const isPro = hasProAccess(resolvedUser);
+  const firstName = (dbUser?.name ?? email.split("@")[0] ?? "příteli").split(" ")[0];
+  const isPro = isAdminEmail || dbUser?.isPremium === true || dbUser?.role === "ADMIN";
 
   const activePacks = packs.filter((p) => p.status === "ACTIVE").length;
   const deliveredPacks = packs.filter((p) => p.status === "DELIVERED" || p.status === "TRIGGERED").length;
@@ -92,7 +98,7 @@ export default async function DashboardPage() {
   const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
   const shortDate = now.toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" });
 
-  const lastActive = resolvedUser.lastActiveAt || new Date();
+  const lastActive = dbUser?.lastActiveAt ?? new Date();
   const daysSinceActive = Math.floor((now.getTime() - lastActive.getTime()) / 86_400_000);
 
   const kindIcon = (type: "EMOTIONAL" | "PRACTICAL") =>

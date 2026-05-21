@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import RecipientTimeline from "@/components/dashboard/RecipientTimeline";
 
 export async function generateMetadata({ params }: { params: Promise<{ personId: string }> }) {
   const { personId } = await params;
@@ -172,10 +173,10 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
               ))}
             </svg>
           </div>
-          <div style={{ padding: "0 32px 24px", marginTop: -36, display: "flex", alignItems: "flex-end", gap: 22 }}>
+          <div style={{ padding: "0 24px 24px", marginTop: -36, display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
             <span className={`arca-avatar xl ${tone}`} style={{ border: "4px solid var(--surface)", flexShrink: 0 }}>{init}</span>
-            <div style={{ flex: 1, paddingBottom: 6 }}>
-              <h1 className="arca-h1" style={{ margin: 0, fontSize: 32 }}>{recipient.name}</h1>
+            <div style={{ flex: 1, minWidth: 0, paddingBottom: 6 }}>
+              <h1 className="arca-h1" style={{ margin: 0, fontSize: 28, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recipient.name}</h1>
               <div style={{ display: "flex", gap: 12, marginTop: 6, color: "var(--muted)", fontSize: 13, flexWrap: "wrap" }}>
                 {recipient.email && <span>{recipient.email}</span>}
                 {recipient.phone && <><span style={{ opacity: .4 }}>·</span><span>{recipient.phone}</span></>}
@@ -183,8 +184,8 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
                 <span>{msgCount} {msgCount === 1 ? "zpráva" : msgCount < 5 ? "zprávy" : "zpráv"} připraveno</span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, paddingBottom: 6 }}>
-              <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary"><IcPlus /> Nová zpráva</Link>
+            <div style={{ paddingBottom: 6, flexShrink: 0 }}>
+              <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary sm"><IcPlus /> Nová zpráva</Link>
             </div>
           </div>
         </div>
@@ -192,131 +193,21 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
         {/* Split layout */}
         <div className="arca-split">
 
-          {/* Timeline */}
+          {/* Timeline — client component with working filter */}
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 className="arca-h3">Co {recipient.name.split(" ")[0]} jednou najde</h3>
-              <div className="arca-seg">
-                <button className="active">Vše</button>
-                <button>Texty</button>
-                <button>Video</button>
-                <button>Hlas</button>
-              </div>
-            </div>
-
-            {packs.length === 0 ? (
-              <div className="arca-card" style={{ padding: "32px 24px", textAlign: "center" }}>
-                <p className="arca-sub">Zatím žádné zprávy pro tuto osobu.</p>
-                <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary"
-                  style={{ marginTop: 16, display: "inline-flex" }}>
-                  <IcPlus /> Nová zpráva
-                </Link>
-              </div>
-            ) : (
-              <div className="arca-tl">
-                {packs.map(pack => {
-                  const st = STATUS[pack.status] ?? STATUS.DRAFT;
-                  const kind = dominantKind(pack.contents);
-                  const textContent = pack.contents.find(c => c.type === "TEXT");
-                  const mediaContent = pack.contents.find(c => c.type !== "TEXT");
-                  const whenLabel = triggerLabel(pack);
-
-                  const TlIc = kind === "video" ? IcVideo : kind === "voice" ? IcVoice : kind === "photo" ? IcPhoto : IcText;
-                  const StatusIc = pack.status === "DRAFT" ? IcLock : pack.status === "ACTIVE" ? IcClock : IcCheck;
-
-                  return (
-                    <div key={pack.id} className={`arca-tl__node ${st.tl}`}>
-                      <div className="arca-card" style={{ padding: "16px 20px" }}>
-                        {/* Header row */}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                            <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--bg-tint)", display: "grid", placeItems: "center", color: "var(--ink-2)", flexShrink: 0 }}>
-                              <TlIc />
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 550, fontSize: 14.5 }}>{pack.title}</div>
-                              <div className="arca-mono" style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{whenLabel}</div>
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <span className={`arca-chip ${st.chip}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                              <StatusIc />{st.label}
-                            </span>
-                            <Link href={`/dashboard/arca/${pack.id}/edit`} className="arca-btn icon-btn arca-btn--ghost">
-                              <IcChev />
-                            </Link>
-                          </div>
-                        </div>
-
-                        {/* Content preview */}
-                        {kind === "text" && textContent?.textBody && (
-                          <p style={{ margin: "10px 0 0", fontSize: 14, color: "var(--ink-2)", fontFamily: "var(--f-serif)", lineHeight: 1.5, fontStyle: "italic" }}>
-                            &ldquo;{textContent.textBody.slice(0, 180)}{textContent.textBody.length > 180 ? "…" : ""}&rdquo;
-                          </p>
-                        )}
-
-                        {kind === "video" && (
-                          <div style={{ marginTop: 12, aspectRatio: "16/7", background: "linear-gradient(135deg, #2A241C, #1C1A16)", borderRadius: "var(--r-md)", position: "relative", overflow: "hidden", display: "grid", placeItems: "center" }}>
-                            {mediaContent?.signedUrl ? (
-                              <video src={mediaContent.signedUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            ) : null}
-                            <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-                              <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(0,0,0,0.6)", display: "grid", placeItems: "center", color: "#fff", backdropFilter: "blur(6px)" }}>
-                                <IcPlay />
-                              </div>
-                            </div>
-                            {pack.contents.find(c => c.type === "VIDEO") && (
-                              <span className="arca-mono" style={{ position: "absolute", top: 10, left: 10, background: "rgba(0,0,0,0.6)", color: "#fff", padding: "2px 8px", borderRadius: 5, fontSize: 11 }}>
-                                VIDEO
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {kind === "voice" && (
-                          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 16, padding: "12px 16px", background: "var(--bg-tint)", borderRadius: "var(--r-md)" }}>
-                            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--ink)", display: "grid", placeItems: "center", color: "var(--bg)", flexShrink: 0 }}>
-                              <IcPlay />
-                            </div>
-                            <div style={{ flex: 1, display: "flex", gap: 2, alignItems: "center", height: 32 }}>
-                              {Array.from({ length: 48 }).map((_, i) => {
-                                const h = 4 + Math.abs(Math.sin(i * 0.7) * 20) + (i % 4) * 1.5;
-                                return <div key={i} style={{ width: 3, height: h, background: "var(--accent)", borderRadius: 2, opacity: 0.7 }} />;
-                              })}
-                            </div>
-                            <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 12, flexShrink: 0 }}>hlasová zpráva</span>
-                          </div>
-                        )}
-
-                        {kind === "photo" && (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginTop: 12 }}>
-                            {PHOTO_PAIRS.slice(0, 4).map(([a, b], i) => (
-                              <div key={i} style={{ aspectRatio: "1", borderRadius: 8, background: `linear-gradient(135deg, ${a}, ${b})` }} />
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Footer */}
-                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 8, borderTop: "1px solid var(--hairline)" }}>
-                          <span className={`arca-tag ${pack.type === "EMOTIONAL" ? "clay" : "sky"}`}>
-                            {pack.type === "EMOTIONAL" ? "✦ Emocionální" : "⬡ Praktická"}
-                          </span>
-                          <span className="arca-tag">{KIND_LABEL[kind]}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Add more */}
-            <Link href="/dashboard/arca/new"
-              className="arca-card flat"
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderStyle: "dashed", background: "transparent", color: "var(--muted)", cursor: "pointer", textDecoration: "none", borderRadius: "var(--r-lg)", border: "1px dashed var(--hairline)", marginTop: 8 }}>
-              <IcPlus />
-              <span>Přidat další zprávu pro {recipient.name.split(" ")[0]}</span>
-            </Link>
+            <RecipientTimeline
+              recipientFirstName={recipient.name.split(" ")[0]}
+              packs={packs.map(pack => ({
+                id: pack.id,
+                title: pack.title,
+                type: pack.type,
+                status: pack.status,
+                createdAt: pack.createdAt,
+                triggerLabel: triggerLabel(pack),
+                kind: dominantKind(pack.contents),
+                contents: pack.contents,
+              }))}
+            />
           </div>
 
           {/* Sidebar */}
