@@ -41,6 +41,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="cs" className={`dark ${inter.variable} ${playfair.variable} ${instrumentSerif.variable}`} suppressHydrationWarning>
+      {/* Flash-prevention: reads localStorage before first paint and sets ARCA theme attrs */}
+      <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('arca.theme')||'light';var a=localStorage.getItem('arca.accent')||'clay';var dark=t==='dark'||(t==='auto'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-accent',a);if(dark)document.documentElement.setAttribute('data-arca-dark','true');else document.documentElement.removeAttribute('data-arca-dark');}catch(e){}})();` }} />
       <body className="bg-background text-foreground antialiased font-sans">
         <ThemeProvider defaultTheme="dark">
           <VibeProvider>

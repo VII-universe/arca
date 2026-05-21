@@ -1,26 +1,43 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Shield, Plus, Trash2, Loader2, UserCheck } from "lucide-react";
 import { addGuardian, removeGuardian } from "@/app/actions/guardians";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
-interface Guardian {
-  id: string;
-  name: string;
-  email: string;
+interface Guardian { id: string; name: string; email: string; }
+
+const IcPlus = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 5v14M5 12h14"/>
+  </svg>
+);
+const IcTrash = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+  </svg>
+);
+const IcLoader = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+    style={{ animation: "spin 1s linear infinite" }}>
+    <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+  </svg>
+);
+
+const TONES = ["sage", "sky", "clay", "ink"];
+function toneFor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return TONES[Math.abs(h) % TONES.length];
+}
+function initials(name: string): string {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 }
 
-export default function GuardianManager({
-  initialGuardians,
-}: {
-  initialGuardians: Guardian[];
-}) {
+export default function GuardianManager({ initialGuardians }: { initialGuardians: Guardian[] }) {
   const [guardians, setGuardians] = useState<Guardian[]>(initialGuardians);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   function handleAdd(formData: FormData) {
@@ -28,152 +45,90 @@ export default function GuardianManager({
     startTransition(async () => {
       try {
         await addGuardian(formData);
-        // Optimistic: re-fetch by just reading back form values
         const name = (formData.get("name") as string).trim();
         const email = (formData.get("email") as string).trim().toLowerCase();
-        setGuardians((prev) => [
-          ...prev,
-          { id: `temp-${Date.now()}`, name, email },
-        ]);
+        setGuardians((prev) => [...prev, { id: `temp-${Date.now()}`, name, email }]);
         setShowForm(false);
         formRef.current?.reset();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Something went wrong");
+        setError(err instanceof Error ? err.message : "Chyba");
       }
     });
   }
 
   function handleRemove(id: string) {
+    setDeletingId(id);
     startTransition(async () => {
       await removeGuardian(id);
       setGuardians((prev) => prev.filter((g) => g.id !== id));
+      setDeletingId(null);
     });
   }
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-md px-6 py-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-500/10 border border-violet-500/20">
-            <Shield className="size-4 text-violet-400" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-foreground">Trusted Guardians</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Up to 3 people consulted before your Arca is delivered.
-            </p>
-          </div>
-        </div>
-
-        {guardians.length < 3 && !showForm && (
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => setShowForm(true)}
-            className="gap-1.5 text-muted-foreground hover:text-foreground"
-          >
-            <Plus className="size-3.5" />
-            Add
-          </Button>
-        )}
-      </div>
-
-      {/* Guardian list */}
-      {guardians.length > 0 && (
-        <ul className="space-y-2">
-          {guardians.map((g) => (
-            <li
-              key={g.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/20 px-4 py-2.5"
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* List */}
+      {guardians.map((g) => {
+        const tone = toneFor(g.name);
+        const init = initials(g.name);
+        return (
+          <div key={g.id} className="arca-card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+            <span className={`arca-avatar ${tone}`}>{init}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 550, fontSize: 14 }}>{g.name}</div>
+              <div className="arca-sub" style={{ fontSize: 12.5 }}>{g.email}</div>
+            </div>
+            <button
+              onClick={() => handleRemove(g.id)}
+              disabled={deletingId === g.id}
+              className="arca-btn sm arca-btn--ghost"
+              style={{ color: "var(--muted)", padding: "6px 8px" }}
+              aria-label="Odebrat strážce"
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <UserCheck className="size-3.5 shrink-0 text-violet-400" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{g.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{g.email}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => handleRemove(g.id)}
-                disabled={isPending}
-                className="shrink-0 p-1.5 rounded-lg text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-400/10 transition-colors disabled:opacity-40"
-                aria-label="Remove guardian"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+              {deletingId === g.id ? <IcLoader /> : <IcTrash />}
+            </button>
+          </div>
+        );
+      })}
 
       {guardians.length === 0 && !showForm && (
-        <p className="text-xs text-muted-foreground/50 italic">
-          No guardians yet. Add trusted contacts who can confirm you're okay.
+        <p className="arca-sub" style={{ fontSize: 13, fontStyle: "italic" }}>
+          Zatím žádní strážci.
         </p>
       )}
 
       {/* Add form */}
-      {showForm && (
-        <form
-          ref={formRef}
-          action={handleAdd}
-          className="space-y-3 pt-1"
-        >
+      {showForm ? (
+        <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none", padding: 18 }}>
           {error && (
-            <p className="text-xs text-rose-400 bg-rose-400/10 rounded-lg px-3 py-2">
+            <p style={{ fontSize: 12, color: "#C0392B", background: "rgba(192,57,43,0.08)", borderRadius: 8, padding: "8px 12px", marginBottom: 12 }}>
               {error}
             </p>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              name="name"
-              required
-              placeholder="Full name"
-              className={cn(
-                "text-sm rounded-xl border border-border/60 bg-muted/30 px-3 py-2",
-                "placeholder:text-muted-foreground/40 text-foreground",
-                "focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30",
-                "transition-colors"
-              )}
-            />
-            <input
-              name="email"
-              type="email"
-              required
-              placeholder="email@example.com"
-              className={cn(
-                "text-sm rounded-xl border border-border/60 bg-muted/30 px-3 py-2",
-                "placeholder:text-muted-foreground/40 text-foreground",
-                "focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30",
-                "transition-colors"
-              )}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              size="xs"
-              disabled={isPending}
-              className="gap-1.5"
-            >
-              {isPending ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Plus className="size-3.5" />
-              )}
-              Add guardian
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={() => { setShowForm(false); setError(null); }}
-              className="text-muted-foreground"
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+          <form ref={formRef} action={handleAdd}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+              <input name="name" required placeholder="Celé jméno" className="arca-input" style={{ fontSize: 13 }} />
+              <input name="email" type="email" required placeholder="email@example.com" className="arca-input" style={{ fontSize: 13 }} />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="submit" disabled={isPending} className="arca-btn arca-btn--primary sm">
+                {isPending ? <IcLoader /> : <IcPlus />}
+                Přidat strážce
+              </button>
+              <button type="button" className="arca-btn arca-btn--ghost sm" onClick={() => { setShowForm(false); setError(null); }}>
+                Zrušit
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : guardians.length < 3 && (
+        <button
+          className="arca-card"
+          style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 10, borderStyle: "dashed", background: "transparent", color: "var(--muted)", cursor: "pointer", justifyContent: "center" }}
+          onClick={() => setShowForm(true)}
+        >
+          <IcPlus /> Pozvat dalšího strážce
+        </button>
       )}
     </div>
   );

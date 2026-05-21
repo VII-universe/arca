@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
+import AppearanceButton from "./AppearanceButton";
 import type { ResolvedUser } from "@/lib/auth/user";
 
 interface NavItem {
@@ -140,6 +141,11 @@ export default function ArcaSidebar({ user, packCount, guardianCount, recentReci
           <p className="arca-sub" style={{ fontSize: 12, margin: 0, lineHeight: 1.4 }}>
             „Vzpomeneš si na ten den, kdy jsme poprvé…" — začni odtud.
           </p>
+        </div>
+
+        {/* Appearance button */}
+        <div style={{ marginBottom: 12 }}>
+          <AppearanceButton />
         </div>
 
         {/* User foot */}

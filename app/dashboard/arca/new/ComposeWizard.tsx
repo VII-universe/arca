@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createPack } from "@/app/actions/arca";
+import AppearanceButton from "@/components/layout/AppearanceButton";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -252,10 +253,11 @@ export default function ComposeWizard({ recipients, isPro }: Props) {
         </div>
         <div className="arca-grow" />
         {/* Pack type toggle — subtle, right side */}
-        <div className="arca-seg">
+        <div className="arca-seg" style={{ marginRight: 8 }}>
           <button className={packType === "EMOTIONAL" ? "active" : ""} onClick={() => setPackType("EMOTIONAL")}>✦ Emocionální</button>
           <button className={packType === "PRACTICAL" ? "active" : ""} onClick={() => setPackType("PRACTICAL")}>⬡ Praktická</button>
         </div>
+        <AppearanceButton />
       </div>
 
       <div className="arca-inner">

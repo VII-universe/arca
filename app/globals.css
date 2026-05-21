@@ -163,19 +163,22 @@
   --r-xs: 6px; --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px; --r-pill: 999px;
 }
 
-/* accent palettes */
-[data-arca-theme][data-accent="clay"],
-[data-arca-theme] {
+/* ── Accent palettes — set on html, cascade everywhere ─────────────
+   The flash-prevention script sets data-accent on <html> before
+   first paint, so these must live on html (not on [data-arca-theme]).
+   CSS custom properties cascade through the DOM tree.              */
+html, html[data-accent="clay"] {
   --accent: #B6754A; --accent-soft: #E8D4C0; --accent-tint: #F4E8DC; --accent-deep: #8B5430;
   --clay: #B6754A; --clay-soft: #E8D4C0; --clay-tint: #F4E8DC;
 }
-[data-arca-theme][data-accent="sage"]  { --accent:#7C8A6B; --accent-soft:#D7DCCB; --accent-tint:#E5EAD8; --accent-deep:#4E5B3F; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
-[data-arca-theme][data-accent="dusk"]  { --accent:#9B6A8B; --accent-soft:#E2D0DD; --accent-tint:#EDE0E8; --accent-deep:#6B4561; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
-[data-arca-theme][data-accent="sea"]   { --accent:#4F8B95; --accent-soft:#C8DDE0; --accent-tint:#DEEAEC; --accent-deep:#2F5E66; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
-[data-arca-theme][data-accent="ink"]   { --accent:#4A4540; --accent-soft:#D6D1C8; --accent-tint:#E8E3D9; --accent-deep:#2A2520; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
+html[data-accent="sage"]  { --accent:#7C8A6B; --accent-soft:#D7DCCB; --accent-tint:#E5EAD8; --accent-deep:#4E5B3F; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
+html[data-accent="dusk"]  { --accent:#9B6A8B; --accent-soft:#E2D0DD; --accent-tint:#EDE0E8; --accent-deep:#6B4561; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
+html[data-accent="sea"]   { --accent:#4F8B95; --accent-soft:#C8DDE0; --accent-tint:#DEEAEC; --accent-deep:#2F5E66; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
+html[data-accent="ink"]   { --accent:#4A4540; --accent-soft:#D6D1C8; --accent-tint:#E8E3D9; --accent-deep:#2A2520; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
 
-/* dark overrides */
-[data-arca-theme][data-arca-dark="true"] {
+/* ── Dark mode — set data-arca-dark on html, overrides surface vars  */
+html[data-arca-dark="true"] [data-arca-theme],
+html[data-arca-dark="true"][data-arca-theme] {
   --bg:#15120F; --bg-tint:#1D1915; --surface:#211D19; --surface-2:#2A2520;
   --ink:#F2EDE3; --ink-2:#D5CDBE; --muted:#8C8473; --muted-2:#5F584D;
   --hairline:rgba(255,244,225,.07); --hairline-2:rgba(255,244,225,.14);
@@ -185,15 +188,18 @@
   --sh-2:0 8px 24px -12px rgba(0,0,0,.55),0 2px 4px rgba(0,0,0,.25);
   --sh-3:0 24px 60px -24px rgba(0,0,0,.7),0 4px 12px rgba(0,0,0,.3);
 }
-[data-arca-theme][data-arca-dark="true"][data-accent="clay"],
-[data-arca-theme][data-arca-dark="true"] {
+/* Dark accent adjustments */
+html[data-arca-dark="true"], html[data-arca-dark="true"][data-accent="clay"] {
   --accent:#D89060; --accent-soft:#5C3A22; --accent-tint:#3A2516; --accent-deep:#EAB088;
   --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint);
 }
-[data-arca-theme][data-arca-dark="true"][data-accent="sage"]  { --accent:#A3B388; --accent-soft:#3F4A33; --accent-tint:#2A331F; --accent-deep:#C8D5AE; }
-[data-arca-theme][data-arca-dark="true"][data-accent="dusk"]  { --accent:#BC8AAA; --accent-soft:#4F354A; --accent-tint:#2E1F2A; --accent-deep:#D9B0C6; }
-[data-arca-theme][data-arca-dark="true"][data-accent="sea"]   { --accent:#7BB2BB; --accent-soft:#2C4F55; --accent-tint:#1B3236; --accent-deep:#9FCDD3; }
-[data-arca-theme][data-arca-dark="true"][data-accent="ink"]   { --accent:#B8AFA0; --accent-soft:#3A3530; --accent-tint:#2A2520; --accent-deep:#DDD4C5; }
+html[data-arca-dark="true"][data-accent="sage"]  { --accent:#A3B388; --accent-soft:#3F4A33; --accent-tint:#2A331F; --accent-deep:#C8D5AE; }
+html[data-arca-dark="true"][data-accent="dusk"]  { --accent:#BC8AAA; --accent-soft:#4F354A; --accent-tint:#2E1F2A; --accent-deep:#D9B0C6; }
+html[data-arca-dark="true"][data-accent="sea"]   { --accent:#7BB2BB; --accent-soft:#2C4F55; --accent-tint:#1B3236; --accent-deep:#9FCDD3; }
+html[data-arca-dark="true"][data-accent="ink"]   { --accent:#B8AFA0; --accent-soft:#3A3530; --accent-tint:#2A2520; --accent-deep:#DDD4C5; }
+
+/* dark body bg to avoid white flash around arca-app */
+html[data-arca-dark="true"] body { background: #15120F; }
 
 /* ── ARCA shell layout ────────────────────────────────────────────── */
 .arca-app {

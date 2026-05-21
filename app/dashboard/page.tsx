@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { resolveUser, hasProAccess } from "@/lib/auth/user";
+import AppearanceButton from "@/components/layout/AppearanceButton";
 
 export const metadata = { title: "Přehled — ARCA" };
 
@@ -23,9 +24,10 @@ function Topbar({ crumbs }: { crumbs: string[] }) {
         ))}
       </div>
       <div className="arca-grow" />
-      <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11 }}>
+      <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, marginRight: 8 }}>
         Vše synchronizováno · {timeStr}
       </span>
+      <AppearanceButton />
     </div>
   );
 }
