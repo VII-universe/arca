@@ -1,17 +1,14 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import { redirect } from "next/navigation";
 import { resolveUser, hasProAccess, FREE_LIMITS } from "@/lib/auth/user";
-import NewArcaForm from "./NewArcaForm";
+import ComposeWizard from "./ComposeWizard";
 
-export const metadata = { title: "New Arca — ARCA" };
+export const metadata = { title: "Nová zpráva — ARCA" };
 
 export default async function NewArcaPage() {
   const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
 
   const resolvedUser = await resolveUser(authUser);
@@ -20,74 +17,27 @@ export default async function NewArcaPage() {
     if (packCount >= FREE_LIMITS.maxPacks) redirect("/dashboard/billing");
   }
 
+  // Fetch existing recipients for the selector
+  const allRecipients = await prisma.recipient.findMany({
+    where: { messagePack: { ownerId: authUser.id } },
+    select: { id: true, name: true, email: true },
+    distinct: ["email"],
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+
+  // Deduplicate by name/email
+  const seen = new Set<string>();
+  const recipients: { id: string; name: string; email: string | null }[] = [];
+  for (const r of allRecipients) {
+    const key = r.email ?? r.name;
+    if (!seen.has(key)) { seen.add(key); recipients.push(r); }
+  }
+
   return (
-    <main className="min-h-screen px-4 py-12">
-      <div className="mx-auto max-w-2xl space-y-10">
-        {/* Nav */}
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← Dashboard
-        </Link>
-
-        {/* Heading */}
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Create a new Arca
-          </h1>
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-md">
-            An Arca is a sealed message pack — delivered to the people you
-            choose, at the moment you decide. Start by choosing what kind of
-            message you want to leave.
-          </p>
-        </div>
-
-        {/* Step indicator */}
-        <div className="flex items-center gap-2">
-          <Step n={1} label="Choose type" active />
-          <Connector />
-          <Step n={2} label="Write your message" />
-          <Connector />
-          <Step n={3} label="Set delivery" />
-        </div>
-
-        {/* The interactive form */}
-        <NewArcaForm />
-      </div>
-    </main>
+    <ComposeWizard
+      recipients={recipients}
+      isPro={hasProAccess(resolvedUser)}
+    />
   );
-}
-
-function Step({
-  n,
-  label,
-  active = false,
-}: {
-  n: number;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-          active
-            ? "bg-foreground text-background"
-            : "bg-muted text-muted-foreground"
-        }`}
-      >
-        {n}
-      </div>
-      <span
-        className={`text-xs ${active ? "text-foreground" : "text-muted-foreground/50"}`}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function Connector() {
-  return <div className="flex-1 h-px bg-border max-w-8" />;
 }
