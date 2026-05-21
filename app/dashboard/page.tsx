@@ -34,9 +34,9 @@ function Topbar({ crumbs }: { crumbs: string[] }) {
 function StatCard({ label, value, hint, tone }: { label: string; value: number | string; hint: string; tone?: "clay" | "sage" | "sky" }) {
   const color = tone === "clay" ? "var(--accent)" : tone === "sage" ? "var(--sage)" : tone === "sky" ? "var(--sky)" : "var(--ink)";
   return (
-    <div className="arca-card" style={{ padding: "20px 22px", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+    <div className="arca-card" style={{ padding: "20px 22px", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center" }}>
       <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>{label}</span>
-      <span style={{ fontFamily: "var(--f-serif)", fontSize: 42, lineHeight: 1, fontWeight: 400, color, display: "block", textAlign: "center" }}>{value}</span>
+      <span style={{ fontFamily: "var(--f-serif)", fontSize: 42, lineHeight: 1, fontWeight: 400, color }}>{value}</span>
       <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--f-mono)" }}>{hint}</span>
     </div>
   );
