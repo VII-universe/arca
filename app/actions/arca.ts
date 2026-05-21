@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { randomBytes } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import { PackType, ContentType } from "@/lib/prisma/generated";
+import { PackType, ContentType, TriggerType } from "@/lib/prisma/generated";
 
 // ─── createPack ────────────────────────────────────────────────────────────────
 export async function createPack(
@@ -41,7 +41,7 @@ export async function createPack(
 }
 
 // ─── createPackFull ────────────────────────────────────────────────────────────
-// Used by the new ComposeWizard — saves all data in one shot and redirects to vault.
+// Used by the new ComposeWizard — saves all data sequentially and redirects to vault.
 export async function createPackFull(
   _prev: { error: string } | null,
   formData: FormData
@@ -50,90 +50,84 @@ export async function createPackFull(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const rawType   = (formData.get("type") as string) || "EMOTIONAL";
-  const title     = (formData.get("title") as string)?.trim();
-  const text      = (formData.get("text") as string)?.trim();
-  const trigger   = formData.get("trigger") as string;
-  const dateVal   = formData.get("date") as string;
-  const timeVal   = formData.get("time") as string || "08:00";
-  const recipientId      = formData.get("recipientId") as string | null;
-  const newRecipientName = (formData.get("newRecipientName") as string)?.trim();
-  const isDraft = formData.get("draft") === "1";
+  const rawType          = (formData.get("type") as string) || "EMOTIONAL";
+  const title            = (formData.get("title") as string)?.trim();
+  const text             = (formData.get("text") as string)?.trim();
+  const trigger          = (formData.get("trigger") as string) || "date";
+  const dateVal          = (formData.get("date") as string) || "";
+  const timeVal          = (formData.get("time") as string) || "08:00";
+  const recipientId      = (formData.get("recipientId") as string) || null;
+  const newRecipientName = ((formData.get("newRecipientName") as string) || "").trim();
+  const isDraft          = formData.get("draft") === "1";
 
   if (!title) return { error: "Zadej název zprávy." };
   if (!Object.values(PackType).includes(rawType as PackType)) {
     return { error: "Neplatný typ." };
   }
 
-  // Build trigger condition data
-  type TriggerData = { type: string; executeAtDate?: Date } | null;
-  let triggerData: TriggerData = null;
+  // Resolve trigger type
+  let triggerType: TriggerType | null = null;
+  let executeAtDate: Date | null = null;
   if (!isDraft && trigger === "date" && dateVal) {
-    const [yyyy, mm, dd] = dateVal.split("-").map(Number);
-    const [hh, min] = timeVal.split(":").map(Number);
-    triggerData = { type: "SPECIFIC_DATE", executeAtDate: new Date(yyyy, mm - 1, dd, hh || 8, min || 0) };
+    const parts = dateVal.split("-").map(Number);
+    const timeParts = timeVal.split(":").map(Number);
+    triggerType = TriggerType.SPECIFIC_DATE;
+    executeAtDate = new Date(parts[0], parts[1] - 1, parts[2], timeParts[0] || 8, timeParts[1] || 0);
   } else if (!isDraft && trigger === "sealed") {
-    triggerData = { type: "MANUAL_EMERGENCY" };
+    triggerType = TriggerType.MANUAL_EMERGENCY;
   }
 
-  // Create pack (with optional content + trigger in one transaction)
-  await prisma.$transaction(async (tx) => {
-    const newPack = await tx.messagePack.create({
-      data: {
-        title,
-        type: rawType as PackType,
-        livingLinkHash: randomBytes(32).toString("hex"),
-        ownerId: user.id,
-        status: !isDraft && triggerData ? "ACTIVE" : "DRAFT",
-      },
-    });
-
-    // Save text content if provided
-    if (text) {
-      await tx.messageContent.create({
-        data: { messagePackId: newPack.id, type: ContentType.TEXT, textBody: text },
-      });
-    }
-
-    // Link existing recipient
-    if (recipientId) {
-      // Check recipient belongs to this user
-      const existing = await tx.recipient.findFirst({
-        where: { id: recipientId, messagePack: { ownerId: user.id } },
-        select: { name: true, email: true },
-      });
-      if (existing) {
-        await tx.recipient.create({
-          data: {
-            messagePackId: newPack.id,
-            name: existing.name,
-            email: existing.email,
-          },
-        });
-      }
-    } else if (newRecipientName) {
-      await tx.recipient.create({
-        data: { messagePackId: newPack.id, name: newRecipientName },
-      });
-    }
-
-    // Save trigger
-    if (triggerData) {
-      await tx.triggerCondition.create({
-        data: {
-          messagePackId: newPack.id,
-          type: triggerData.type as import("@/lib/prisma/generated").TriggerType,
-          ...(triggerData.executeAtDate ? { executeAtDate: triggerData.executeAtDate } : {}),
-        },
-      });
-    }
+  // 1. Create the pack
+  const pack = await prisma.messagePack.create({
+    data: {
+      title,
+      type: rawType as PackType,
+      livingLinkHash: randomBytes(32).toString("hex"),
+      ownerId: user.id,
+      status: triggerType ? "ACTIVE" : "DRAFT",
+    },
   });
 
-  // Redirect to the recipient's detail if we have a recipient, else vault
-  if (recipientId) {
-    redirect(`/dashboard/vault/${recipientId}`);
+  // 2. Save text content if provided
+  if (text) {
+    await prisma.messageContent.create({
+      data: { messagePackId: pack.id, type: ContentType.TEXT, textBody: text },
+    });
   }
-  redirect("/dashboard/vault");
+
+  // 3. Link recipient
+  let finalRecipientId: string | null = null;
+  if (recipientId) {
+    const existing = await prisma.recipient.findFirst({
+      where: { id: recipientId, messagePack: { ownerId: user.id } },
+      select: { name: true, email: true },
+    });
+    if (existing) {
+      const r = await prisma.recipient.create({
+        data: { messagePackId: pack.id, name: existing.name, email: existing.email },
+      });
+      finalRecipientId = r.id;
+    }
+  } else if (newRecipientName) {
+    const r = await prisma.recipient.create({
+      data: { messagePackId: pack.id, name: newRecipientName },
+    });
+    finalRecipientId = r.id;
+  }
+
+  // 4. Save trigger
+  if (triggerType) {
+    await prisma.triggerCondition.create({
+      data: {
+        messagePackId: pack.id,
+        type: triggerType,
+        ...(executeAtDate ? { executeAtDate } : {}),
+      },
+    });
+  }
+
+  // Redirect to the new recipient or vault
+  redirect(finalRecipientId ? `/dashboard/vault/${finalRecipientId}` : "/dashboard/vault");
 }
 
 // ─── upsertContent ─────────────────────────────────────────────────────────────
