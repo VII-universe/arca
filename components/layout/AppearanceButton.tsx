@@ -122,7 +122,7 @@ export default function AppearanceButton() {
           className="arca-card elev"
           style={{
             position: "absolute",
-            right: 0, bottom: "calc(100% + 8px)",
+            left: 0, bottom: "calc(100% + 8px)",
             width: 300, zIndex: 100,
             padding: 18, fontSize: 13,
           }}
