@@ -55,20 +55,21 @@ export default function AppearanceButton() {
   const [open, setOpen]       = useState(false);
   const [panelPos, setPanelPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTheme((localStorage.getItem("arca.theme") as Theme | null) ?? "light");
     setAccent((localStorage.getItem("arca.accent") as Accent | null) ?? "clay");
   }, []);
 
-  // Close on outside click
+  // Close only when clicking outside BOTH the trigger and the panel
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (triggerRef.current && !triggerRef.current.closest("[data-appearance-panel]")?.contains(target) && !triggerRef.current.contains(target)) {
-        setOpen(false);
-      }
+      const insideTrigger = triggerRef.current?.contains(target) ?? false;
+      const insidePanel   = panelRef.current?.contains(target) ?? false;
+      if (!insideTrigger && !insidePanel) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -117,15 +118,9 @@ export default function AppearanceButton() {
 
       {open && (
         <>
-          {/* Invisible backdrop */}
-          <div
-            style={{ position: "fixed", inset: 0, zIndex: 999 }}
-            onClick={() => setOpen(false)}
-          />
-
           {/* Panel — fixed, above trigger, never clipped */}
           <div
-            data-appearance-panel=""
+            ref={panelRef}
             className="arca-card elev"
             style={{
               position: "fixed",
