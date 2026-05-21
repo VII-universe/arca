@@ -427,4 +427,5 @@ html[data-arca-dark="true"] body { background: #15120F; }
 .arca-compose-tile.active { border-color:var(--ink); background:var(--ink); color:var(--bg); }
 .arca-compose-tile.active .arca-sub { color:rgba(255,255,255,.6); }
 @keyframes arca-fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+@keyframes arca-spin   { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .arca-fade-in { animation: arca-fadeUp .35s ease both; }

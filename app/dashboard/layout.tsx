@@ -20,23 +20,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
 
-  const [user, packCount, guardianCount, recipients] = await Promise.all([
+  const [user, packCount, guardianCount, rawRecipients] = await Promise.all([
     resolveUser(authUser),
     prisma.messagePack.count({ where: { ownerId: authUser.id } }),
     prisma.guardian.count({ where: { userId: authUser.id } }),
+    // No distinct — deduplicate in JS to avoid PostgreSQL DISTINCT ON / ORDER BY conflict
     prisma.recipient.findMany({
       where: { messagePack: { ownerId: authUser.id } },
-      distinct: ["email"],
       orderBy: { createdAt: "asc" },
-      take: 6,
-      select: { id: true, name: true, email: true, messagePackId: true },
+      take: 30,
+      select: { id: true, name: true, email: true },
     }),
   ]);
 
-  // Deduplicate by name+email, build recent recipient list
+  // Deduplicate by email-or-name, keep first occurrence, max 5 in sidebar
   const seen = new Set<string>();
   const recentRecipients: { id: string; name: string; initials: string; tone: string; messageCount: number }[] = [];
-  for (const r of recipients) {
+  for (const r of rawRecipients) {
+    if (recentRecipients.length >= 5) break;
     const key = r.email ?? r.name;
     if (seen.has(key)) continue;
     seen.add(key);
