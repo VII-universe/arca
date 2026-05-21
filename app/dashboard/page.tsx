@@ -92,7 +92,7 @@ export default async function DashboardPage() {
   const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
   const shortDate = now.toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" });
 
-  const lastActive = resolvedUser.lastActiveAt;
+  const lastActive = resolvedUser.lastActiveAt || new Date();
   const daysSinceActive = Math.floor((now.getTime() - lastActive.getTime()) / 86_400_000);
 
   const kindIcon = (type: "EMOTIONAL" | "PRACTICAL") =>
