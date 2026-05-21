@@ -165,27 +165,37 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
 
         {/* Hero card */}
         <div className="arca-card elev" style={{ marginBottom: 28, overflow: "hidden" }}>
-          <div style={{ height: 100, background: "linear-gradient(135deg, var(--accent-tint) 0%, var(--accent-soft) 100%)", position: "relative" }}>
-            <svg width="100%" height="100%" viewBox="0 0 800 100" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0 }}>
+          {/* Gradient banner */}
+          <div style={{ height: 90, background: "linear-gradient(135deg, var(--accent-tint) 0%, var(--accent-soft) 100%)", position: "relative", overflow: "hidden" }}>
+            <svg width="100%" height="100%" viewBox="0 0 800 90" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0 }}>
               {[0,1,2,3].map(i => (
-                <path key={i} d={`M -20 ${120 - i*14} Q 400 ${40 - i*14} 820 ${120 - i*14}`}
-                  fill="none" stroke="var(--accent)" strokeOpacity={0.18 - i*0.03} strokeWidth="1"/>
+                <path key={i} d={`M -20 ${110 - i*12} Q 400 ${35 - i*12} 820 ${110 - i*12}`}
+                  fill="none" stroke="var(--accent)" strokeOpacity={0.18 - i*0.025} strokeWidth="1"/>
               ))}
             </svg>
           </div>
-          <div style={{ padding: "0 24px 24px", marginTop: -36, display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
-            <span className={`arca-avatar xl ${tone}`} style={{ border: "4px solid var(--surface)", flexShrink: 0 }}>{init}</span>
-            <div style={{ flex: 1, minWidth: 0, paddingBottom: 6 }}>
-              <h1 className="arca-h1" style={{ margin: 0, fontSize: 28, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recipient.name}</h1>
-              <div style={{ display: "flex", gap: 12, marginTop: 6, color: "var(--muted)", fontSize: 13, flexWrap: "wrap" }}>
+
+          {/* Content row — z-index ensures it always renders above the SVG banner */}
+          <div style={{ padding: "0 24px 24px", marginTop: -32, display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
+            <span className={`arca-avatar xl ${tone}`}
+              style={{ border: "4px solid var(--surface)", flexShrink: 0, width: 68, height: 68, fontSize: 20 }}>
+              {init}
+            </span>
+            <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
+              <h1 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 26, lineHeight: 1.2, margin: 0, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {recipient.name}
+              </h1>
+              <div style={{ display: "flex", gap: 10, marginTop: 5, color: "var(--muted)", fontSize: 12.5, flexWrap: "wrap" }}>
                 {recipient.email && <span>{recipient.email}</span>}
                 {recipient.phone && <><span style={{ opacity: .4 }}>·</span><span>{recipient.phone}</span></>}
                 <span style={{ opacity: .4 }}>·</span>
-                <span>{msgCount} {msgCount === 1 ? "zpráva" : msgCount < 5 ? "zprávy" : "zpráv"} připraveno</span>
+                <span>{msgCount} {msgCount === 1 ? "zpráva" : msgCount < 5 ? "zprávy" : "zpráv"}</span>
               </div>
             </div>
-            <div style={{ paddingBottom: 6, flexShrink: 0 }}>
-              <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary sm"><IcPlus /> Nová zpráva</Link>
+            <div style={{ paddingBottom: 4, flexShrink: 0 }}>
+              <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary sm">
+                <IcPlus /> Nová zpráva
+              </Link>
             </div>
           </div>
         </div>
