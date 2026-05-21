@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 type Theme = "light" | "dark" | "auto";
 type Accent = "clay" | "sage" | "dusk" | "sea" | "ink";
@@ -12,8 +12,6 @@ const ACCENTS: { id: Accent; label: string; swatch: string }[] = [
   { id: "sea",  label: "Moře",     swatch: "#4F8B95" },
   { id: "ink",  label: "Grafit",   swatch: "#4A4540" },
 ];
-
-// ── Tiny icon helpers ─────────────────────────────────────────────────────────
 
 const Svg = ({ children, size = 14 }: { children: React.ReactNode; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -39,12 +37,8 @@ function ThemeIcon({ theme }: { theme: Theme }) {
   return <SunIc />;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 function applyTheme(theme: Theme) {
-  const dark =
-    theme === "dark" ||
-    (theme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const dark = theme === "dark" || (theme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   if (dark) document.documentElement.setAttribute("data-arca-dark", "true");
   else document.documentElement.removeAttribute("data-arca-dark");
   localStorage.setItem("arca.theme", theme);
@@ -55,15 +49,13 @@ function applyAccent(accent: Accent) {
   localStorage.setItem("arca.accent", accent);
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export default function AppearanceButton() {
-  const [theme, setTheme]   = useState<Theme>("light");
-  const [accent, setAccent] = useState<Accent>("clay");
-  const [open, setOpen]     = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [theme, setTheme]     = useState<Theme>("light");
+  const [accent, setAccent]   = useState<Accent>("clay");
+  const [open, setOpen]       = useState(false);
+  const [panelPos, setPanelPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Read from localStorage on mount (client only)
   useEffect(() => {
     setTheme((localStorage.getItem("arca.theme") as Theme | null) ?? "light");
     setAccent((localStorage.getItem("arca.accent") as Accent | null) ?? "clay");
@@ -73,7 +65,10 @@ export default function AppearanceButton() {
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current && !triggerRef.current.closest("[data-appearance-panel]")?.contains(target) && !triggerRef.current.contains(target)) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -88,125 +83,127 @@ export default function AppearanceButton() {
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
-  function handleTheme(t: Theme) {
-    setTheme(t);
-    applyTheme(t);
-  }
-  function handleAccent(a: Accent) {
-    setAccent(a);
-    applyAccent(a);
-  }
+  const handleOpen = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const PANEL_W = 300;
+    // Place panel above the button
+    const top = rect.top - 8; // will be set as bottom via transform
+    // Start at button's left, but clamp so it doesn't overflow right edge
+    let left = rect.left;
+    if (left + PANEL_W > window.innerWidth - 12) {
+      left = window.innerWidth - PANEL_W - 12;
+    }
+    setPanelPos({ top, left });
+    setOpen((o) => !o);
+  }, []);
+
+  function handleTheme(t: Theme) { setTheme(t); applyTheme(t); }
+  function handleAccent(a: Accent) { setAccent(a); applyAccent(a); }
 
   return (
-    <div style={{ position: "relative" }} ref={ref}>
-      {/* Trigger button */}
+    <>
       <button
-        onClick={() => setOpen((o) => !o)}
+        ref={triggerRef}
+        onClick={handleOpen}
         className="arca-btn sm arca-btn--outline"
         title="Změnit vzhled"
-        style={{ gap: 6 }}
+        style={{ gap: 6, width: "100%" }}
       >
         <ThemeIcon theme={theme} />
         <span>Vzhled</span>
-        <span style={{
-          width: 14, height: 14, borderRadius: "50%",
-          background: "var(--accent)",
-          boxShadow: "inset 0 0 0 2px var(--surface-2)",
-          flexShrink: 0,
-        }} />
+        <span style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--accent)", boxShadow: "inset 0 0 0 2px var(--surface-2)", flexShrink: 0, marginLeft: "auto" }} />
       </button>
 
-      {/* Panel */}
       {open && (
-        <div
-          className="arca-card elev"
-          style={{
-            position: "absolute",
-            left: 0, bottom: "calc(100% + 8px)",
-            width: 300, zIndex: 100,
-            padding: 18, fontSize: 13,
-          }}
-        >
-          {/* Mode */}
-          <div className="arca-kicker" style={{ marginBottom: 10 }}>Režim</div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-            {([
-              { id: "light" as Theme, label: "Světlý",  Ic: SunIc,  bg: "#F6F2EB", fg: "#1C1A16" },
-              { id: "dark"  as Theme, label: "Tmavý",   Ic: MoonIc, bg: "#15120F", fg: "#F2EDE3" },
-              { id: "auto"  as Theme, label: "Auto",    Ic: AutoIc, bg: "linear-gradient(135deg,#F6F2EB 50%,#15120F 50%)", fg: "#807868" },
-            ]).map((m) => (
-              <button
-                key={m.id}
-                onClick={() => handleTheme(m.id)}
-                style={{
-                  flex: 1, padding: 10, borderRadius: 12, cursor: "pointer",
-                  border: `1px solid ${theme === m.id ? "var(--accent)" : "var(--hairline-2)"}`,
-                  background: theme === m.id ? "var(--accent-tint)" : "var(--surface-2)",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                  fontFamily: "var(--f-sans)",
-                }}
-              >
-                <div style={{
-                  width: "100%", height: 36, borderRadius: 7,
-                  background: m.bg, border: "1px solid var(--hairline)",
-                  display: "grid", placeItems: "center", color: m.fg,
-                }}>
-                  <m.Ic />
-                </div>
-                <span style={{
-                  fontSize: 12, fontWeight: 500,
-                  color: theme === m.id ? "var(--accent-deep)" : "var(--ink-2)",
-                }}>
-                  {m.label}
-                </span>
-              </button>
-            ))}
-          </div>
+        <>
+          {/* Invisible backdrop */}
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 999 }}
+            onClick={() => setOpen(false)}
+          />
 
-          {/* Accent */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <span className="arca-kicker">Akcent</span>
-            <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 10 }}>{accent}</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {ACCENTS.map((a) => (
-              <button
-                key={a.id}
-                onClick={() => handleAccent(a.id)}
-                style={{
-                  width: "100%", padding: "8px 10px", borderRadius: 10,
-                  display: "flex", alignItems: "center", gap: 12,
-                  background: accent === a.id ? "var(--accent-tint)" : "transparent",
-                  border: `1px solid ${accent === a.id ? "var(--accent-soft)" : "transparent"}`,
-                  cursor: "pointer", fontFamily: "var(--f-sans)",
-                }}
-              >
-                <span style={{
-                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                  background: a.swatch, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.1)",
-                }} />
-                <span style={{
-                  flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500,
-                  color: accent === a.id ? "var(--accent-deep)" : "var(--ink)",
-                }}>
-                  {a.label}
-                </span>
-                {accent === a.id && (
-                  <span style={{ color: "var(--accent-deep)" }}><CheckIc /></span>
-                )}
-              </button>
-            ))}
-          </div>
+          {/* Panel — fixed, above trigger, never clipped */}
+          <div
+            data-appearance-panel=""
+            className="arca-card elev"
+            style={{
+              position: "fixed",
+              left: panelPos.left,
+              top: panelPos.top,
+              transform: "translateY(-100%)",
+              width: 300,
+              zIndex: 1000,
+              padding: 18,
+              fontSize: 13,
+            }}
+          >
+            {/* Mode */}
+            <div className="arca-kicker" style={{ marginBottom: 10 }}>Režim</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+              {([
+                { id: "light" as Theme, label: "Světlý",  Ic: SunIc,  bg: "#F6F2EB", fg: "#1C1A16" },
+                { id: "dark"  as Theme, label: "Tmavý",   Ic: MoonIc, bg: "#15120F", fg: "#F2EDE3" },
+                { id: "auto"  as Theme, label: "Auto",    Ic: AutoIc, bg: "linear-gradient(135deg,#F6F2EB 50%,#15120F 50%)", fg: "#807868" },
+              ]).map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => handleTheme(m.id)}
+                  style={{
+                    flex: 1, padding: 10, borderRadius: 12, cursor: "pointer",
+                    border: `1px solid ${theme === m.id ? "var(--accent)" : "var(--hairline-2)"}`,
+                    background: theme === m.id ? "var(--accent-tint)" : "var(--surface-2)",
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                    fontFamily: "var(--f-sans)",
+                  }}
+                >
+                  <div style={{ width: "100%", height: 36, borderRadius: 7, background: m.bg, border: "1px solid var(--hairline)", display: "grid", placeItems: "center", color: m.fg }}>
+                    <m.Ic />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: theme === m.id ? "var(--accent-deep)" : "var(--ink-2)" }}>
+                    {m.label}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-          <hr className="arca-divider" />
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: "var(--accent)" }}><SparkIc /></span>
-            <span className="arca-sub" style={{ fontSize: 12, lineHeight: 1.45 }}>
-              Vzhled je tvůj. Tvoji blízcí uvidí ten svůj při doručení.
-            </span>
+            {/* Accent */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span className="arca-kicker">Akcent</span>
+              <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 10 }}>{accent}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {ACCENTS.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => handleAccent(a.id)}
+                  style={{
+                    width: "100%", padding: "8px 10px", borderRadius: 10,
+                    display: "flex", alignItems: "center", gap: 12,
+                    background: accent === a.id ? "var(--accent-tint)" : "transparent",
+                    border: `1px solid ${accent === a.id ? "var(--accent-soft)" : "transparent"}`,
+                    cursor: "pointer", fontFamily: "var(--f-sans)",
+                  }}
+                >
+                  <span style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, background: a.swatch, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.1)" }} />
+                  <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500, color: accent === a.id ? "var(--accent-deep)" : "var(--ink)" }}>
+                    {a.label}
+                  </span>
+                  {accent === a.id && <span style={{ color: "var(--accent-deep)" }}><CheckIc /></span>}
+                </button>
+              ))}
+            </div>
+
+            <hr className="arca-divider" />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ color: "var(--accent)" }}><SparkIc /></span>
+              <span className="arca-sub" style={{ fontSize: 12, lineHeight: 1.45 }}>
+                Vzhled je tvůj. Tvoji blízcí uvidí ten svůj při doručení.
+              </span>
+            </div>
           </div>
-        </div>
+        </>
       )}
-    </div>
+    </>
   );
 }
