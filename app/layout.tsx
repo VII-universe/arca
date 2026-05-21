@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Instrument_Serif } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { VibeProvider } from "@/contexts/vibe-context";
@@ -20,6 +20,14 @@ const playfair = Playfair_Display({
   style: ["normal", "italic"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  variable: "--font-instrument-serif",
+  display: "swap",
+  style: ["normal", "italic"],
+  weight: "400",
+});
+
 export const metadata: Metadata = {
   title: "ARCA — Your words, preserved with care.",
   description:
@@ -32,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang="cs" className={`dark ${inter.variable} ${playfair.variable} ${instrumentSerif.variable}`} suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased font-sans">
         <ThemeProvider defaultTheme="dark">
           <VibeProvider>
