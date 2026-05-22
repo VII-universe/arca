@@ -9,22 +9,36 @@ import TiptapImage from "@tiptap/extension-image";
 import { createClient } from "@/lib/supabase/client";
 
 // ── Upload helper ─────────────────────────────────────────────────────────────
+// Returns a persistent Supabase signed URL, or null on failure.
+// Always resolves — never throws.
 
-async function uploadInlineImage(file: File, userId?: string, packId?: string): Promise<string | null> {
-  if (!file.type.startsWith("image/")) return null;
-  if (file.size > 10 * 1024 * 1024) return null;
-  const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return null;
-  const ts = Date.now();
-  const safe = (file.name || "image.jpg").toLowerCase().replace(/[^a-z0-9.\-_]/g, "_").slice(0, 80);
-  const path = userId && packId
-    ? `${userId}/inline/${packId}/${ts}_${safe}`
-    : `inline/${ts}_${safe}`;
-  const { error } = await supabase.storage.from("arca-media").upload(path, file, { contentType: file.type, upsert: false });
-  if (error) { console.error("[upload]", error.message); return null; }
-  const { data } = await supabase.storage.from("arca-media").createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-  return data?.signedUrl ?? null;
+async function uploadToSupabase(file: File, userId?: string, packId?: string): Promise<string | null> {
+  try {
+    const supabase = createClient();
+    // Get the user ID — either from prop or from current session
+    const { data: { user } } = await supabase.auth.getUser();
+    const uid = userId ?? user?.id;
+    if (!uid) return null;
+
+    const ts = Date.now();
+    const safe = (file.name || "image.jpg").toLowerCase().replace(/[^a-z0-9.\-_]/g, "_").slice(0, 80);
+    const path = packId
+      ? `${uid}/inline/${packId}/${ts}_${safe}`
+      : `${uid}/inline/${ts}_${safe}`;
+
+    const { error } = await supabase.storage
+      .from("arca-media")
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (error) { console.warn("[ArcaRichEditor] upload failed:", error.message); return null; }
+
+    const { data } = await supabase.storage
+      .from("arca-media")
+      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+    return data?.signedUrl ?? null;
+  } catch (err) {
+    console.warn("[ArcaRichEditor] upload error:", err);
+    return null;
+  }
 }
 
 // ── Crop helper ───────────────────────────────────────────────────────────────
@@ -51,7 +65,7 @@ async function cropAndUpload(
       canvas.toBlob(async (blob) => {
         if (!blob) { resolve(null); return; }
         const file = new File([blob], "cropped.jpg", { type: "image/jpeg" });
-        const url = await uploadInlineImage(file, userId, packId);
+        const url = await uploadToSupabase(file, userId, packId);
         resolve(url);
       }, "image/jpeg", 0.92);
     };
@@ -244,10 +258,32 @@ export default function ArcaRichEditor({
 
   const insertImage = useCallback(async (file: File) => {
     if (!editor) return;
-    const url = await uploadInlineImage(file, userId, packId);
-    if (url) {
-      editor.chain().focus().setImage({ src: url, alt: file.name }).run();
-    }
+    if (!file.type.startsWith("image/")) return;
+
+    // 1. Insert immediately with a local blob URL so the user sees it right away
+    const blobUrl = URL.createObjectURL(file);
+    editor.chain().focus().setImage({ src: blobUrl, alt: file.name }).run();
+
+    // 2. Upload to Supabase in the background and swap the src when done
+    const persistentUrl = await uploadToSupabase(file, userId, packId);
+    if (!persistentUrl) return; // keep blob URL — works for the current session
+
+    // Replace blob URL with the persistent signed URL in the document
+    const editorState = editor.state;
+    let found = false;
+    editorState.doc.descendants((node, pos) => {
+      if (found) return false;
+      if (node.type.name === "image" && node.attrs.src === blobUrl) {
+        const tr = editorState.tr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          src: persistentUrl,
+        });
+        editor.view.dispatch(tr);
+        URL.revokeObjectURL(blobUrl);
+        found = true;
+        return false;
+      }
+    });
   }, [editor, userId, packId]);
 
   const insertImageUrl = useCallback(() => {
