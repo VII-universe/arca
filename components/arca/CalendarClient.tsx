@@ -409,9 +409,12 @@ function CalendarGrid({
                   className={`arca-cal__cell ${c.muted ? "muted" : ""} ${isToday ? "today" : ""}`}
                   style={{
                     cursor: c.muted ? "default" : "pointer",
-                    background: isHov ? "var(--surface-2)" : undefined,
-                    boxShadow: isHov && !c.muted ? "inset 0 0 0 1.5px var(--hairline-2)" : undefined,
-                    transition: "background .1s, box-shadow .1s",
+                    background: isHov
+                      ? "linear-gradient(160deg, var(--accent-tint) 0%, color-mix(in srgb, var(--accent-tint) 60%, var(--surface)) 100%)"
+                      : undefined,
+                    boxShadow: isHov ? "inset 0 2px 0 var(--accent-soft)" : undefined,
+                    transition: "background .14s ease, box-shadow .14s ease",
+                    position: "relative",
                   }}
                   onClick={() => { if (!c.muted) onDayClick(c.day); }}
                   onMouseEnter={() => { if (!c.muted) setHovered(c.day); }}
@@ -419,10 +422,26 @@ function CalendarGrid({
                 >
                   <span
                     className="num"
-                    style={isHov && !isToday ? { color: "var(--accent)" } : undefined}
+                    style={
+                      isHov && !isToday
+                        ? { color: "var(--accent)", fontWeight: 600 }
+                        : { transition: "color .14s, font-weight .14s" }
+                    }
                   >
                     {c.day}
                   </span>
+                  {/* "+" add indicator on hover when no events */}
+                  {isHov && evs.length === 0 && (
+                    <div style={{
+                      position: "absolute", top: 6, right: 7,
+                      width: 16, height: 16, borderRadius: "50%",
+                      background: "var(--accent)", color: "var(--on-accent)",
+                      display: "grid", placeItems: "center",
+                      fontSize: 12, lineHeight: 1, fontWeight: 400,
+                      opacity: 0.75,
+                      animation: "calPlusIn .12s cubic-bezier(.22,1,.36,1) both",
+                    }}>+</div>
+                  )}
 
                   {/* Event pills — max 3, then overflow */}
                   {evs.slice(0, 3).map((ev, j) => (
@@ -735,6 +754,10 @@ export default function CalendarClient({
         @keyframes calModalIn {
           from { opacity: 0; transform: scale(0.94) translateY(12px); }
           to   { opacity: 1; transform: none; }
+        }
+        @keyframes calPlusIn {
+          from { opacity: 0; transform: scale(0.5); }
+          to   { opacity: 0.75; transform: scale(1); }
         }
       `}</style>
     </>

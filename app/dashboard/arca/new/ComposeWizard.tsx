@@ -220,6 +220,11 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
   const [timeVal, setTimeVal] = useState("08:00");
   const [showPreview, setShowPreview] = useState(false);
 
+  // Sync date from URL param — handles App Router component reuse across navigations
+  useEffect(() => {
+    if (prefilledDate) setDateVal(prefilledDate);
+  }, [prefilledDate]);
+
   const selectedRecipient = recipients.find((r) => r.id === recipientId);
   const displayName = selectedRecipient?.name ?? (newRecipientName.trim() || "příjemce");
 
