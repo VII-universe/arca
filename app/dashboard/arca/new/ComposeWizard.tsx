@@ -3,7 +3,6 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createPackFull } from "@/app/actions/arca";
-import AppearanceButton from "@/components/layout/AppearanceButton";
 import ArcaRichEditor from "@/components/arca/ArcaRichEditor";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -40,6 +39,8 @@ interface Recipient { id: string; name: string; email: string | null; }
 interface Props {
   recipients: Recipient[];
   isPro: boolean;
+  prefilledRecipientId?: string;
+  prefilledOccasion?: "birthday" | "anniversary";
 }
 
 const KINDS: { id: Kind; label: string; sub: string; Ic: React.ComponentType }[] = [
@@ -195,14 +196,23 @@ function TriggerCard({ active, onClick, Ic: IconComp, title, sub }: {
 
 // ── Main Compose Wizard ───────────────────────────────────────────────────────
 
-export default function ComposeWizard({ recipients, isPro }: Props) {
+const OCCASION_TRIGGER_MAP: Record<string, Trigger> = {
+  birthday: "date",
+  anniversary: "date",
+};
+
+export default function ComposeWizard({ recipients, isPro, prefilledRecipientId, prefilledOccasion }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [recipientId, setRecipientId] = useState<string | null>(recipients[0]?.id ?? null);
+  const [recipientId, setRecipientId] = useState<string | null>(
+    prefilledRecipientId ?? recipients[0]?.id ?? null
+  );
   const [newRecipientName, setNewRecipientName] = useState("");
   const [kind, setKind] = useState<Kind>("text");
-  const [trigger, setTrigger] = useState<Trigger>("date");
+  const [trigger, setTrigger] = useState<Trigger>(
+    prefilledOccasion ? (OCCASION_TRIGGER_MAP[prefilledOccasion] ?? "date") : "date"
+  );
   const [packType, setPackType] = useState<PackType>("EMOTIONAL");
   const [text, setText] = useState("");
   const [dateVal, setDateVal] = useState("");
@@ -258,7 +268,6 @@ export default function ComposeWizard({ recipients, isPro }: Props) {
           <button className={packType === "EMOTIONAL" ? "active" : ""} onClick={() => setPackType("EMOTIONAL")}>✦ Emocionální</button>
           <button className={packType === "PRACTICAL" ? "active" : ""} onClick={() => setPackType("PRACTICAL")}>⬡ Praktická</button>
         </div>
-        <AppearanceButton />
       </div>
 
       <div className="arca-inner">

@@ -2,9 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import AppearanceButton from "@/components/layout/AppearanceButton";
-
 export const metadata = { title: "Přehled — ARCA" };
+
+// ── Reminder helpers ──────────────────────────────────────────────────────────
+function daysUntilNextOccurrence(date: Date): number {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), date.getMonth(), date.getDate());
+  const todayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (next.getTime() < todayMs) next.setFullYear(next.getFullYear() + 1);
+  return Math.ceil((next.getTime() - todayMs) / 86_400_000);
+}
 
 // ── Topbar ────────────────────────────────────────────────────────────────────
 function Topbar({ crumbs }: { crumbs: string[] }) {
@@ -23,10 +30,9 @@ function Topbar({ crumbs }: { crumbs: string[] }) {
         ))}
       </div>
       <div className="arca-grow" />
-      <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, marginRight: 8 }}>
+      <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11 }}>
         Vše synchronizováno · {timeStr}
       </span>
-      <AppearanceButton />
     </div>
   );
 }
@@ -51,7 +57,7 @@ export default async function DashboardPage() {
   const email = authUser.email ?? "";
   const isAdminEmail = ADMIN_EMAILS.has(email.toLowerCase());
 
-  const [dbUser, packs, guardians] = await Promise.all([
+  const [dbUser, packs, guardians, allRecipients] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
       select: { name: true, isPremium: true, role: true, lastActiveAt: true },
@@ -70,6 +76,15 @@ export default async function DashboardPage() {
     prisma.guardian.findMany({
       where: { userId: authUser.id },
       select: { id: true, name: true, email: true },
+    }),
+    // Load unique recipients with birthday/anniversary for reminders
+    prisma.recipient.findMany({
+      where: {
+        messagePack: { ownerId: authUser.id },
+        OR: [{ birthday: { not: null } }, { anniversary: { not: null } }],
+      },
+      select: { id: true, name: true, relationship: true, birthday: true, anniversary: true },
+      distinct: ["id"],
     }),
   ]);
 
@@ -90,6 +105,30 @@ export default async function DashboardPage() {
 
   // Recent
   const recent = packs.slice(0, 4);
+
+  // Smart reminders — flatten birthday + anniversary events, dedupe by person
+  type ReminderItem = { recipientId: string; name: string; relationship: string | null; label: string; days: number; occasion: "birthday" | "anniversary"; urgent: boolean };
+  const reminders: ReminderItem[] = [];
+  const seen = new Set<string>();
+  for (const r of allRecipients) {
+    if (r.birthday) {
+      const days = daysUntilNextOccurrence(r.birthday);
+      const key = `${r.id}-birthday`;
+      if (days <= 30 && !seen.has(key)) {
+        seen.add(key);
+        reminders.push({ recipientId: r.id, name: r.name, relationship: r.relationship, label: "Narozeniny", days, occasion: "birthday", urgent: days <= 7 });
+      }
+    }
+    if (r.anniversary) {
+      const days = daysUntilNextOccurrence(r.anniversary);
+      const key = `${r.id}-anniversary`;
+      if (days <= 30 && !seen.has(key)) {
+        seen.add(key);
+        reminders.push({ recipientId: r.id, name: r.name, relationship: r.relationship, label: "Výročí", days, occasion: "anniversary", urgent: days <= 7 });
+      }
+    }
+  }
+  reminders.sort((a, b) => a.days - b.days);
 
   const now = new Date();
   const dayName = now.toLocaleDateString("cs-CZ", { weekday: "long" });
@@ -124,6 +163,61 @@ export default async function DashboardPage() {
             <Link href="/dashboard/vault" className="arca-btn arca-btn--clay sm">Zobrazit</Link>
           </div>
         )}
+
+        {/* ── Smart Reminders ────────────────────────────────────── */}
+        {reminders.length > 0 && (
+          <div style={{ marginBottom: 28, display: "flex", flexDirection: "column", gap: 8 }}>
+            {reminders.map((r) => (
+              <div
+                key={`${r.recipientId}-${r.occasion}`}
+                style={{
+                  display: "flex", alignItems: "center", gap: 14,
+                  background: "var(--bg-tint)", borderRadius: "var(--r-lg)",
+                  padding: "12px 18px",
+                  border: r.urgent ? "1px solid var(--accent-soft)" : "1px solid var(--hairline)",
+                  position: "relative", overflow: "hidden",
+                }}
+              >
+                {r.urgent && (
+                  <span style={{
+                    position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
+                    background: "var(--accent)", borderRadius: "var(--r-lg) 0 0 var(--r-lg)",
+                    boxShadow: r.urgent ? "0 0 8px var(--accent)" : "none",
+                  }} />
+                )}
+                <div style={{ flex: 1, paddingLeft: r.urgent ? 6 : 0 }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 550 }}>
+                    {r.name.split(" ")[0]}{r.relationship ? ` (${r.relationship})` : ""} · {r.label}
+                  </span>
+                  {" "}
+                  <span className="arca-sub" style={{ fontSize: 13 }}>
+                    za {r.days} {r.days === 1 ? "den" : r.days < 5 ? "dny" : "dní"}
+                  </span>
+                </div>
+                {r.urgent && (
+                  <span style={{
+                    width: 8, height: 8, borderRadius: "50%", background: "var(--accent)",
+                    flexShrink: 0,
+                    boxShadow: "0 0 0 3px var(--accent-tint)",
+                    animation: "arca-reminder-pulse 2s ease-in-out infinite",
+                  }} />
+                )}
+                <Link
+                  href={`/dashboard/arca/new?recipientId=${r.recipientId}&occasion=${r.occasion}`}
+                  className="arca-btn sm arca-btn--clay"
+                >
+                  Napsat zprávu
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+        <style>{`
+          @keyframes arca-reminder-pulse {
+            0%, 100% { box-shadow: 0 0 0 3px var(--accent-tint); }
+            50% { box-shadow: 0 0 0 7px transparent; }
+          }
+        `}</style>
 
         {/* ── Greeting ───────────────────────────────────────────── */}
         <div style={{ marginBottom: 36 }}>

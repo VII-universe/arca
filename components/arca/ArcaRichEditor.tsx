@@ -91,7 +91,7 @@ async function cropAndUpload(
       }, "image/jpeg", 0.92);
     };
     img.onerror = () => resolve(null);
-    // No crossOrigin — signed URLs don't need it for canvas in same-origin context
+    img.crossOrigin = "anonymous";
     img.src = src;
   });
 }
@@ -459,6 +459,183 @@ const ResizableImage = TiptapImage.extend({
   },
 });
 
+// ── AI Assist panel ───────────────────────────────────────────────────────────
+
+const AI_OCCASIONS = [
+  { value: "narozeniny", label: "Narozeniny" },
+  { value: "poděkování", label: "Poděkování" },
+  { value: "omluva", label: "Omluva" },
+  { value: "rozloučení", label: "Rozloučení" },
+  { value: "povzbuzení", label: "Povzbuzení" },
+  { value: "výročí", label: "Výročí" },
+  { value: "osobní zpráva", label: "Osobní zpráva" },
+];
+
+interface AIVersion { label: string; content: string; }
+
+function AiAssistPanel({
+  onInsert,
+  onClose,
+  recipientName,
+  relationship,
+  existingContent,
+}: {
+  onInsert: (html: string) => void;
+  onClose: () => void;
+  recipientName?: string;
+  relationship?: string;
+  existingContent?: string;
+}) {
+  const [occasion, setOccasion] = useState(AI_OCCASIONS[0].value);
+  const [userNotes, setUserNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [versions, setVersions] = useState<AIVersion[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  async function generate() {
+    if (!userNotes.trim()) return;
+    setLoading(true);
+    setError(null);
+    setVersions([]);
+    try {
+      const res = await fetch("/api/arca/ai-assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientName, relationship, occasion, userNotes, existingContent }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setError(data.error ?? "Chyba."); return; }
+      setVersions(data.versions ?? []);
+    } catch {
+      setError("Nepodařilo se spojit s AI.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 500, display: "flex",
+    }}>
+      {/* backdrop */}
+      <div onClick={onClose} style={{ flex: 1, background: "rgba(28,26,22,.45)", backdropFilter: "blur(3px)" }} />
+
+      {/* panel */}
+      <div
+        data-arca-theme=""
+        style={{
+          width: 440, background: "var(--surface)", borderLeft: "1px solid var(--hairline)",
+          display: "flex", flexDirection: "column", overflowY: "auto",
+          boxShadow: "var(--sh-3)", fontFamily: "var(--f-sans)",
+        }}
+      >
+        {/* Header */}
+        <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--hairline)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>
+            <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 19, margin: 0 }}>AI Pomoc</h3>
+            <button type="button" onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          {/* Privacy disclaimer */}
+          <div style={{
+            background: "var(--bg-tint)", borderRadius: "var(--r-md)", padding: "10px 14px",
+            border: "1px solid var(--hairline)",
+          }}>
+            <p style={{ margin: 0, fontSize: 11.5, color: "var(--muted)", lineHeight: 1.55 }}>
+              <strong style={{ color: "var(--ink-2)" }}>Soukromí</strong> — ARCA dbá na absolutní soukromí. Text, který zadáš do tohoto pole, bude anonymně zpracován AI modelem pro vygenerování inspirace a není nikde ukládán na našich serverech.
+            </p>
+          </div>
+        </div>
+
+        {/* Form */}
+        <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
+          {/* Occasion */}
+          <div>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>Příležitost</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {AI_OCCASIONS.map(o => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setOccasion(o.value)}
+                  style={{
+                    padding: "5px 12px", borderRadius: "var(--r-pill)", fontSize: 12.5, cursor: "pointer",
+                    border: "1px solid",
+                    borderColor: occasion === o.value ? "var(--accent)" : "var(--hairline-2)",
+                    background: occasion === o.value ? "var(--accent-tint)" : "var(--surface-2)",
+                    color: occasion === o.value ? "var(--accent-deep)" : "var(--ink-2)",
+                    fontFamily: "var(--f-sans)",
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Klíčové myšlenky</label>
+            <textarea
+              className="arca-input"
+              rows={4}
+              placeholder={"Napiš pár slov, co chceš vyjádřit… např. chci jí poděkovat za to, jak mě podržela"}
+              value={userNotes}
+              onChange={e => setUserNotes(e.target.value)}
+              style={{ resize: "vertical", fontFamily: "var(--f-sans)" }}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={generate}
+            disabled={loading || !userNotes.trim()}
+            className="arca-btn arca-btn--primary"
+            style={{ justifyContent: "center" }}
+          >
+            {loading ? (
+              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ animation: "arca-spin .8s linear infinite" }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                Generuji…
+              </span>
+            ) : "Vygenerovat návrhy"}
+          </button>
+
+          {error && (
+            <p style={{ fontSize: 13, color: "#c00", margin: 0 }}>{error}</p>
+          )}
+
+          {/* Results */}
+          {versions.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <hr style={{ border: 0, height: 1, background: "var(--hairline)", margin: "4px 0" }} />
+              {versions.map((v, i) => (
+                <div key={i} className="arca-card" style={{ padding: "16px 18px" }}>
+                  <div className="arca-mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8 }}>{v.label}</div>
+                  <p style={{ fontFamily: "var(--f-serif)", fontSize: 14.5, lineHeight: 1.6, margin: "0 0 14px", color: "var(--ink-2)" }}>
+                    {v.content}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { onInsert(`<p>${v.content.replace(/\n/g, "</p><p>")}</p>`); onClose(); }}
+                    className="arca-btn sm arca-btn--clay"
+                  >
+                    Použít tento text
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface ArcaRichEditorProps {
@@ -468,6 +645,8 @@ interface ArcaRichEditorProps {
   packId?: string;
   userId?: string;
   minHeight?: number;
+  recipientName?: string;
+  relationship?: string;
 }
 
 export default function ArcaRichEditor({
@@ -475,9 +654,12 @@ export default function ArcaRichEditor({
   placeholder = "Začni psát…",
   packId, userId,
   minHeight = 260,
+  recipientName,
+  relationship,
 }: ArcaRichEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropImg, setCropImg] = useState<HTMLImageElement | null>(null);
+  const [showAiPanel, setShowAiPanel] = useState(false);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -664,6 +846,27 @@ export default function ArcaRichEditor({
         <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted-2)", fontFamily: "var(--f-mono)" }}>
           {charCount} znaků
         </span>
+        <TDivider />
+        <button
+          type="button"
+          title="AI Pomoc — vygeneruje inspiraci pro tvůj text"
+          onMouseDown={e => { e.preventDefault(); setShowAiPanel(o => !o); }}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "3px 10px", borderRadius: "var(--r-pill)",
+            background: showAiPanel ? "var(--accent-tint)" : "var(--surface-2)",
+            border: "1px solid",
+            borderColor: showAiPanel ? "var(--accent-soft)" : "var(--hairline-2)",
+            color: showAiPanel ? "var(--accent-deep)" : "var(--ink-2)",
+            fontSize: 11.5, fontFamily: "var(--f-sans)", cursor: "pointer",
+            fontWeight: 500, flexShrink: 0, height: 26, transition: "all .15s",
+          }}
+        >
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+            <path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/>
+          </svg>
+          Nevím, jak začít
+        </button>
       </div>
 
       {/* BubbleMenu — floating toolbar above selected image */}
@@ -705,6 +908,20 @@ export default function ArcaRichEditor({
             </button>
           </div>
         </BubbleMenu>
+      )}
+
+      {/* AI Assist panel */}
+      {showAiPanel && (
+        <AiAssistPanel
+          recipientName={recipientName}
+          relationship={relationship}
+          existingContent={content}
+          onInsert={(html) => {
+            if (editor) editor.commands.setContent(html);
+            onChange(html);
+          }}
+          onClose={() => setShowAiPanel(false)}
+        />
       )}
 
       {/* Crop overlay (portal-like, positioned fixed over selected image) */}

@@ -6,7 +6,11 @@ import ComposeWizard from "./ComposeWizard";
 
 export const metadata = { title: "Nová zpráva — ARCA" };
 
-export default async function NewArcaPage() {
+export default async function NewArcaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ recipientId?: string; occasion?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
@@ -16,6 +20,8 @@ export default async function NewArcaPage() {
     const packCount = await prisma.messagePack.count({ where: { ownerId: authUser.id } });
     if (packCount >= FREE_LIMITS.maxPacks) redirect("/dashboard/billing");
   }
+
+  const { recipientId: prefilledRecipientId, occasion: prefilledOccasion } = await searchParams;
 
   // Fetch existing recipients for the selector
   const allRecipients = await prisma.recipient.findMany({
@@ -38,6 +44,8 @@ export default async function NewArcaPage() {
     <ComposeWizard
       recipients={recipients}
       isPro={hasProAccess(resolvedUser)}
+      prefilledRecipientId={prefilledRecipientId}
+      prefilledOccasion={prefilledOccasion as "birthday" | "anniversary" | undefined}
     />
   );
 }

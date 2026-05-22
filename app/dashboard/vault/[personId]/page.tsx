@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import RecipientTimeline from "@/components/dashboard/RecipientTimeline";
+import RecipientProfileEditor from "@/components/arca/RecipientProfileEditor";
+import { getSignedAvatarUrl, getSignedMemoryUrl } from "@/app/actions/recipients";
 
 export async function generateMetadata({ params }: { params: Promise<{ personId: string }> }) {
   const { personId } = await params;
@@ -21,7 +23,6 @@ function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
 }
 
-// Status config for timeline nodes
 const STATUS = {
   DRAFT:    { label: "Návrh",      chip: "",      tl: "" },
   ACTIVE:   { label: "Naplánováno",chip: "clay",  tl: "scheduled" },
@@ -43,10 +44,6 @@ const IcText  = () => <Ic d="M5 6h14M5 12h14M5 18h9" />;
 const IcVideo = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>;
 const IcVoice = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>;
 const IcPhoto = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10.5" r="1.5"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg>;
-const IcLock  = () => <Ic d="M5 11V8a7 7 0 0 1 14 0v3M3 11h18v10H3z" size={11} />;
-const IcClock = () => <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>;
-const IcHeart = () => <Ic d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10Z" size={11} />;
-const IcCheck = () => <Ic d="M5 12l4 4 10-10" size={11} />;
 const IcChev  = ({ rotate }: { rotate?: boolean }) => (
   <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"
     style={{ transform: rotate ? "rotate(180deg)" : undefined, display: "inline-flex" }}>
@@ -54,7 +51,6 @@ const IcChev  = ({ rotate }: { rotate?: boolean }) => (
   </svg>
 );
 const IcPlus  = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>;
-const IcPlay  = () => <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg>;
 const IcSparkle = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>;
 
 function Topbar({ name }: { name: string }) {
@@ -75,7 +71,6 @@ function Topbar({ name }: { name: string }) {
   );
 }
 
-// ── Content kind detection ────────────────────────────────────────────────────
 type ContentKind = "text" | "video" | "voice" | "photo";
 type ContentRow = { id: string; type: string; textBody: string | null; s3FileKey: string | null; signedUrl?: string | null };
 
@@ -93,14 +88,6 @@ function KindIcon({ kind }: { kind: ContentKind }) {
   return <IcText />;
 }
 
-const KIND_LABEL: Record<ContentKind, string> = { text: "Text", video: "Video", voice: "Hlas", photo: "Foto" };
-
-// ── Photo grid colours (deterministic) ───────────────────────────────────────
-const PHOTO_PAIRS = [
-  ["#E8D4C0","#D4B89A"], ["#D7DCCB","#B8C2A3"], ["#D5DEE7","#B0BFD0"],
-  ["#EFE9DD","#D9D1BD"], ["#F4E8DC","#E8D4C0"], ["#E5EAD8","#A8B58C"],
-];
-
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default async function RecipientDetailPage({ params }: { params: Promise<{ personId: string }> }) {
   const { personId } = await params;
@@ -110,9 +97,27 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
 
   const recipient = await prisma.recipient.findFirst({
     where: { id: personId, messagePack: { ownerId: authUser.id } },
-    select: { id: true, name: true, email: true, phone: true },
+    select: {
+      id: true, name: true, email: true, phone: true,
+      relationship: true, birthday: true, anniversary: true, notes: true, avatarUrl: true,
+      memories: {
+        orderBy: { happenedAt: "desc" },
+        select: { id: true, title: true, note: true, mediaUrl: true, mediaType: true, happenedAt: true },
+      },
+    },
   });
   if (!recipient) notFound();
+
+  // Signed URLs for memories
+  const memoriesWithUrls = await Promise.all(
+    recipient.memories.map(async (m) => {
+      const signedUrl = m.mediaUrl ? await getSignedMemoryUrl(m.mediaUrl) : null;
+      return { ...m, signedUrl };
+    })
+  );
+
+  // Signed URL for avatar
+  const signedAvatarUrl = recipient.avatarUrl ? await getSignedAvatarUrl(recipient.avatarUrl) : null;
 
   const rawPacks = await prisma.messagePack.findMany({
     where: { ownerId: authUser.id, recipients: { some: { id: personId } } },
@@ -127,7 +132,6 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
     },
   });
 
-  // Generate signed URLs for media content
   const packs = await Promise.all(rawPacks.map(async (pack) => {
     const contents: ContentRow[] = await Promise.all(pack.contents.map(async (c) => {
       if (!c.s3FileKey) return { ...c, signedUrl: null };
@@ -175,17 +179,14 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
             </svg>
           </div>
 
-          {/* Content row — z-index ensures it always renders above the SVG banner */}
+          {/* Content row */}
           <div style={{ padding: "0 24px 24px", marginTop: -32, display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
-            <span className={`arca-avatar xl ${tone}`}
-              style={{ border: "4px solid var(--surface)", flexShrink: 0, width: 68, height: 68, fontSize: 20 }}>
-              {init}
-            </span>
-            <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
+            {/* Avatar with edit capability lives in client component below */}
+            <div style={{ flex: 1, minWidth: 0, paddingBottom: 4, paddingTop: 36 }}>
               <h1 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 26, lineHeight: 1.2, margin: 0, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {recipient.name}
               </h1>
-              <div style={{ display: "flex", gap: 10, marginTop: 5, color: "var(--muted)", fontSize: 12.5, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 10, marginTop: 5, color: "var(--muted)", fontSize: 12.5, flexWrap: "wrap", alignItems: "center" }}>
                 {recipient.email && <span>{recipient.email}</span>}
                 {recipient.phone && <><span style={{ opacity: .4 }}>·</span><span>{recipient.phone}</span></>}
                 <span style={{ opacity: .4 }}>·</span>
@@ -203,21 +204,40 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
         {/* Split layout */}
         <div className="arca-split">
 
-          {/* Timeline — client component with working filter */}
-          <div>
-            <RecipientTimeline
-              recipientFirstName={recipient.name.split(" ")[0]}
-              packs={packs.map(pack => ({
-                id: pack.id,
-                title: pack.title,
-                type: pack.type,
-                status: pack.status,
-                createdAt: pack.createdAt,
-                triggerLabel: triggerLabel(pack),
-                kind: dominantKind(pack.contents),
-                contents: pack.contents,
-              }))}
+          {/* Left: timeline */}
+          <div className="arca-stack-5">
+            {/* Profile editor (client component) — avatar, edit, milestones, gallery */}
+            <RecipientProfileEditor
+              recipientId={recipient.id}
+              recipientName={recipient.name}
+              initialProfile={{
+                relationship: recipient.relationship,
+                birthday: recipient.birthday,
+                anniversary: recipient.anniversary,
+                notes: recipient.notes,
+              }}
+              initialAvatarUrl={signedAvatarUrl}
+              initialMemories={memoriesWithUrls}
+              tone={tone}
+              initials={init}
             />
+
+            <div>
+              <h3 className="arca-h3" style={{ marginBottom: 14 }}>Zprávy pro {recipient.name.split(" ")[0]}</h3>
+              <RecipientTimeline
+                recipientFirstName={recipient.name.split(" ")[0]}
+                packs={packs.map(pack => ({
+                  id: pack.id,
+                  title: pack.title,
+                  type: pack.type,
+                  status: pack.status,
+                  createdAt: pack.createdAt,
+                  triggerLabel: triggerLabel(pack),
+                  kind: dominantKind(pack.contents),
+                  contents: pack.contents,
+                }))}
+              />
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -228,8 +248,10 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
                 {[
                   ["E-mail", recipient.email ?? "—"],
                   ["Telefon", recipient.phone ?? "—"],
+                  ["Vztah", recipient.relationship ?? "—"],
                   ["Zpráv", msgCount.toString()],
-                  ["Typů obsahu", [...new Set(packs.flatMap(p => p.contents.map(c => c.type)))].length.toString()],
+                  ...(recipient.birthday ? [["Narozeniny", new Date(recipient.birthday).toLocaleDateString("cs-CZ", { day: "numeric", month: "long" })]] : []),
+                  ...(recipient.anniversary ? [["Výročí", new Date(recipient.anniversary).toLocaleDateString("cs-CZ", { day: "numeric", month: "long" })]] : []),
                 ].map(([label, value]) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--hairline)" }}>
                     <span className="arca-mono" style={{ color: "var(--muted)" }}>{label}</span>
@@ -271,7 +293,7 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
                 <p style={{ fontFamily: "var(--f-serif)", fontSize: 17, lineHeight: 1.3, margin: "0 0 14px", color: "var(--accent-deep)" }}>
                   „Napiš {recipient.name.split(" ")[0]}, co pro tebe znamená."
                 </p>
-                <Link href="/dashboard/arca/new" className="arca-btn sm"
+                <Link href={`/dashboard/arca/new?recipientId=${recipient.id}`} className="arca-btn sm"
                   style={{ background: "var(--surface-2)", color: "var(--accent)", textDecoration: "none" }}>
                   Začít psát <IcChev />
                 </Link>

@@ -251,12 +251,42 @@ model Recipient {
   challengeQuestion   String?
   challengeAnswerHash String?
 
+  // Extended profile
+  birthday     DateTime? // narozeniny
+  anniversary  DateTime? // výročí vztahu (první setkání, svatba...)
+  relationship String?   // "máma" | "táta" | "partner" | "kamarád" | custom
+  notes        String?   // volné poznámky o člověku
+  avatarUrl    String?   // cesta k souboru v Supabase Storage (ne public URL)
+
   createdAt DateTime @default(now())
 
   messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
   messagePackId String
 
+  memories Memory[]
+
   @@index([messagePackId])
+}
+
+// ---------------------------------------------------------------------------
+// Memory  (Galerie okamžiků — vzpomínky navázané na příjemce)
+// ---------------------------------------------------------------------------
+
+model Memory {
+  id        String    @id @default(cuid())
+  title     String?
+  note      String?       // příběh / popis
+  mediaUrl  String?       // cesta k souboru v Supabase Storage
+  mediaType String?       // "image" | "audio" | "video"
+  happenedAt DateTime?    // kdy se to stalo
+
+  recipient   Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+
+  createdAt DateTime @default(now())
+
+  @@index([recipientId])
+  @@index([happenedAt])
 }
 
 // ---------------------------------------------------------------------------
