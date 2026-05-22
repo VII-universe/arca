@@ -19,6 +19,7 @@ interface ArcaSidebarProps {
   packCount: number;
   guardianCount: number;
   recentRecipients: { id: string; name: string; initials: string; tone: string; messageCount: number }[];
+  contactGroups: { id: string; name: string; color: string; emoji: string | null }[];
 }
 
 // ── SVG icon helpers ──────────────────────────────────────────────────────────
@@ -45,7 +46,14 @@ const TONE_COLORS: Record<string, string> = {
   ink:  "background: linear-gradient(135deg, #3D3830, #1C1A16)",
 };
 
-export default function ArcaSidebar({ user, packCount, guardianCount, recentRecipients }: ArcaSidebarProps) {
+const GROUP_COLOR_DOT: Record<string, string> = {
+  clay: "#B6754A",
+  sage: "#7C8A6B",
+  sky:  "#6F8AA8",
+  ink:  "#4A4540",
+};
+
+export default function ArcaSidebar({ user, packCount, guardianCount, recentRecipients, contactGroups }: ArcaSidebarProps) {
   const pathname = usePathname();
 
   const navItems: NavItem[] = [
@@ -102,34 +110,66 @@ export default function ArcaSidebar({ user, packCount, guardianCount, recentReci
         ))}
       </div>
 
-      {/* Recent recipients */}
-      {recentRecipients.length > 0 && (
-        <>
-          <div className="arca-nav-label">Příjemci</div>
-          <div className="arca-nav-group" style={{ paddingTop: 0 }}>
-            {recentRecipients.slice(0, 4).map((r) => (
-              <Link
-                key={r.id}
-                href={`/dashboard/vault/${r.id}`}
-                className={`arca-nav-item ${pathname === `/dashboard/vault/${r.id}` ? "active" : ""}`}
-              >
-                <span
-                  className="arca-avatar sm"
-                  style={{ ...(TONE_COLORS[r.tone] ? { backgroundImage: TONE_COLORS[r.tone].replace("background: ", "") } : {}) }}
-                >
-                  {r.initials}
-                </span>
-                <span>{r.name}</span>
-                <span className="count">{r.messageCount}</span>
-              </Link>
-            ))}
-            <Link href="/dashboard/vault" className="arca-nav-item" style={{ color: "var(--muted)" }}>
-              <span className="ic"><IcPlus /></span>
-              <span>Přidat příjemce</span>
+      {/* Recipients + groups */}
+      <>
+        <div className="arca-nav-label">Příjemci</div>
+        <div className="arca-nav-group" style={{ paddingTop: 0 }}>
+          {/* All recipients shortcut */}
+          <Link
+            href="/dashboard/vault"
+            className={`arca-nav-item ${pathname === "/dashboard/vault" && !pathname.includes("?") ? "active" : ""}`}
+          >
+            <span className="ic">
+              <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round">
+                <circle cx="9" cy="9" r="3.5"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"/>
+                <circle cx="17" cy="8" r="2.5"/><path d="M15 14.5c2.7 0 6 1.4 6 4.5"/>
+              </svg>
+            </span>
+            <span>Všichni</span>
+            <span className="count">{recentRecipients.length}</span>
+          </Link>
+
+          {/* Group links */}
+          {contactGroups.map((g) => (
+            <Link
+              key={g.id}
+              href={`/dashboard/vault?group=${g.id}`}
+              className={`arca-nav-item ${pathname === "/dashboard/vault" && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("group") === g.id ? "active" : ""}`}
+            >
+              <span className="ic" style={{ width: 15, height: 15, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {g.emoji ? (
+                  <span style={{ fontSize: 13, lineHeight: 1 }}>{g.emoji}</span>
+                ) : (
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: GROUP_COLOR_DOT[g.color] ?? "#B6754A", flexShrink: 0 }} />
+                )}
+              </span>
+              <span>{g.name}</span>
             </Link>
-          </div>
-        </>
-      )}
+          ))}
+
+          {/* Recent people */}
+          {recentRecipients.slice(0, 3).map((r) => (
+            <Link
+              key={r.id}
+              href={`/dashboard/vault/${r.id}`}
+              className={`arca-nav-item ${pathname === `/dashboard/vault/${r.id}` ? "active" : ""}`}
+            >
+              <span
+                className="arca-avatar sm"
+                style={{ ...(TONE_COLORS[r.tone] ? { backgroundImage: TONE_COLORS[r.tone].replace("background: ", "") } : {}) }}
+              >
+                {r.initials}
+              </span>
+              <span>{r.name}</span>
+            </Link>
+          ))}
+
+          <Link href="/dashboard/vault" className="arca-nav-item" style={{ color: "var(--muted)" }}>
+            <span className="ic"><IcPlus /></span>
+            <span>Přidat příjemce</span>
+          </Link>
+        </div>
+      </>
 
       {/* Inspiration prompt */}
       <div style={{ marginTop: "auto" }}>

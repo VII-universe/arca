@@ -280,6 +280,12 @@ model Recipient {
   notes        String?   // volné poznámky o člověku
   avatarUrl    String?   // cesta k souboru v Supabase Storage (ne public URL)
 
+  // Additional contact channels
+  whatsapp  String?
+  facebook  String?
+  instagram String?
+  address   String?
+
   // Optional group assignment (deduped person level)
   group   ContactGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   groupId String?
@@ -425,6 +431,7 @@ model Guardian {
   id    String @id @default(cuid())
   name  String
   email String
+  phone String?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String

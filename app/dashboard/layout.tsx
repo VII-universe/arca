@@ -24,12 +24,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let packCount = 0;
   let guardianCount = 0;
   let recentRecipients: { id: string; name: string; initials: string; tone: string; messageCount: number }[] = [];
+  let contactGroups: { id: string; name: string; color: string; emoji: string | null }[] = [];
 
   try {
-    [user, packCount, guardianCount] = await Promise.all([
+    [user, packCount, guardianCount, contactGroups] = await Promise.all([
       resolveUser(authUser),
       prisma.messagePack.count({ where: { ownerId: authUser.id } }),
       prisma.guardian.count({ where: { userId: authUser.id } }),
+      prisma.contactGroup.findMany({
+        where: { userId: authUser.id },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, name: true, color: true, emoji: true },
+      }),
     ]);
   } catch (err) {
     console.error("[dashboard/layout] DB error:", err);
@@ -89,6 +95,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         packCount={packCount}
         guardianCount={guardianCount}
         recentRecipients={recentRecipients}
+        contactGroups={contactGroups}
       />
       <main className="arca-main">
         {children}
