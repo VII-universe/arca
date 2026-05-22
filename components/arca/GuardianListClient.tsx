@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { addGuardian, removeGuardian } from "@/app/actions/guardians";
+import { addGuardian, removeGuardian, updateGuardian } from "@/app/actions/guardians";
 import { assignGuardianGroup, createGroup, deleteGroup } from "@/app/actions/groups";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -73,6 +73,7 @@ const IcChev   = () => <svg width={10} height={10} viewBox="0 0 24 24" fill="non
 const IcCheck  = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12l4 4 10-10"/></svg>;
 const IcSpin   = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ animation: "arca-spin .8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
 const IcDown   = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>;
+const IcSettings = () => <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 14.2l1.4 1.2-1.7 3-1.8-.4a7.6 7.6 0 0 1-2 1.2L15 21h-3.4l-.3-1.8a7.6 7.6 0 0 1-2-1.2l-1.8.4-1.7-3 1.4-1.2a7.7 7.7 0 0 1 0-2.3L4.8 10.5l1.7-3 1.8.4a7.6 7.6 0 0 1 2-1.2L10.6 5H14l.3 1.7a7.6 7.6 0 0 1 2 1.2l1.8-.4 1.7 3-1.4 1.2a7.7 7.7 0 0 1 0 2.3Z"/></svg>;
 
 // ── GroupPicker ───────────────────────────────────────────────────────────────
 
@@ -139,19 +140,46 @@ function GroupPicker({ guardianId, currentGroupId, groups, onAssign, onClose }: 
 
 // ── GuardianCard ──────────────────────────────────────────────────────────────
 
-function GuardianCard({ guardian, groups, showGroupChip, onRemove, onGroupAssign }: {
+function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGroupAssign, onUpdated }: {
   guardian: GuardianItem; groups: GuardianGroup[]; showGroupChip: boolean;
   onRemove: (id: string) => void;
   onGroupAssign: (id: string, groupId: string | null) => void;
+  onUpdated: (id: string, data: Partial<GuardianItem>) => void;
 }) {
+  const [guardian, setGuardian] = useState(initial);
   const [pickerOpen, setPicker] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [removing, startRemove] = useTransition();
+  const [editing, setEditing]     = useState(false);
+  const [removing, startRemove]   = useTransition();
+  const [saving,   startSave]     = useTransition();
 
-  const tone = toneFor(guardian.name);
-  const init = initials(guardian.name);
-  const c = guardian.group ? colorFor(guardian.group.color) : null;
-  const { score, max, color: scoreColor } = contactScore({ email: guardian.email, phone: guardian.phone ?? undefined });
+  // Edit form state
+  const [editName,  setEditName]  = useState(guardian.name);
+  const [editEmail, setEditEmail] = useState(guardian.email);
+  const [editPhone, setEditPhone] = useState(guardian.phone ?? "");
+
+  function openEdit() {
+    setEditName(guardian.name);
+    setEditEmail(guardian.email);
+    setEditPhone(guardian.phone ?? "");
+    setEditing(true);
+  }
+
+  function handleSave() {
+    startSave(async () => {
+      const res = await updateGuardian(guardian.id, {
+        name:  editName,
+        email: editEmail,
+        phone: editPhone || null,
+      });
+      if ("error" in res) { toast.error(res.error); return; }
+      const updated = { ...guardian, name: editName, email: editEmail, phone: editPhone || null };
+      setGuardian(updated);
+      onUpdated(guardian.id, updated);
+      toast.success("Strážce uložen.");
+      setEditing(false);
+    });
+  }
 
   function handleRemove() {
     startRemove(async () => {
@@ -161,73 +189,162 @@ function GuardianCard({ guardian, groups, showGroupChip, onRemove, onGroupAssign
     });
   }
 
+  const tone = toneFor(guardian.name);
+  const c = guardian.group ? colorFor(guardian.group.color) : null;
+  const editScore = contactScore({ email: editEmail, phone: editPhone });
+  const viewScore = contactScore({ email: guardian.email, phone: guardian.phone ?? undefined });
+
   return (
-    <div className="arca-card" style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-      <span className={`arca-avatar lg ${tone}`}>{init}</span>
+    <div className="arca-card" style={{ overflow: "hidden" }}>
+      {/* ── View row ─────────────────────────────────── */}
+      <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
+        <span className={`arca-avatar lg ${tone}`} style={{ flexShrink: 0 }}>
+          {initials(guardian.name)}
+        </span>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 550, fontSize: 14.5 }}>{guardian.name}</span>
-          <span className="arca-chip sage" style={{ fontSize: 10.5 }}>
-            <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M5 12l4 4 10-10"/></svg>
-            Potvrzeno
-          </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontWeight: 550, fontSize: 14.5 }}>{guardian.name}</span>
+            <span className="arca-chip sage" style={{ fontSize: 10.5 }}>
+              <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M5 12l4 4 10-10"/></svg>
+              Potvrzeno
+            </span>
+          </div>
+          <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 2 }}>
+            {guardian.email}
+            {guardian.phone && <span style={{ opacity: .6 }}> · {guardian.phone}</span>}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+            <ContactDots score={viewScore.score} max={viewScore.max} color={viewScore.color} />
+
+            {showGroupChip && (
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <button type="button" onClick={() => setPicker(o => !o)} style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  padding: "3px 9px", borderRadius: "var(--r-pill)", border: "1px solid",
+                  borderColor: c ? c.border : "var(--hairline-2)",
+                  background: c ? c.bg : "var(--surface-2)",
+                  color: c ? c.text : "var(--muted-2)",
+                  fontSize: 11.5, cursor: "pointer", fontFamily: "var(--f-sans)",
+                }}>
+                  {guardian.group?.emoji && <span style={{ fontSize: 12 }}>{guardian.group.emoji}</span>}
+                  <span>{guardian.group?.name ?? "Skupina"}</span>
+                  <IcChev />
+                </button>
+                {pickerOpen && (
+                  <GroupPicker guardianId={guardian.id} currentGroupId={guardian.groupId}
+                    groups={groups}
+                    onAssign={(id, gid) => {
+                      const g = gid ? groups.find(x => x.id === gid) ?? null : null;
+                      onGroupAssign(id, gid);
+                      setGuardian(prev => ({ ...prev, groupId: gid, group: g }));
+                      toast.success(g ? `Přiřazeno do skupiny „${g.name}".` : "Skupina odebrána.");
+                    }}
+                    onClose={() => setPicker(false)} />
+                )}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 2 }}>
-          {guardian.email}
-          {guardian.phone && <span style={{ opacity: .6 }}> · {guardian.phone}</span>}
-        </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
-          {/* Contact completeness */}
-          <ContactDots score={score} max={max} color={scoreColor} />
+        {/* Action buttons */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          {/* Settings / edit */}
+          <button
+            type="button"
+            onClick={() => editing ? setEditing(false) : openEdit()}
+            className="arca-btn sm arca-btn--ghost"
+            style={{ color: editing ? "var(--accent)" : "var(--muted)", padding: "6px 8px" }}
+            title="Upravit strážce"
+          >
+            <IcSettings />
+          </button>
 
-          {/* Group chip — only show if groups exist */}
-          {showGroupChip && (
-            <div style={{ position: "relative", display: "inline-block" }}>
-              <button type="button" onClick={() => setPicker(o => !o)} style={{
-                display: "inline-flex", alignItems: "center", gap: 4,
-                padding: "3px 9px", borderRadius: "var(--r-pill)", border: "1px solid",
-                borderColor: c ? c.border : "var(--hairline-2)",
-                background: c ? c.bg : "var(--surface-2)",
-                color: c ? c.text : "var(--muted-2)",
-                fontSize: 11.5, cursor: "pointer", fontFamily: "var(--f-sans)",
-              }}>
-                {guardian.group?.emoji && <span style={{ fontSize: 12 }}>{guardian.group.emoji}</span>}
-                <span>{guardian.group?.name ?? "Skupina"}</span>
-                <IcChev />
+          {/* Delete */}
+          {confirming ? (
+            <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+              <span className="arca-sub" style={{ fontSize: 11.5 }}>Odebrat?</span>
+              <button type="button" onClick={handleRemove} disabled={removing}
+                className="arca-btn sm" style={{ color: "#c00", borderColor: "#fcc", padding: "4px 8px" }}>
+                {removing ? <IcSpin /> : "Ano"}
               </button>
-              {pickerOpen && (
-                <GroupPicker guardianId={guardian.id} currentGroupId={guardian.groupId}
-                  groups={groups}
-                  onAssign={(id, gid) => {
-                    const g = gid ? groups.find(x => x.id === gid) ?? null : null;
-                    onGroupAssign(id, gid);
-                    toast.success(g ? `Přiřazeno do skupiny „${g.name}".` : "Skupina odebrána.");
-                  }}
-                  onClose={() => setPicker(false)} />
-              )}
+              <button type="button" onClick={() => setConfirming(false)}
+                className="arca-btn sm arca-btn--ghost" style={{ padding: "4px 8px" }}>Ne</button>
             </div>
+          ) : (
+            <button type="button" onClick={() => setConfirming(true)}
+              className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "6px 8px" }}
+              title="Odebrat strážce">
+              <IcTrash />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Delete */}
-      {confirming ? (
-        <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-          <span className="arca-sub" style={{ fontSize: 12 }}>Odebrat?</span>
-          <button type="button" onClick={handleRemove} disabled={removing}
-            className="arca-btn sm" style={{ color: "#c00", borderColor: "#fcc" }}>
-            {removing ? <IcSpin /> : "Ano"}
-          </button>
-          <button type="button" onClick={() => setConfirming(false)} className="arca-btn sm arca-btn--ghost">Ne</button>
+      {/* ── Inline edit panel ─────────────────────────── */}
+      {editing && (
+        <div style={{
+          borderTop: "1px solid var(--hairline)", padding: "16px 20px",
+          background: "var(--bg-tint)",
+          animation: "gpIn .16s cubic-bezier(.22,1,.36,1) both",
+        }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+            <div>
+              <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>Jméno</label>
+              <input
+                className="arca-input"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                style={{ fontSize: 13 }}
+              />
+            </div>
+            <div>
+              <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>E-mail</label>
+              <input
+                type="email"
+                className="arca-input"
+                value={editEmail}
+                onChange={e => setEditEmail(e.target.value)}
+                style={{ fontSize: 13 }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>Telefon</label>
+            <input
+              type="tel"
+              className="arca-input"
+              placeholder="+420 600 000 000"
+              value={editPhone}
+              onChange={e => setEditPhone(e.target.value)}
+              style={{ fontSize: 13 }}
+            />
+          </div>
+
+          {/* Completeness preview */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <ContactDots score={editScore.score} max={editScore.max} color={editScore.color} />
+            <span style={{ fontSize: 11.5, color: editScore.color, fontFamily: "var(--f-sans)" }}>
+              {editScore.label}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || !editName.trim() || !editEmail.trim()}
+              className="arca-btn arca-btn--primary sm"
+            >
+              {saving ? <IcSpin /> : <IcCheck />} Uložit
+            </button>
+            <button type="button" onClick={() => setEditing(false)} className="arca-btn arca-btn--ghost sm">
+              Zrušit
+            </button>
+          </div>
         </div>
-      ) : (
-        <button type="button" onClick={() => setConfirming(true)}
-          className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", flexShrink: 0 }}
-          title="Odebrat strážce">
-          <IcTrash />
-        </button>
       )}
     </div>
   );
@@ -549,7 +666,8 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
           {guardians.map(g => (
             <GuardianCard key={g.id} guardian={g} groups={groups} showGroupChip={false}
               onRemove={id => setGuardians(prev => prev.filter(x => x.id !== id))}
-              onGroupAssign={handleGroupAssign} />
+              onGroupAssign={handleGroupAssign}
+              onUpdated={(id, data) => setGuardians(prev => prev.map(x => x.id === id ? { ...x, ...data } : x))} />
           ))}
           {guardians.length === 0 && (
             <p className="arca-sub" style={{ fontSize:13, fontStyle:"italic" }}>Zatím žádní strážci.</p>
@@ -588,7 +706,8 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
                 {section.items.map(g => (
                   <GuardianCard key={g.id} guardian={g} groups={groups} showGroupChip={true}
                     onRemove={id => setGuardians(prev => prev.filter(x => x.id !== id))}
-                    onGroupAssign={handleGroupAssign} />
+                    onGroupAssign={handleGroupAssign}
+                    onUpdated={(id, data) => setGuardians(prev => prev.map(x => x.id === id ? { ...x, ...data } : x))} />
                 ))}
               </div>
             </div>
@@ -600,7 +719,8 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
           {displayedGuardians.map(g => (
             <GuardianCard key={g.id} guardian={g} groups={groups} showGroupChip={true}
               onRemove={id => setGuardians(prev => prev.filter(x => x.id !== id))}
-              onGroupAssign={handleGroupAssign} />
+              onGroupAssign={handleGroupAssign}
+              onUpdated={(id, data) => setGuardians(prev => prev.map(x => x.id === id ? { ...x, ...data } : x))} />
           ))}
           {displayedGuardians.length === 0 && (
             <p className="arca-sub" style={{ fontSize:13 }}>Tato skupina nemá žádné členy.</p>

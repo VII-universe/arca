@@ -33,6 +33,37 @@ export async function addGuardian(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function updateGuardian(
+  guardianId: string,
+  data: { name?: string; email?: string; phone?: string | null }
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const guardian = await prisma.guardian.findFirst({
+    where: { id: guardianId, userId: user.id },
+    select: { id: true },
+  });
+  if (!guardian) return { error: "Strážce nenalezen." };
+
+  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    return { error: "Neplatný e-mail." };
+  }
+
+  await prisma.guardian.update({
+    where: { id: guardianId },
+    data: {
+      ...(data.name  ? { name: data.name.trim() }               : {}),
+      ...(data.email ? { email: data.email.trim().toLowerCase() } : {}),
+      ...(data.phone !== undefined ? { phone: data.phone?.trim() || null } : {}),
+    },
+  });
+
+  revalidatePath("/dashboard/guardians");
+  return { ok: true };
+}
+
 export async function removeGuardian(guardianId: string) {
   const supabase = await createClient();
   const {
