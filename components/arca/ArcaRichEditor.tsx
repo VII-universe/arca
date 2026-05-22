@@ -9,7 +9,25 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TiptapImage from "@tiptap/extension-image";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { FontFamily } from "@tiptap/extension-font-family";
+import { Extension } from "@tiptap/core";
 import { createClient } from "@/lib/supabase/client";
+
+// ── Font-size TipTap extension ────────────────────────────────────────────────
+const FontSize = Extension.create({
+  name: "fontSize",
+  addGlobalAttributes() {
+    return [{
+      types: ["textStyle"],
+      attributes: {
+        fontSize: {
+          default: null,
+          parseHTML: el => el.style.fontSize || null,
+          renderHTML: attrs => attrs.fontSize ? { style: `font-size:${attrs.fontSize}` } : {},
+        },
+      },
+    }];
+  },
+});
 
 // ── Upload helper ─────────────────────────────────────────────────────────────
 // Returns a persistent Supabase signed URL, or null on failure.
@@ -228,6 +246,83 @@ function ToolBtn({ onClick, title, children, active }: { onClick: () => void; ti
 }
 const TDivider = () => <div style={{ width: 1, height: 16, background: "var(--hairline-2)", margin: "0 3px", flexShrink: 0 }} />;
 
+// ── Custom dropdown for toolbar ───────────────────────────────────────────────
+
+function ToolSelect({
+  value, onChange, options, width = 110, title,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string; style?: React.CSSProperties }[];
+  width?: number;
+  title?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = options.find(o => o.value === value) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }} title={title}>
+      <button
+        type="button"
+        onMouseDown={e => { e.preventDefault(); setOpen(o => !o); }}
+        style={{
+          display: "flex", alignItems: "center", gap: 4,
+          background: "var(--surface-2)", border: "1px solid var(--hairline-2)",
+          borderRadius: 6, padding: "3px 8px 3px 8px", cursor: "pointer",
+          fontSize: 12, color: "var(--ink)", fontFamily: "var(--f-sans)",
+          width, justifyContent: "space-between", height: 26,
+          ...(current.style ?? {}),
+        }}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, textAlign: "left" }}>
+          {current.label}
+        </span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ flexShrink: 0, opacity: 0.5 }}>
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0,
+          minWidth: width, background: "var(--surface-2)",
+          border: "1px solid var(--hairline-2)", borderRadius: 8,
+          boxShadow: "var(--sh-3)", zIndex: 200,
+          overflow: "hidden", padding: "3px 0",
+        }}>
+          {options.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onMouseDown={e => { e.preventDefault(); onChange(opt.value); setOpen(false); }}
+              style={{
+                display: "block", width: "100%", textAlign: "left",
+                padding: "6px 12px", border: "none", cursor: "pointer",
+                background: opt.value === value ? "var(--hover-strong)" : "transparent",
+                color: "var(--ink)", fontSize: 13,
+                fontFamily: "var(--f-sans)",
+                ...(opt.style ?? {}),
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Resizable Image NodeView ──────────────────────────────────────────────────
 
 function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps) {
@@ -390,6 +485,7 @@ export default function ArcaRichEditor({
       StarterKit,
       TextStyle,
       FontFamily.configure({ types: ["textStyle"] }),
+      FontSize,
       Placeholder.configure({ placeholder }),
       ResizableImage.configure({ inline: false, allowBase64: false }),
     ],
@@ -521,32 +617,50 @@ export default function ArcaRichEditor({
           onChange={async e => { const f = e.target.files?.[0]; if (f) await insertImage(f); e.target.value = ""; }}
         />
         <TDivider />
-        {/* Font family selector */}
-        <select
-          value={editor?.getAttributes("textStyle").fontFamily ?? ""}
-          onChange={e => {
-            if (!editor) return;
-            const val = e.target.value;
-            if (val) editor.chain().focus().setFontFamily(val).run();
-            else editor.chain().focus().unsetFontFamily().run();
-          }}
-          style={{
-            background: "transparent", border: "1px solid var(--hairline-2)",
-            borderRadius: 6, padding: "2px 6px", fontSize: 12,
-            color: "var(--ink)", cursor: "pointer", outline: "none",
-            fontFamily: editor?.getAttributes("textStyle").fontFamily ?? "var(--f-serif)",
-            maxWidth: 130,
-          }}
+        {/* Font family */}
+        <ToolSelect
           title="Změnit písmo"
-        >
-          <option value="">Výchozí (Serif)</option>
-          <option value="'Instrument Serif', Georgia, serif" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Instrument Serif</option>
-          <option value="'Geist', -apple-system, sans-serif" style={{ fontFamily: "system-ui, sans-serif" }}>Geist (Sans)</option>
-          <option value="Georgia, serif" style={{ fontFamily: "Georgia, serif" }}>Georgia</option>
-          <option value="'Times New Roman', serif" style={{ fontFamily: "'Times New Roman', serif" }}>Times New Roman</option>
-          <option value="Arial, sans-serif" style={{ fontFamily: "Arial, sans-serif" }}>Arial</option>
-          <option value="'Courier New', monospace" style={{ fontFamily: "'Courier New', monospace" }}>Courier New</option>
-        </select>
+          width={118}
+          value={editor?.getAttributes("textStyle").fontFamily ?? ""}
+          onChange={val => {
+            if (!editor) return;
+            val ? editor.chain().focus().setFontFamily(val).run()
+                : editor.chain().focus().unsetFontFamily().run();
+          }}
+          options={[
+            { value: "", label: "Serif" },
+            { value: "'Instrument Serif',Georgia,serif", label: "Instrument", style: { fontFamily: "Georgia,serif" } },
+            { value: "Georgia,serif",                   label: "Georgia",    style: { fontFamily: "Georgia,serif" } },
+            { value: "'Times New Roman',serif",         label: "Times New Roman", style: { fontFamily: "'Times New Roman',serif" } },
+            { value: "Arial,sans-serif",                label: "Arial",      style: { fontFamily: "Arial,sans-serif" } },
+            { value: "system-ui,sans-serif",            label: "Sans-serif", style: { fontFamily: "system-ui,sans-serif" } },
+            { value: "'Courier New',monospace",         label: "Courier New",style: { fontFamily: "'Courier New',monospace" } },
+          ]}
+        />
+        {/* Font size */}
+        <ToolSelect
+          title="Velikost písma"
+          width={72}
+          value={editor?.getAttributes("textStyle").fontSize ?? ""}
+          onChange={val => {
+            if (!editor) return;
+            if (val) {
+              editor.chain().focus().setMark("textStyle", { fontSize: val }).run();
+            } else {
+              editor.chain().focus().setMark("textStyle", { fontSize: null }).run();
+            }
+          }}
+          options={[
+            { value: "",     label: "Norm." },
+            { value: "12px", label: "12" },
+            { value: "14px", label: "14" },
+            { value: "16px", label: "16" },
+            { value: "18px", label: "18" },
+            { value: "22px", label: "22" },
+            { value: "28px", label: "28" },
+            { value: "36px", label: "36" },
+          ]}
+        />
         <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted-2)", fontFamily: "var(--f-mono)" }}>
           {charCount} znaků
         </span>
