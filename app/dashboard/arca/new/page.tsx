@@ -9,7 +9,7 @@ export const metadata = { title: "Nová zpráva — ARCA" };
 export default async function NewArcaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ recipientId?: string; occasion?: string }>;
+  searchParams: Promise<{ recipientId?: string; occasion?: string; date?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -21,7 +21,7 @@ export default async function NewArcaPage({
     if (packCount >= FREE_LIMITS.maxPacks) redirect("/dashboard/billing");
   }
 
-  const { recipientId: prefilledRecipientId, occasion: prefilledOccasion } = await searchParams;
+  const { recipientId: prefilledRecipientId, occasion: prefilledOccasion, date: prefilledDate } = await searchParams;
 
   // Fetch existing recipients for the selector
   const allRecipients = await prisma.recipient.findMany({
@@ -46,6 +46,7 @@ export default async function NewArcaPage({
       isPro={hasProAccess(resolvedUser)}
       prefilledRecipientId={prefilledRecipientId}
       prefilledOccasion={prefilledOccasion as "birthday" | "anniversary" | undefined}
+      prefilledDate={prefilledDate}
     />
   );
 }

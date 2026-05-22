@@ -1,42 +1,43 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import CalendarClient from "@/components/arca/CalendarClient";
-import type { CalEvent } from "@/app/api/arca/calendar-events/route";
 
-export const metadata = { title: "Kalendář — ARCA" };
+export type CalEvent = {
+  id: string;
+  label: string;
+  type: "pack" | "birthday" | "anniversary";
+  packId?: string;
+  recipientId?: string;
+  tone: "clay" | "sage" | "sky";
+  recurring: boolean;
+};
 
-function Topbar() {
-  return (
-    <div className="arca-topbar">
-      <div className="arca-topbar__crumbs">
-        <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M9 6l6 6-6 6"/></svg>
-          <span className="here">Kalendář</span>
-        </span>
-      </div>
-    </div>
-  );
-}
+export type CalendarPayload = {
+  eventsByDay: Record<number, CalEvent[]>;
+  upcoming: { id: string; title: string; recipientName: string | null; date: string; packType: string }[];
+};
 
-export default async function CalendarPage() {
+export async function GET(req: NextRequest) {
   const supabase = await createClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
-  if (!authUser) redirect("/login");
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const now = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth();
+  const sp = new URL(req.url).searchParams;
+  const year  = parseInt(sp.get("year")  ?? String(new Date().getFullYear()));
+  const month = parseInt(sp.get("month") ?? String(new Date().getMonth())); // 0-indexed
+
+  if (isNaN(year) || isNaN(month) || month < 0 || month > 11) {
+    return NextResponse.json({ error: "Invalid params" }, { status: 400 });
+  }
 
   const rangeStart = new Date(year, month, 1);
   const rangeEnd   = new Date(year, month + 1, 0, 23, 59, 59);
 
   const [packs, recipients, upcomingPacks] = await Promise.all([
+    // Packs with a SPECIFIC_DATE trigger falling in this month
     prisma.messagePack.findMany({
       where: {
-        ownerId: authUser.id,
+        ownerId: user.id,
         triggerCondition: { type: "SPECIFIC_DATE", executeAtDate: { gte: rangeStart, lte: rangeEnd } },
       },
       select: {
@@ -46,18 +47,22 @@ export default async function CalendarPage() {
       },
       orderBy: { triggerCondition: { executeAtDate: "asc" } },
     }),
+
+    // All recipients with birthday/anniversary set (filter by month in JS)
     prisma.recipient.findMany({
       where: {
-        messagePack: { ownerId: authUser.id },
+        messagePack: { ownerId: user.id },
         OR: [{ birthday: { not: null } }, { anniversary: { not: null } }],
       },
       select: { id: true, name: true, relationship: true, birthday: true, anniversary: true },
       distinct: ["id"],
     }),
+
+    // Next 6 upcoming packs from today (for sidebar)
     prisma.messagePack.findMany({
       where: {
-        ownerId: authUser.id,
-        triggerCondition: { type: "SPECIFIC_DATE", executeAtDate: { gte: now } },
+        ownerId: user.id,
+        triggerCondition: { type: "SPECIFIC_DATE", executeAtDate: { gte: new Date() } },
       },
       select: {
         id: true, title: true, type: true,
@@ -69,13 +74,14 @@ export default async function CalendarPage() {
     }),
   ]);
 
-  // Build initial events map
   const eventsByDay: Record<number, CalEvent[]> = {};
+
   const push = (day: number, ev: CalEvent) => {
     if (!eventsByDay[day]) eventsByDay[day] = [];
     eventsByDay[day].push(ev);
   };
 
+  // Pack events
   for (const p of packs) {
     const d = p.triggerCondition?.executeAtDate;
     if (!d) continue;
@@ -88,19 +94,27 @@ export default async function CalendarPage() {
       recurring: false,
     });
   }
+
+  // Birthday / anniversary events (match month only — year-agnostic)
   for (const r of recipients) {
     if (r.birthday && r.birthday.getMonth() === month) {
       push(r.birthday.getDate(), {
         id: `bday-${r.id}`,
         label: r.name + (r.relationship ? ` (${r.relationship})` : ""),
-        type: "birthday", recipientId: r.id, tone: "clay", recurring: true,
+        type: "birthday",
+        recipientId: r.id,
+        tone: "clay",
+        recurring: true,
       });
     }
     if (r.anniversary && r.anniversary.getMonth() === month) {
       push(r.anniversary.getDate(), {
         id: `anniv-${r.id}`,
         label: r.name + (r.relationship ? ` (${r.relationship})` : ""),
-        type: "anniversary", recipientId: r.id, tone: "sage", recurring: true,
+        type: "anniversary",
+        recipientId: r.id,
+        tone: "sage",
+        recurring: true,
       });
     }
   }
@@ -113,34 +127,5 @@ export default async function CalendarPage() {
     packType: p.type,
   }));
 
-  return (
-    <>
-      <Topbar />
-      <div className="arca-inner arca-fade-in">
-        <div className="arca-row arca-between" style={{ marginBottom: 8 }}>
-          <div>
-            <div className="arca-kicker">Kalendář</div>
-            <h1 className="arca-h1" style={{ marginTop: 8 }}>
-              Okamžiky, které <em>se vrátí.</em>
-            </h1>
-          </div>
-          <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary">
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            Nová zpráva
-          </Link>
-        </div>
-
-        <p className="arca-sub" style={{ maxWidth: 540, marginBottom: 28 }}>
-          Narozeniny, výročí, dny, kdy chceš, aby tě někdo slyšel. Klikni na libovolný den a přidej zprávu, která tam jednou přistane.
-        </p>
-
-        <CalendarClient
-          initialYear={year}
-          initialMonth={month}
-          initialEvents={eventsByDay}
-          initialUpcoming={upcoming}
-        />
-      </div>
-    </>
-  );
+  return NextResponse.json({ eventsByDay, upcoming } satisfies CalendarPayload);
 }

@@ -41,6 +41,7 @@ interface Props {
   isPro: boolean;
   prefilledRecipientId?: string;
   prefilledOccasion?: "birthday" | "anniversary";
+  prefilledDate?: string; // ISO date e.g. "2025-05-15"
 }
 
 const KINDS: { id: Kind; label: string; sub: string; Ic: React.ComponentType }[] = [
@@ -201,7 +202,7 @@ const OCCASION_TRIGGER_MAP: Record<string, Trigger> = {
   anniversary: "date",
 };
 
-export default function ComposeWizard({ recipients, isPro, prefilledRecipientId, prefilledOccasion }: Props) {
+export default function ComposeWizard({ recipients, isPro, prefilledRecipientId, prefilledOccasion, prefilledDate }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -215,7 +216,7 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
   );
   const [packType, setPackType] = useState<PackType>("EMOTIONAL");
   const [text, setText] = useState("");
-  const [dateVal, setDateVal] = useState("");
+  const [dateVal, setDateVal] = useState(prefilledDate ?? "");
   const [timeVal, setTimeVal] = useState("08:00");
   const [showPreview, setShowPreview] = useState(false);
 
