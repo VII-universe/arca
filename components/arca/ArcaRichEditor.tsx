@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useCallback, useEffect, useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
+import type { NodeViewProps } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -225,6 +226,142 @@ function ToolBtn({ onClick, title, children, active }: { onClick: () => void; ti
 }
 const TDivider = () => <div style={{ width: 1, height: 16, background: "var(--hairline-2)", margin: "0 3px", flexShrink: 0 }} />;
 
+// ── Resizable Image NodeView ──────────────────────────────────────────────────
+
+function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps) {
+  const { src, alt, width, align } = node.attrs as {
+    src: string; alt?: string; width?: number; align?: string;
+  };
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [liveWidth, setLiveWidth] = useState<number | null>(null);
+
+  const startResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startW = imgRef.current?.getBoundingClientRect().width ?? (width ?? 320);
+    setDragging(true);
+
+    const onMove = (ev: MouseEvent) => {
+      const newW = Math.max(60, Math.round(startW + ev.clientX - startX));
+      setLiveWidth(newW);
+    };
+    const onUp = (ev: MouseEvent) => {
+      const finalW = Math.max(60, Math.round(startW + ev.clientX - startX));
+      updateAttributes({ width: finalW });
+      setLiveWidth(null);
+      setDragging(false);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [width, updateAttributes]);
+
+  const displayWidth = liveWidth ?? width;
+  const alignStyle: React.CSSProperties =
+    align === "center" ? { display: "block", margin: "12px auto" } :
+    align === "right"  ? { display: "block", margin: "12px 0 12px auto" } :
+                         { display: "block", margin: "12px 0" };
+
+  return (
+    <NodeViewWrapper as="div" style={{ ...alignStyle, display: "inline-block", maxWidth: "100%", position: "relative", lineHeight: 0, userSelect: "none" }}>
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt ?? ""}
+        draggable={false}
+        style={{
+          width: displayWidth ? `${displayWidth}px` : "100%",
+          maxWidth: "100%",
+          height: "auto",
+          borderRadius: 8,
+          display: "block",
+          boxShadow: "0 2px 8px rgba(28,26,22,0.12)",
+          outline: selected ? "2px solid var(--accent)" : "none",
+          outlineOffset: 2,
+          cursor: dragging ? "ew-resize" : "default",
+          transition: dragging ? "none" : "outline 0.1s",
+        }}
+      />
+
+      {/* Drag handle — bottom-right corner, visible when selected */}
+      {selected && (
+        <>
+          {/* SE corner handle */}
+          <div
+            onMouseDown={startResize}
+            title="Táhni pro změnu velikosti"
+            style={{
+              position: "absolute", right: -6, bottom: -6,
+              width: 14, height: 14,
+              background: "var(--accent)",
+              border: "2px solid var(--surface)",
+              borderRadius: 3,
+              cursor: "se-resize",
+              zIndex: 10,
+            }}
+          />
+          {/* Right-edge handle */}
+          <div
+            onMouseDown={startResize}
+            title="Táhni pro změnu šířky"
+            style={{
+              position: "absolute", right: -5, top: "50%",
+              transform: "translateY(-50%)",
+              width: 8, height: 28,
+              background: "var(--accent)",
+              border: "2px solid var(--surface)",
+              borderRadius: 3,
+              cursor: "e-resize",
+              zIndex: 10,
+              opacity: 0.75,
+            }}
+          />
+          {/* Width tooltip during drag */}
+          {dragging && liveWidth && (
+            <div style={{
+              position: "absolute", top: -28, left: "50%", transform: "translateX(-50%)",
+              background: "var(--ink)", color: "var(--bg)",
+              fontSize: 11, fontFamily: "var(--f-mono)",
+              padding: "2px 8px", borderRadius: 4, whiteSpace: "nowrap",
+              pointerEvents: "none",
+            }}>
+              {liveWidth}px
+            </div>
+          )}
+        </>
+      )}
+    </NodeViewWrapper>
+  );
+}
+
+// ── Image extension with NodeView + extra attributes ──────────────────────────
+
+const ResizableImage = TiptapImage.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: el => el.getAttribute("width"),
+        renderHTML: attrs => attrs.width
+          ? { width: attrs.width, style: `width:${attrs.width}px;max-width:100%` }
+          : {},
+      },
+      align: {
+        default: "left",
+        parseHTML: el => el.getAttribute("data-align") ?? "left",
+        renderHTML: attrs => ({ "data-align": attrs.align }),
+      },
+    };
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageView);
+  },
+});
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface ArcaRichEditorProps {
@@ -250,7 +387,7 @@ export default function ArcaRichEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder }),
-      ImageWithAttrs.configure({ inline: true, allowBase64: false }),
+      ResizableImage.configure({ inline: false, allowBase64: false }),
     ],
     content,
     onUpdate: ({ editor: e }) => onChange(e.getHTML()),
@@ -392,42 +529,34 @@ export default function ArcaRichEditor({
           shouldShow={({ editor: ed }) => ed.isActive("image")}
         >
           <div style={{
-            display: "flex", alignItems: "center", gap: 3,
+            display: "flex", alignItems: "center", gap: 2,
             background: "var(--ink)", borderRadius: 8, padding: "5px 8px",
             boxShadow: "var(--sh-3)",
           }}>
-            {/* Resize */}
-            <button type="button" onMouseDown={e => { e.preventDefault(); setWidth(-20); }}
-              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--bg)", padding: "2px 7px", borderRadius: 4, fontSize: 16, lineHeight: 1 }}>−</button>
-            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, fontFamily: "var(--f-mono)", padding: "0 3px" }}>vel.</span>
-            <button type="button" onMouseDown={e => { e.preventDefault(); setWidth(20); }}
-              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--bg)", padding: "2px 7px", borderRadius: 4, fontSize: 16, lineHeight: 1 }}>+</button>
-
-            <div style={{ width: 1, background: "rgba(255,255,255,0.15)", height: 16, margin: "0 3px" }} />
-
             {/* Alignment */}
             {[
-              { v: "left",   icon: "←" },
-              { v: "center", icon: "⊞" },
-              { v: "right",  icon: "→" },
+              { v: "left",   icon: "←", title: "Vlevo" },
+              { v: "center", icon: "⊞", title: "Na střed" },
+              { v: "right",  icon: "→", title: "Vpravo" },
             ].map(a => (
-              <button key={a.v} type="button"
+              <button key={a.v} type="button" title={a.title}
                 onMouseDown={e => { e.preventDefault(); setAlign(a.v); }}
                 style={{
                   background: "transparent", border: "none", cursor: "pointer",
-                  color: "var(--bg)", padding: "2px 7px", borderRadius: 4, fontSize: 14,
-                  lineHeight: 1, opacity: 0.8,
+                  color: "var(--bg)", padding: "3px 8px", borderRadius: 4, fontSize: 14,
+                  lineHeight: 1,
                 }}
               >
                 {a.icon}
               </button>
             ))}
 
-            <div style={{ width: 1, background: "rgba(255,255,255,0.15)", height: 16, margin: "0 3px" }} />
+            <div style={{ width: 1, background: "rgba(255,255,255,0.15)", height: 16, margin: "0 4px" }} />
 
             {/* Crop */}
-            <button type="button" onMouseDown={e => { e.preventDefault(); openCrop(); }}
-              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--bg)", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontFamily: "var(--f-mono)", letterSpacing: "0.04em", lineHeight: 1.4 }}>
+            <button type="button" title="Ořezat obrázek"
+              onMouseDown={e => { e.preventDefault(); openCrop(); }}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--bg)", padding: "3px 8px", borderRadius: 4, fontSize: 11, fontFamily: "var(--f-mono)", letterSpacing: "0.04em", lineHeight: 1.4 }}>
               CROP
             </button>
           </div>
