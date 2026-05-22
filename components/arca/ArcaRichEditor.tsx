@@ -7,6 +7,8 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TiptapImage from "@tiptap/extension-image";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { FontFamily } from "@tiptap/extension-font-family";
 import { createClient } from "@/lib/supabase/client";
 
 // ── Upload helper ─────────────────────────────────────────────────────────────
@@ -386,6 +388,8 @@ export default function ArcaRichEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit,
+      TextStyle,
+      FontFamily.configure({ types: ["textStyle"] }),
       Placeholder.configure({ placeholder }),
       ResizableImage.configure({ inline: false, allowBase64: false }),
     ],
@@ -517,6 +521,32 @@ export default function ArcaRichEditor({
           onChange={async e => { const f = e.target.files?.[0]; if (f) await insertImage(f); e.target.value = ""; }}
         />
         <TDivider />
+        {/* Font family selector */}
+        <select
+          value={editor?.getAttributes("textStyle").fontFamily ?? ""}
+          onChange={e => {
+            if (!editor) return;
+            const val = e.target.value;
+            if (val) editor.chain().focus().setFontFamily(val).run();
+            else editor.chain().focus().unsetFontFamily().run();
+          }}
+          style={{
+            background: "transparent", border: "1px solid var(--hairline-2)",
+            borderRadius: 6, padding: "2px 6px", fontSize: 12,
+            color: "var(--ink)", cursor: "pointer", outline: "none",
+            fontFamily: editor?.getAttributes("textStyle").fontFamily ?? "var(--f-serif)",
+            maxWidth: 130,
+          }}
+          title="Změnit písmo"
+        >
+          <option value="">Výchozí (Serif)</option>
+          <option value="'Instrument Serif', Georgia, serif" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Instrument Serif</option>
+          <option value="'Geist', -apple-system, sans-serif" style={{ fontFamily: "system-ui, sans-serif" }}>Geist (Sans)</option>
+          <option value="Georgia, serif" style={{ fontFamily: "Georgia, serif" }}>Georgia</option>
+          <option value="'Times New Roman', serif" style={{ fontFamily: "'Times New Roman', serif" }}>Times New Roman</option>
+          <option value="Arial, sans-serif" style={{ fontFamily: "Arial, sans-serif" }}>Arial</option>
+          <option value="'Courier New', monospace" style={{ fontFamily: "'Courier New', monospace" }}>Courier New</option>
+        </select>
         <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted-2)", fontFamily: "var(--f-mono)" }}>
           {charCount} znaků
         </span>

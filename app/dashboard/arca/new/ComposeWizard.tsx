@@ -456,9 +456,10 @@ export default function ComposeWizard({ recipients, isPro }: Props) {
                   </div>
                 </div>
                 {kind === "text" && text ? (
-                  <p style={{ fontFamily: "var(--f-serif)", fontSize: 14.5, lineHeight: 1.5, margin: 0, color: "var(--ink-2)", maxHeight: 160, overflow: "hidden", position: "relative" }}>
-                    {text.slice(0, 240)}{text.length > 240 ? "…" : ""}
-                  </p>
+                  <div
+                    dangerouslySetInnerHTML={{ __html: text }}
+                    style={{ fontFamily: "var(--f-serif)", fontSize: 14, lineHeight: 1.55, color: "var(--ink-2)", maxHeight: 160, overflow: "hidden" }}
+                  />
                 ) : (
                   <p className="arca-sub" style={{ fontSize: 13, margin: 0, fontStyle: "italic" }}>
                     {kind === "voice" ? "Hlasová nahrávka" : kind === "video" ? "Video zpráva" : kind === "photo" ? "Fotoalbum" : "Začni psát…"}
