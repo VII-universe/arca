@@ -134,7 +134,7 @@ export default function ArcaSidebar({ user, packCount, guardianCount, recentReci
             <Link
               key={g.id}
               href={`/dashboard/vault?group=${g.id}`}
-              className={`arca-nav-item ${pathname === "/dashboard/vault" && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("group") === g.id ? "active" : ""}`}
+              className="arca-nav-item"
             >
               <span className="ic" style={{ width: 15, height: 15, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {g.emoji ? (

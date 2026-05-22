@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createGroup, deleteGroup, assignPersonGroup } from "@/app/actions/groups";
@@ -503,21 +502,14 @@ function PersonCard({
 interface Props {
   initialPeople: VaultPerson[];
   initialGroups: VaultGroup[];
+  initialGroupId?: string | null;
 }
 
-export default function VaultClient({ initialPeople, initialGroups }: Props) {
-  const searchParams = useSearchParams();
+export default function VaultClient({ initialPeople, initialGroups, initialGroupId }: Props) {
   const [people, setPeople] = useState<VaultPerson[]>(initialPeople);
   const [groups, setGroups] = useState<VaultGroup[]>(initialGroups);
-  const [activeGroup, setActiveGroup] = useState<string | null>(
-    searchParams.get("group") ?? null
-  );
+  const [activeGroup, setActiveGroup] = useState<string | null>(initialGroupId ?? null);
   const [showCreate, setShowCreate] = useState(false);
-
-  // Sync group filter from URL (sidebar links)
-  useEffect(() => {
-    setActiveGroup(searchParams.get("group") ?? null);
-  }, [searchParams]);
 
   const filtered = activeGroup === null
     ? people

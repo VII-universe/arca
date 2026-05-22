@@ -32,10 +32,16 @@ function Topbar() {
   );
 }
 
-export default async function VaultPage() {
+export default async function VaultPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ group?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
+
+  const { group: initialGroupId } = await searchParams;
 
   const [allRecipients, groups] = await Promise.all([
     prisma.recipient.findMany({
@@ -105,7 +111,11 @@ export default async function VaultPage() {
           Každý člověk má vlastní schránku. Otevři kohokoli a uvidíš zprávy, fotky a vzpomínky, které ho jednou najdou.
         </p>
 
-        <VaultClient initialPeople={people} initialGroups={groups as VaultGroup[]} />
+        <VaultClient
+          initialPeople={people}
+          initialGroups={groups as VaultGroup[]}
+          initialGroupId={initialGroupId}
+        />
 
         {/* Tip */}
         <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none", marginTop: 32, padding: "20px 24px", display: "flex", alignItems: "center", gap: 16 }}>
