@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { upsertContent, updatePackTitle } from "@/app/actions/arca";
+import ArcaRichEditor from "./ArcaRichEditor";
 import { upsertTrigger, activatePack, cancelDelivery, addRecipient, removeRecipient } from "@/app/actions/delivery";
 import AppearanceButton from "@/components/layout/AppearanceButton";
 
@@ -337,29 +338,13 @@ export default function ArcaEditorNew({
             {/* Step 03 – Content */}
             <div>
               <Step n="03" label="Obsah" />
-              <div className="arca-card" style={{ padding: 0, overflow: "hidden" }}>
-                <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 6 }}>
-                  <button type="button" className="arca-btn icon-btn arca-btn--ghost" style={{ fontFamily: "var(--f-serif)", fontWeight: 600, fontSize: 14 }}>B</button>
-                  <button type="button" className="arca-btn icon-btn arca-btn--ghost" style={{ fontStyle: "italic", fontFamily: "var(--f-serif)", fontSize: 14 }}>I</button>
-                  <div style={{ width: 1, height: 16, background: "var(--hairline)" }} />
-                  <button type="button" className="arca-btn sm arca-btn--ghost"><IcSparkle /> Nápověda</button>
-                  <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)", fontFamily: "var(--f-mono)" }}>
-                    {text.length} / 5000 znaků
-                  </span>
-                </div>
-                <textarea
-                  value={text}
-                  onChange={e => setText(e.target.value)}
-                  placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
-                  maxLength={5000}
-                  style={{
-                    width: "100%", border: "none", outline: "none",
-                    minHeight: 280, padding: "18px 22px", resize: "vertical",
-                    fontFamily: "var(--f-serif)", fontSize: 18, lineHeight: 1.55,
-                    background: "transparent", color: "var(--ink)",
-                  }}
-                />
-              </div>
+              <ArcaRichEditor
+                content={text}
+                onChange={setText}
+                placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
+                packId={packId}
+                minHeight={280}
+              />
             </div>
 
             {/* Step 04 – Trigger */}

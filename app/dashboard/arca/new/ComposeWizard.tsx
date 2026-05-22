@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createPackFull } from "@/app/actions/arca";
 import AppearanceButton from "@/components/layout/AppearanceButton";
+import ArcaRichEditor from "@/components/arca/ArcaRichEditor";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -364,33 +365,12 @@ export default function ComposeWizard({ recipients, isPro }: Props) {
             <div>
               <Step n="03" label="Obsah" />
               {kind === "text" && (
-                <div className="arca-card" style={{ padding: 0, overflow: "hidden" }}>
-                  {/* Toolbar */}
-                  <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 6 }}>
-                    <button type="button" className="arca-btn icon-btn arca-btn--ghost" style={{ fontFamily: "var(--f-serif)", fontWeight: 600, fontSize: 14 }}>B</button>
-                    <button type="button" className="arca-btn icon-btn arca-btn--ghost" style={{ fontStyle: "italic", fontFamily: "var(--f-serif)", fontSize: 14 }}>I</button>
-                    <button type="button" className="arca-btn icon-btn arca-btn--ghost" style={{ fontSize: 12 }}>" "</button>
-                    <div style={{ width: 1, height: 16, background: "var(--hairline)" }} />
-                    <button type="button" className="arca-btn sm arca-btn--ghost">
-                      <IcSparkle /> Nápověda
-                    </button>
-                    <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)" }} className="arca-mono">
-                      {text.length} / 5000 znaků
-                    </span>
-                  </div>
-                  <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
-                    maxLength={5000}
-                    style={{
-                      width: "100%", border: "none", outline: "none",
-                      minHeight: 260, padding: "18px 22px", resize: "vertical",
-                      fontFamily: "var(--f-serif)", fontSize: 18, lineHeight: 1.55,
-                      background: "transparent", color: "var(--ink)",
-                    }}
-                  />
-                </div>
+                <ArcaRichEditor
+                  content={text}
+                  onChange={setText}
+                  placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
+                  minHeight={260}
+                />
               )}
               {kind === "voice" && <VoiceRecorder />}
               {kind === "video" && <VideoRecorder />}
