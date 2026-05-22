@@ -99,10 +99,11 @@ model User {
   stripeCustomerId       String?
   stripeSubscriptionId   String?
 
-  messagePacks  MessagePack[]
-  activityLogs  ActivityLog[]
-  guardians     Guardian[]
-  categories    Category[]
+  messagePacks   MessagePack[]
+  activityLogs   ActivityLog[]
+  guardians      Guardian[]
+  categories     Category[]
+  contactGroups  ContactGroup[]
 
   // Executor rows where this user is the pack owner
   ownedExecutors    Executor[] @relation("ExecutorOwner")
@@ -112,6 +113,27 @@ model User {
   @@index([lastActiveAt]) // primary target for the inactivity cron job
   @@index([webhookSecret]) // heartbeat route looks up by this
   @@index([stripeCustomerId])
+}
+
+// ---------------------------------------------------------------------------
+// ContactGroup  (User-defined groups for recipients and guardians)
+// ---------------------------------------------------------------------------
+
+model ContactGroup {
+  id    String  @id @default(cuid())
+  name  String
+  color String  @default("clay") // "clay" | "sage" | "sky" | "ink"
+  emoji String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  recipients Recipient[]
+  guardians  Guardian[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ---------------------------------------------------------------------------
@@ -258,6 +280,10 @@ model Recipient {
   notes        String?   // volné poznámky o člověku
   avatarUrl    String?   // cesta k souboru v Supabase Storage (ne public URL)
 
+  // Optional group assignment (deduped person level)
+  group   ContactGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  groupId String?
+
   createdAt DateTime @default(now())
 
   messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
@@ -266,6 +292,7 @@ model Recipient {
   memories Memory[]
 
   @@index([messagePackId])
+  @@index([groupId])
 }
 
 // ---------------------------------------------------------------------------
@@ -402,11 +429,15 @@ model Guardian {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
+  group   ContactGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  groupId String?
+
   createdAt DateTime @default(now())
 
   tokens GuardianToken[]
 
   @@index([userId])
+  @@index([groupId])
 }
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import GuardianManager from "@/components/dashboard/GuardianManager";
+import GuardianListClient from "@/components/arca/GuardianListClient";
+import type { GuardianItem, GuardianGroup } from "@/components/arca/GuardianListClient";
 import CheckInButton from "@/components/dashboard/CheckInButton";
 import HeartbeatWidget from "@/components/dashboard/HeartbeatWidget";
 
@@ -46,7 +47,7 @@ export default async function GuardiansPage() {
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
 
-  const [user, guardians] = await Promise.all([
+  const [user, guardians, groups] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
       select: { lastActiveAt: true, webhookSecret: true, name: true },
@@ -54,7 +55,16 @@ export default async function GuardiansPage() {
     prisma.guardian.findMany({
       where: { userId: authUser.id },
       orderBy: { createdAt: "asc" },
-      select: { id: true, name: true, email: true, createdAt: true },
+      select: {
+        id: true, name: true, email: true, createdAt: true,
+        groupId: true,
+        group: { select: { id: true, name: true, color: true, emoji: true } },
+      },
+    }),
+    prisma.contactGroup.findMany({
+      where: { userId: authUser.id },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, name: true, color: true, emoji: true },
     }),
   ]);
 
@@ -63,10 +73,12 @@ export default async function GuardiansPage() {
   const now = new Date();
   const daysSinceActive = Math.floor((now.getTime() - user.lastActiveAt.getTime()) / 86_400_000);
 
-  const guardianList = guardians.map((g) => ({
+  const guardianList: GuardianItem[] = guardians.map((g) => ({
     id: g.id,
     name: g.name,
     email: g.email,
+    groupId: g.groupId,
+    group: g.group,
   }));
 
   return (
@@ -113,36 +125,13 @@ export default async function GuardiansPage() {
           </div>
         </div>
 
-        {/* Guardians manager */}
+        {/* Guardian list with groups */}
         <h3 className="arca-h3" style={{ marginBottom: 14 }}>Tvoji strážci · {guardians.length}</h3>
-
-        {/* Guardian rows */}
-        <div className="arca-stack-3" style={{ marginBottom: 32 }}>
-          {guardianList.map((g, i) => {
-            const tones = ["sage", "sky", "clay"];
-            const tone = tones[i % tones.length];
-            const init = g.name.split(" ").filter(Boolean).slice(0, 2).map((w: string) => w[0].toUpperCase()).join("");
-            return (
-              <div key={g.id} className="arca-card" style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 16 }}>
-                <span className={`arca-avatar lg ${tone}`}>{init}</span>
-                <div style={{ flex: 1 }}>
-                  <div className="arca-row" style={{ gap: 8 }}>
-                    <span style={{ fontWeight: 550, fontSize: 14.5 }}>{g.name}</span>
-                    <span className="arca-chip sage">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M5 12l4 4 10-10"/></svg>
-                      Potvrzeno
-                    </span>
-                  </div>
-                  <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 2 }}>{g.email}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* GuardianManager component for adding/removing */}
         <div style={{ marginBottom: 32 }}>
-          <GuardianManager initialGuardians={guardianList} />
+          <GuardianListClient
+            initialGuardians={guardianList}
+            initialGroups={groups as GuardianGroup[]}
+          />
         </div>
 
         {/* Check-in + Heartbeat */}
