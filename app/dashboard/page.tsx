@@ -77,14 +77,13 @@ export default async function DashboardPage() {
       where: { userId: authUser.id },
       select: { id: true, name: true, email: true },
     }),
-    // Load unique recipients with birthday/anniversary for reminders
+    // Load recipients with birthday/anniversary for reminders
     prisma.recipient.findMany({
       where: {
         messagePack: { ownerId: authUser.id },
         OR: [{ birthday: { not: null } }, { anniversary: { not: null } }],
       },
-      select: { id: true, name: true, relationship: true, birthday: true, anniversary: true },
-      distinct: ["id"],
+      select: { id: true, name: true, email: true, relationship: true, birthday: true, anniversary: true },
     }),
   ]);
 
@@ -106,24 +105,32 @@ export default async function DashboardPage() {
   // Recent
   const recent = packs.slice(0, 4);
 
-  // Smart reminders — flatten birthday + anniversary events, dedupe by person
+  // Smart reminders — dedupe by email/name, then build reminder items
   type ReminderItem = { recipientId: string; name: string; relationship: string | null; label: string; days: number; occasion: "birthday" | "anniversary"; urgent: boolean };
   const reminders: ReminderItem[] = [];
   const seen = new Set<string>();
-  for (const r of allRecipients) {
+  // Deduplicate in JS (same person may appear as recipient of multiple packs)
+  const uniqueRecipients = allRecipients.filter(r => {
+    const key = r.email ?? r.name;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const reminderSeen = new Set<string>();
+  for (const r of uniqueRecipients) {
     if (r.birthday) {
-      const days = daysUntilNextOccurrence(r.birthday);
+      const days = daysUntilNextOccurrence(new Date(r.birthday));
       const key = `${r.id}-birthday`;
-      if (days <= 30 && !seen.has(key)) {
-        seen.add(key);
+      if (days <= 30 && !reminderSeen.has(key)) {
+        reminderSeen.add(key);
         reminders.push({ recipientId: r.id, name: r.name, relationship: r.relationship, label: "Narozeniny", days, occasion: "birthday", urgent: days <= 7 });
       }
     }
     if (r.anniversary) {
-      const days = daysUntilNextOccurrence(r.anniversary);
+      const days = daysUntilNextOccurrence(new Date(r.anniversary));
       const key = `${r.id}-anniversary`;
-      if (days <= 30 && !seen.has(key)) {
-        seen.add(key);
+      if (days <= 30 && !reminderSeen.has(key)) {
+        reminderSeen.add(key);
         reminders.push({ recipientId: r.id, name: r.name, relationship: r.relationship, label: "Výročí", days, occasion: "anniversary", urgent: days <= 7 });
       }
     }

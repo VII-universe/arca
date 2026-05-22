@@ -48,14 +48,13 @@ export async function GET(req: NextRequest) {
       orderBy: { triggerCondition: { executeAtDate: "asc" } },
     }),
 
-    // All recipients with birthday/anniversary set (filter by month in JS)
+    // All recipients with birthday/anniversary (deduplicate in JS)
     prisma.recipient.findMany({
       where: {
         messagePack: { ownerId: user.id },
         OR: [{ birthday: { not: null } }, { anniversary: { not: null } }],
       },
-      select: { id: true, name: true, relationship: true, birthday: true, anniversary: true },
-      distinct: ["id"],
+      select: { id: true, name: true, email: true, relationship: true, birthday: true, anniversary: true },
     }),
 
     // Next 6 upcoming packs from today (for sidebar)
@@ -95,10 +94,14 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Birthday / anniversary events (match month only — year-agnostic)
+  // Birthday / anniversary events — dedupe in JS, safe Date coercion
+  const apiSeen = new Set<string>();
   for (const r of recipients) {
-    if (r.birthday && r.birthday.getMonth() === month) {
-      push(r.birthday.getDate(), {
+    const personKey = r.email ?? r.name;
+    if (apiSeen.has(personKey)) continue;
+    apiSeen.add(personKey);
+    if (r.birthday && new Date(r.birthday).getMonth() === month) {
+      push(new Date(r.birthday).getDate(), {
         id: `bday-${r.id}`,
         label: r.name + (r.relationship ? ` (${r.relationship})` : ""),
         type: "birthday",
@@ -107,8 +110,8 @@ export async function GET(req: NextRequest) {
         recurring: true,
       });
     }
-    if (r.anniversary && r.anniversary.getMonth() === month) {
-      push(r.anniversary.getDate(), {
+    if (r.anniversary && new Date(r.anniversary).getMonth() === month) {
+      push(new Date(r.anniversary).getDate(), {
         id: `anniv-${r.id}`,
         label: r.name + (r.relationship ? ` (${r.relationship})` : ""),
         type: "anniversary",

@@ -51,8 +51,7 @@ export default async function CalendarPage() {
         messagePack: { ownerId: authUser.id },
         OR: [{ birthday: { not: null } }, { anniversary: { not: null } }],
       },
-      select: { id: true, name: true, relationship: true, birthday: true, anniversary: true },
-      distinct: ["id"],
+      select: { id: true, name: true, email: true, relationship: true, birthday: true, anniversary: true },
     }),
     prisma.messagePack.findMany({
       where: {
@@ -88,16 +87,21 @@ export default async function CalendarPage() {
       recurring: false,
     });
   }
+  // In-memory dedup (same person may appear in multiple packs)
+  const calSeen = new Set<string>();
   for (const r of recipients) {
-    if (r.birthday && r.birthday.getMonth() === month) {
-      push(r.birthday.getDate(), {
+    const personKey = r.email ?? r.name;
+    if (calSeen.has(personKey)) continue;
+    calSeen.add(personKey);
+    if (r.birthday && new Date(r.birthday).getMonth() === month) {
+      push(new Date(r.birthday).getDate(), {
         id: `bday-${r.id}`,
         label: r.name + (r.relationship ? ` (${r.relationship})` : ""),
         type: "birthday", recipientId: r.id, tone: "clay", recurring: true,
       });
     }
-    if (r.anniversary && r.anniversary.getMonth() === month) {
-      push(r.anniversary.getDate(), {
+    if (r.anniversary && new Date(r.anniversary).getMonth() === month) {
+      push(new Date(r.anniversary).getDate(), {
         id: `anniv-${r.id}`,
         label: r.name + (r.relationship ? ` (${r.relationship})` : ""),
         type: "anniversary", recipientId: r.id, tone: "sage", recurring: true,
