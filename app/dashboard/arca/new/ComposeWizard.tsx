@@ -282,7 +282,7 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
           <h1 className="arca-h1" style={{ marginTop: 8 }}>Něco, co jednou <em>najdou.</em></h1>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 28 }}>
+        <div className="arca-compose-split" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 28 }}>
           {/* ── Left: editor steps ─────────────────────────────── */}
           <div className="arca-stack-5">
 
@@ -348,7 +348,7 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
             {/* Step 02 — kind */}
             <div>
               <Step n="02" label="Forma" />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
+              <div className="arca-kind-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
                 {KINDS.map((k) => {
                   const active = kind === k.id;
                   const isProOnly = (k.id === "voice" || k.id === "video") && !isPro;
@@ -395,14 +395,14 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
             {/* Step 04 — trigger */}
             <div>
               <Step n="04" label="Kdy se otevře" />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              <div className="arca-trigger-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
                 <TriggerCard active={trigger === "date"}   onClick={() => setTrigger("date")}   Ic={IcCalPlus} title="V daný den"    sub="Konkrétní datum a čas." />
                 <TriggerCard active={trigger === "event"}  onClick={() => setTrigger("event")}  Ic={IcHeart}   title="Při události" sub="Když nadejde okamžik." />
                 <TriggerCard active={trigger === "sealed"} onClick={() => setTrigger("sealed")} Ic={IcLock}    title="Zapečetit"   sub="Doručit, až tu nebudu." />
               </div>
 
               {trigger === "date" && (
-                <div className="arca-card" style={{ padding: 18, marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                <div className="arca-card arca-date-grid" style={{ padding: 18, marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                   <div>
                     <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Datum</label>
                     <input type="date" className="arca-input" value={dateVal} onChange={(e) => setDateVal(e.target.value)} />
@@ -451,7 +451,7 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
           </div>
 
           {/* ── Right: preview ─────────────────────────────────── */}
-          <div style={{ position: "sticky", top: 90, alignSelf: "start" }}>
+          <div className="arca-compose-preview" style={{ position: "sticky", top: 90, alignSelf: "start" }}>
             <div className="arca-card elev" style={{ overflow: "hidden" }}>
               <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--hairline)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span className="arca-kicker">Náhled doručení</span>

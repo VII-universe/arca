@@ -560,7 +560,7 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
           )}
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+        <div className="arca-persons-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           {filtered.map(p => (
             <PersonCard
               key={p.id}

@@ -20,6 +20,8 @@ interface ArcaSidebarProps {
   guardianCount: number;
   recentRecipients: { id: string; name: string; initials: string; tone: string; messageCount: number }[];
   contactGroups: { id: string; name: string; color: string; emoji: string | null }[];
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 // ── SVG icon helpers ──────────────────────────────────────────────────────────
@@ -53,7 +55,7 @@ const GROUP_COLOR_DOT: Record<string, string> = {
   ink:  "#4A4540",
 };
 
-export default function ArcaSidebar({ user, packCount, guardianCount, recentRecipients, contactGroups }: ArcaSidebarProps) {
+export default function ArcaSidebar({ user, packCount, guardianCount, recentRecipients, contactGroups, isOpen, onClose }: ArcaSidebarProps) {
   const pathname = usePathname();
 
   const navItems: NavItem[] = [
@@ -74,7 +76,7 @@ export default function ArcaSidebar({ user, packCount, guardianCount, recentReci
     .map((w) => w[0].toUpperCase()).join("");
 
   return (
-    <aside className="arca-side">
+    <aside className={`arca-side${isOpen ? " mob-open" : ""}`}>
       {/* Brand */}
       <div className="arca-brand">
         <div className="mark">
@@ -84,6 +86,12 @@ export default function ArcaSidebar({ user, packCount, guardianCount, recentReci
           </svg>
         </div>
         <div className="name">arc<em>a</em></div>
+        {/* Close button — visible only on mobile */}
+        <button className="arca-side__close" onClick={onClose} aria-label="Zavřít menu">
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
       </div>
 
       {/* Search */}

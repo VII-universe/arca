@@ -131,7 +131,6 @@
    ARCA design system — tokens imported from Claude Design handoff
    ═══════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;450;500;550;600&family=Geist+Mono:wght@400;500&display=swap');
 
 /* ── ARCA light defaults ─────────────────────────────────────────── */
 [data-arca-theme] {
@@ -432,3 +431,212 @@ html[data-arca-dark="true"] body { background: #15120F; }
 @keyframes arca-fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @keyframes arca-spin   { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .arca-fade-in { animation: arca-fadeUp .35s ease both; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ARCA — Mobile Responsiveness
+   Breakpoints: 768px tablet/mobile | 480px small phone
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Desktop: hide mobile-only elements ───────────────────────── */
+@media (min-width: 769px) {
+  .arca-mobile-header   { display: none !important; }
+  .arca-sidebar-overlay { display: none !important; }
+  .arca-bottom-nav      { display: none !important; }
+  .arca-side__close     { display: none !important; }
+}
+
+/* Tablet – slight breathing room ───────────────────────────── */
+@media (max-width: 1024px) {
+  .arca-inner { padding: 32px 36px 60px; }
+  .arca-topbar { padding: 14px 36px; }
+}
+
+/* ── Mobile (≤ 768px) ──────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Shell — flex column, sidebar removed from flow */
+  .arca-app {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  /* Sidebar: fixed slide-in drawer from the left */
+  .arca-side {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 280px;
+    z-index: 300;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+    overflow-y: auto;
+    border-right: none;
+  }
+  .arca-side.mob-open {
+    transform: translateX(0);
+    box-shadow: var(--sh-3);
+  }
+
+  /* Close ✕ button inside the sidebar (only visible on mobile) */
+  .arca-side__close {
+    display: flex;
+    align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: none; background: var(--hover);
+    cursor: pointer; color: var(--ink);
+    flex-shrink: 0;
+    margin-left: auto;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .arca-side__close:active { background: var(--hover-strong); }
+
+  /* Backdrop overlay */
+  .arca-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--scrim);
+    z-index: 299;
+    animation: arcaFadeIn 0.2s ease both;
+  }
+
+  /* Mobile sticky top header */
+  .arca-mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    height: 52px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--hairline);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  .arca-mobile-hamburger {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent;
+    cursor: pointer; color: var(--ink);
+    transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .arca-mobile-hamburger:active { background: var(--hover); }
+  .arca-mobile-header__brand {
+    flex: 1; text-align: center;
+    font-family: var(--f-serif); font-size: 21px;
+    letter-spacing: .02em; font-weight: 400; pointer-events: none;
+  }
+  .arca-mobile-header__brand em { font-style: italic; color: var(--accent); }
+
+  /* Main content — flex 1, no fixed height */
+  .arca-main { flex: 1; }
+
+  /* Desktop topbar — hidden on mobile (replaced by mobile header) */
+  .arca-topbar { display: none !important; }
+
+  /* Inner content padding */
+  .arca-inner { padding: 20px 16px 88px; max-width: 100%; }
+
+  /* Typography */
+  .arca-h1 { font-size: 26px; line-height: 1.28; }
+  .arca-h2 { font-size: 20px; }
+
+  /* Responsive grids — all collapse to 1 col */
+  .arca-split           { grid-template-columns: 1fr !important; }
+  .arca-hero-split      { grid-template-columns: 1fr !important; }
+  .arca-dashboard-2col  { grid-template-columns: 1fr !important; }
+  .arca-persons-grid    { grid-template-columns: 1fr !important; }
+  .arca-compose-split   { grid-template-columns: 1fr !important; }
+  .arca-trigger-grid    { grid-template-columns: repeat(3, 1fr) !important; }
+  .arca-date-grid       { grid-template-columns: 1fr 1fr !important; }
+
+  /* Stats: 2×2 */
+  .arca-stats-row { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Compose kind tiles: 2×2 */
+  .arca-kind-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Compose preview — remove sticky on mobile, normal flow */
+  .arca-compose-preview { position: static !important; }
+
+  /* Form field grids — stack on mobile */
+  .arca-form-grid { grid-template-columns: 1fr !important; }
+
+  /* Dashboard greeting */
+  .arca-greeting-h1 { font-size: 30px !important; }
+
+  /* Hero CTA — hide decorative right panel */
+  .arca-hero-right { display: none !important; }
+
+  /* Calendar cells — compact */
+  .arca-cal__cell      { min-height: 48px; padding: 5px 3px; gap: 2px; }
+  .arca-cal__cell .num { font-size: 11px; }
+  .arca-cal__pill      { font-size: 9.5px; padding: 1px 4px; }
+  .arca-cal__head .cell { padding: 6px 2px; font-size: 9px; letter-spacing: .04em; }
+
+  /* Prevent overflow on cards */
+  .arca-card { border-radius: var(--r-md); }
+
+  /* ── Bottom navigation bar ──────────────────────────────── */
+  .arca-bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 8px 4px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--bg) 95%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 100;
+  }
+  .arca-bottom-nav__item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 4px 8px;
+    color: var(--muted-2);
+    font-size: 9.5px; font-weight: 500;
+    text-decoration: none;
+    transition: color 0.15s;
+    font-family: var(--f-sans);
+    min-width: 48px;
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 10px;
+  }
+  .arca-bottom-nav__item.active { color: var(--accent); }
+  .arca-bottom-nav__item:active { background: var(--hover); }
+  .arca-bottom-nav__fab {
+    display: flex; align-items: center; justify-content: center;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: var(--ink); color: var(--bg);
+    box-shadow: var(--sh-2);
+    transition: transform 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    margin-top: -6px;
+  }
+  .arca-bottom-nav__fab:active { transform: scale(0.9); box-shadow: var(--sh-1); }
+}
+
+/* ── Small phone (≤ 480px) ──────────────────────────────────── */
+@media (max-width: 480px) {
+  .arca-inner { padding: 16px 12px 88px; }
+  .arca-h1 { font-size: 22px; }
+  .arca-stats-row { gap: 10px !important; }
+  .arca-trigger-grid { grid-template-columns: 1fr !important; }
+  .arca-date-grid    { grid-template-columns: 1fr !important; }
+}
+
+@keyframes arcaFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

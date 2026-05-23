@@ -229,7 +229,7 @@ export default async function DashboardPage() {
         {/* ── Greeting ───────────────────────────────────────────── */}
         <div style={{ marginBottom: 36 }}>
           <div className="arca-kicker" style={{ marginBottom: 10 }}>{dayNameCap} · {shortDate}</div>
-          <h1 className="arca-h1" style={{ fontSize: 52 }}>
+          <h1 className="arca-h1 arca-greeting-h1" style={{ fontSize: 52 }}>
             Dobrý den, {firstName}. <em>Co dnes uložíš?</em>
           </h1>
           <p className="arca-sub" style={{ maxWidth: 580, marginTop: 12, fontSize: 15 }}>
@@ -244,7 +244,7 @@ export default async function DashboardPage() {
 
         {/* ── Hero CTA card ───────────────────────────────────────── */}
         <div className="arca-card elev" style={{ overflow: "hidden", marginBottom: 36 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", minHeight: 200 }}>
+          <div className="arca-hero-split" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", minHeight: 200 }}>
             <div style={{ padding: "32px 36px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div>
                 <span className="arca-chip clay"><span className="dot" /> Navrhujeme dnes</span>
@@ -263,7 +263,7 @@ export default async function DashboardPage() {
                 <Link href="/dashboard/vault" className="arca-btn arca-btn--ghost lg">Schránka</Link>
               </div>
             </div>
-            <div style={{ background: "linear-gradient(160deg, var(--accent-tint) 0%, var(--accent-soft) 60%, color-mix(in srgb, var(--accent) 50%, var(--accent-soft)) 100%)", position: "relative", overflow: "hidden" }}>
+            <div className="arca-hero-right" style={{ background: "linear-gradient(160deg, var(--accent-tint) 0%, var(--accent-soft) 60%, color-mix(in srgb, var(--accent) 50%, var(--accent-soft)) 100%)", position: "relative", overflow: "hidden" }}>
               <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0 }}>
                 <defs>
                   <radialGradient id="glw" cx="0.7" cy="0.3" r="0.7">
@@ -283,7 +283,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* ── Stats row ───────────────────────────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 36 }}>
+        <div className="arca-stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 36 }}>
           <StatCard label="Ve schránce" value={packs.length} hint={`pro ${totalRecipients} ${totalRecipients === 1 ? "člověka" : "lidí"}`} />
           <StatCard label="Aktivní" value={activePacks} hint="připraveny k doručení" tone="clay" />
           <StatCard label="Doručené" value={deliveredPacks} hint="úspěšně doručeno" tone="sage" />
@@ -291,7 +291,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* ── Two columns ─────────────────────────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 22 }}>
+        <div className="arca-dashboard-2col" style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 22 }}>
           {/* Upcoming */}
           <div>
             <div className="arca-row arca-between" style={{ marginBottom: 14 }}>

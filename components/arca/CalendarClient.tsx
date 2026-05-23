@@ -654,7 +654,7 @@ export default function CalendarClient({
       </div>
 
       {/* ── Main grid + sidebar ────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 28 }}>
+      <div className="arca-split" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 28 }}>
 
         {/* Calendar */}
         <div style={{ opacity: loading ? 0.55 : 1, transition: "opacity .2s" }}>

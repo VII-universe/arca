@@ -289,7 +289,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
           background: "var(--bg-tint)",
           animation: "gpIn .16s cubic-bezier(.22,1,.36,1) both",
         }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+          <div className="arca-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
             <div>
               <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>Jméno</label>
               <input
@@ -412,7 +412,7 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
 
       <form ref={formRef} action={handleAdd}>
         {/* Required fields */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+        <div className="arca-form-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
           <div>
             <label className="arca-mono" style={{ color:"var(--muted)", fontSize:10, display:"block", marginBottom:5 }}>Celé jméno *</label>
             <input name="name" required placeholder="Jan Novák" className="arca-input" style={{ fontSize:13 }}
@@ -440,7 +440,7 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
               {section.label}
             </button>
             {expanded[section.key] && (
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:8 }}>
+              <div className="arca-form-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:8 }}>
                 {section.fields.map(f => (
                   <div key={f.name}>
                     <label className="arca-mono" style={{ color:"var(--muted)", fontSize:10, display:"block", marginBottom:5 }}>{f.label}</label>

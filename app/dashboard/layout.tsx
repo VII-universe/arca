@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { resolveUser } from "@/lib/auth/user";
-import ArcaSidebar from "@/components/layout/ArcaSidebar";
+import DashboardShell from "@/components/layout/DashboardShell";
 
 const TONES = ["clay", "sage", "sky", "ink", "clay", "sage", "sky"];
 function toneFor(name: string): string {
@@ -72,34 +72,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) {
     return (
       <div className="arca-app" data-arca-theme="">
-        <aside className="arca-side" style={{ display: "flex", flexDirection: "column", padding: "22px 18px" }}>
-          <div className="arca-brand">
-            <div className="mark">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M5 18c0-7 3-12 7-12s7 5 7 12" stroke="rgba(255,255,255,0.5)" strokeWidth="1.8" strokeLinecap="round"/>
-                <circle cx="12" cy="19" r="1.5" fill="var(--accent)"/>
-              </svg>
-            </div>
-            <div className="name">arc<em>a</em></div>
-          </div>
-        </aside>
-        <main className="arca-main">{children}</main>
+        <main className="arca-main" style={{ gridColumn: "1 / -1" }}>{children}</main>
       </div>
     );
   }
 
   return (
-    <div className="arca-app" data-arca-theme="">
-      <ArcaSidebar
-        user={user}
-        packCount={packCount}
-        guardianCount={guardianCount}
-        recentRecipients={recentRecipients}
-        contactGroups={contactGroups}
-      />
-      <main className="arca-main">
-        {children}
-      </main>
-    </div>
+    <DashboardShell
+      user={user}
+      packCount={packCount}
+      guardianCount={guardianCount}
+      recentRecipients={recentRecipients}
+      contactGroups={contactGroups}
+    >
+      {children}
+    </DashboardShell>
   );
 }
