@@ -100,7 +100,7 @@ export default async function GuardiansPage() {
 
         {/* Rule card */}
         <div className="arca-card elev" style={{ marginBottom: 28, overflow: "hidden" }}>
-          <div style={{ padding: "24px 28px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28, alignItems: "center" }}>
+          <div className="arca-guardian-rule-grid" style={{ padding: "24px 28px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28, alignItems: "center" }}>
             <div>
               <span className="arca-chip sage"><span className="dot" /> Pravidlo doručení</span>
               <h2 className="arca-h2" style={{ marginTop: 12 }}>Tichý strážce</h2>
@@ -135,7 +135,7 @@ export default async function GuardiansPage() {
         </div>
 
         {/* Check-in + Heartbeat */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
+        <div className="arca-presence-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
           {/* Presence check-in */}
           <div className="arca-card">
             <div style={{ padding: "20px 22px" }}>

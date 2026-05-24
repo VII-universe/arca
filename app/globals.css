@@ -569,16 +569,21 @@ html[data-arca-dark="true"] body { background: #15120F; }
   .arca-h2 { font-size: 20px; }
 
   /* Responsive grids ─────────────────────────────────────── */
-  .arca-split           { grid-template-columns: 1fr !important; }
-  .arca-hero-split      { grid-template-columns: 1fr !important; }
-  .arca-dashboard-2col  { grid-template-columns: 1fr !important; }
-  .arca-persons-grid    { grid-template-columns: 1fr !important; }
-  .arca-compose-split   { grid-template-columns: 1fr !important; }
-  .arca-trigger-grid    { grid-template-columns: repeat(3, 1fr) !important; }
-  .arca-date-grid       { grid-template-columns: 1fr 1fr !important; }
-  .arca-stats-row       { grid-template-columns: repeat(2, 1fr) !important; }
-  .arca-kind-grid       { grid-template-columns: repeat(2, 1fr) !important; }
-  .arca-form-grid       { grid-template-columns: 1fr !important; }
+  .arca-split              { grid-template-columns: 1fr !important; }
+  .arca-hero-split         { grid-template-columns: 1fr !important; }
+  .arca-dashboard-2col     { grid-template-columns: 1fr !important; }
+  .arca-persons-grid       { grid-template-columns: 1fr !important; }
+  .arca-compose-split      { grid-template-columns: 1fr !important; }
+  .arca-trigger-grid       { grid-template-columns: repeat(3, 1fr) !important; }
+  .arca-date-grid          { grid-template-columns: 1fr 1fr !important; }
+  .arca-stats-row          { grid-template-columns: repeat(2, 1fr) !important; }
+  .arca-kind-grid          { grid-template-columns: repeat(2, 1fr) !important; }
+  .arca-form-grid          { grid-template-columns: 1fr !important; }
+  /* Guardian page — stack 2-col grids */
+  .arca-guardian-rule-grid { grid-template-columns: 1fr !important; align-items: start !important; }
+  .arca-presence-grid      { grid-template-columns: 1fr !important; }
+  /* Compose full-page layout — push content below mobile header (52px) */
+  .arca-compose-layout     { padding-top: 52px !important; }
 
   /* Compose preview — un-sticky on mobile */
   .arca-compose-preview { position: static !important; }
