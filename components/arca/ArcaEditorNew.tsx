@@ -230,7 +230,7 @@ export default function ArcaEditorNew({
   const displayName = recipients[0]?.name ?? "příjemce";
 
   return (
-    <div data-arca-theme="" style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
+    <div data-arca-theme="" style={{ position: "fixed", inset: 0, zIndex: 50, overflowY: "auto", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
       {/* Topbar */}
       <div className="arca-topbar">
         <div className="arca-topbar__crumbs">
