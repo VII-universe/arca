@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { createGroup, deleteGroup, assignPersonGroup } from "@/app/actions/groups";
+import { createGroup, deleteGroup, updateGroup, assignPersonGroup } from "@/app/actions/groups";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -279,10 +279,175 @@ function CreateGroupPanel({
   );
 }
 
+// ── GroupEditModal ────────────────────────────────────────────────────────────
+
+function GroupEditModal({
+  group, people, onSave, onDelete, onClose,
+}: {
+  group: VaultGroup;
+  people: VaultPerson[];
+  onSave: (updated: VaultGroup, memberIds: Set<string>) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [name, setName]   = useState(group.name);
+  const [emoji, setEmoji] = useState(group.emoji ?? "");
+  const [color, setColor] = useState(group.color);
+  const [memberIds, setMemberIds] = useState<Set<string>>(
+    new Set(people.filter(p => p.groupId === group.id).map(p => p.id))
+  );
+  const [pending, startTransition] = useTransition();
+
+  function toggleMember(personId: string) {
+    setMemberIds(prev => {
+      const next = new Set(prev);
+      next.has(personId) ? next.delete(personId) : next.add(personId);
+      return next;
+    });
+  }
+
+  function save() {
+    if (!name.trim()) return;
+    startTransition(async () => {
+      // 1. Update group metadata
+      const res = await updateGroup(group.id, { name: name.trim(), emoji: emoji || null, color });
+      if ("error" in res) { toast.error(res.error); return; }
+
+      // 2. Sync membership — only changed people
+      const original = new Set(people.filter(p => p.groupId === group.id).map(p => p.id));
+      const toAdd    = [...memberIds].filter(id => !original.has(id));
+      const toRemove = [...original].filter(id => !memberIds.has(id));
+
+      await Promise.all([
+        ...toAdd.map(id => assignPersonGroup(id, group.id)),
+        ...toRemove.map(id => assignPersonGroup(id, null)),
+      ]);
+
+      onSave({ id: group.id, name: name.trim(), emoji: emoji || null, color }, memberIds);
+      toast.success(`Skupina „${name.trim()}" uložena.`);
+      onClose();
+    });
+  }
+
+  // Close on Escape
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  const c = colorFor(color);
+
+  return (
+    <div
+      data-arca-theme=""
+      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--scrim)", backdropFilter: "blur(4px)", padding: "20px 16px" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ background: "var(--surface-2)", borderRadius: "var(--r-xl)", boxShadow: "var(--sh-3)", width: "100%", maxWidth: 520, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Header */}
+        <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid var(--hairline)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+            <h2 style={{ margin: 0, fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 22, color: "var(--ink)" }}>Upravit skupinu</h2>
+            <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--muted)", padding: 6, borderRadius: 8, display: "flex" }}>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          {/* Name + emoji */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 62px", gap: 10, marginBottom: 14 }}>
+            <input
+              className="arca-input"
+              placeholder="Název skupiny…"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") save(); }}
+              autoFocus
+              style={{ fontWeight: 500 }}
+            />
+            <input
+              className="arca-input"
+              placeholder="😀"
+              value={emoji}
+              onChange={e => setEmoji(e.target.value)}
+              style={{ textAlign: "center", fontSize: 20 }}
+              maxLength={4}
+            />
+          </div>
+
+          {/* Color picker */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".1em" }}>Barva</span>
+            {COLOR_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setColor(opt.value)}
+                title={opt.label}
+                style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid", borderColor: color === opt.value ? opt.text : "transparent", background: opt.bg, cursor: "pointer", boxShadow: color === opt.value ? `0 0 0 3px ${opt.border}` : undefined, transition: "all .12s" }}
+              />
+            ))}
+            <span style={{ fontSize: 12, color: c.text, background: c.bg, padding: "2px 8px", borderRadius: "var(--r-pill)", border: `1px solid ${c.border}` }}>{emoji || ""} {name || "Skupina"}</span>
+          </div>
+        </div>
+
+        {/* Member list */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
+          <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 12 }}>
+            Členové · {memberIds.size} z {people.length}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {people.map(p => {
+              const isMember = memberIds.has(p.id);
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => toggleMember(p.id)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: "var(--r-md)", border: `1.5px solid ${isMember ? "var(--ink)" : "var(--hairline)"}`, background: isMember ? "var(--ink)" : "var(--surface)", color: isMember ? "var(--bg)" : "var(--ink)", cursor: "pointer", transition: "all .15s", textAlign: "left", fontFamily: "var(--f-sans)" }}
+                >
+                  <span className={`arca-avatar sm ${toneFor(p.name)}`} style={{ background: isMember ? "rgba(255,255,255,0.15)" : undefined, flexShrink: 0 }}>{initials(p.name)}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 550, fontSize: 13.5 }}>{p.name}</div>
+                    {p.email && <div style={{ fontSize: 12, opacity: .65 }}>{p.email}</div>}
+                  </div>
+                  <div style={{ width: 20, height: 20, borderRadius: "50%", border: `1.5px solid ${isMember ? "rgba(255,255,255,0.4)" : "var(--hairline-2)"}`, display: "grid", placeItems: "center", flexShrink: 0, background: isMember ? "rgba(255,255,255,0.15)" : "transparent" }}>
+                    {isMember && <IcCheck />}
+                  </div>
+                </button>
+              );
+            })}
+            {people.length === 0 && (
+              <p style={{ color: "var(--muted)", fontSize: 13, margin: 0, textAlign: "center", padding: "20px 0" }}>Zatím žádné kontakty ve schránce.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "16px 24px", borderTop: "1px solid var(--hairline)", display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center" }}>
+          <button
+            type="button"
+            onClick={() => { onDelete(group.id); onClose(); }}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: "var(--r-md)", border: "none", background: "transparent", color: "#C0392B", cursor: "pointer", fontSize: 13, fontFamily: "var(--f-sans)" }}
+          >
+            <IcTrash /> Smazat skupinu
+          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost sm">Zrušit</button>
+            <button type="button" onClick={save} disabled={pending || !name.trim()} className="arca-btn arca-btn--primary sm">
+              {pending ? "Ukládám…" : "Uložit změny"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── FilterBar ────────────────────────────────────────────────────────────────
 
 function FilterBar({
-  groups, activeGroupId, people, onFilter, onCreateGroup, onDeleteGroup,
+  groups, activeGroupId, people, onFilter, onCreateGroup, onDeleteGroup, onUpdateGroup,
 }: {
   groups: VaultGroup[];
   activeGroupId: string | null;
@@ -290,9 +455,11 @@ function FilterBar({
   onFilter: (id: string | null) => void;
   onCreateGroup: () => void;
   onDeleteGroup: (id: string) => void;
+  onUpdateGroup: (updated: VaultGroup, memberIds: Set<string>) => void;
 }) {
-  const [manageId, setManageId] = useState<string | null>(null);
-  const [deletingId, startDelete] = useTransition();
+  const [manageId, setManageId]   = useState<string | null>(null);
+  const [editGroup, setEditGroup] = useState<VaultGroup | null>(null);
+  const [, startDelete] = useTransition();
 
   function handleDelete(id: string) {
     startDelete(async () => {
@@ -375,19 +542,22 @@ function FilterBar({
                   position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 100,
                   background: "var(--surface-2)", border: "1px solid var(--hairline-2)",
                   borderRadius: "var(--r-lg)", boxShadow: "var(--sh-3)",
-                  minWidth: 140, overflow: "hidden",
+                  minWidth: 160, overflow: "hidden",
                   animation: "groupPickerIn .15s cubic-bezier(.22,1,.36,1) both",
                 }}
               >
                 <button
                   type="button"
+                  onClick={() => { setEditGroup(g); setManageId(null); }}
+                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", color: "var(--ink)", fontSize: 13, fontFamily: "var(--f-sans)" }}
+                >
+                  <IcEdit /> Upravit skupinu
+                </button>
+                <div style={{ height: 1, background: "var(--hairline)", margin: "0 10px" }} />
+                <button
+                  type="button"
                   onClick={() => { handleDelete(g.id); setManageId(null); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    width: "100%", padding: "10px 14px", border: "none",
-                    background: "transparent", cursor: "pointer", color: "#c00",
-                    fontSize: 13, fontFamily: "var(--f-sans)",
-                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", color: "#c00", fontSize: 13, fontFamily: "var(--f-sans)" }}
                 >
                   <IcTrash /> Smazat skupinu
                 </button>
@@ -406,6 +576,20 @@ function FilterBar({
       >
         <IcPlus /> Nová skupina
       </button>
+
+      {/* Group edit modal */}
+      {editGroup && (
+        <GroupEditModal
+          group={editGroup}
+          people={people}
+          onSave={(updated, memberIds) => {
+            onUpdateGroup(updated, memberIds);
+            setEditGroup(null);
+          }}
+          onDelete={(id) => { handleDelete(id); setEditGroup(null); }}
+          onClose={() => setEditGroup(null)}
+        />
+      )}
     </div>
   );
 }
@@ -534,6 +718,17 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
         onDeleteGroup={(id) => {
           setGroups(prev => prev.filter(g => g.id !== id));
           setPeople(prev => prev.map(p => p.groupId === id ? { ...p, groupId: null, group: null } : p));
+        }}
+        onUpdateGroup={(updated, memberIds) => {
+          setGroups(prev => prev.map(g => g.id === updated.id ? updated : g));
+          setPeople(prev => prev.map(p => {
+            const shouldBe = memberIds.has(p.id);
+            const isMember = p.groupId === updated.id;
+            if (shouldBe && !isMember) return { ...p, groupId: updated.id, group: updated };
+            if (!shouldBe && isMember) return { ...p, groupId: null, group: null };
+            if (isMember) return { ...p, group: updated };
+            return p;
+          }));
         }}
       />
 
