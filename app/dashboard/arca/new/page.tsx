@@ -23,18 +23,24 @@ export default async function NewArcaPage({
 
   const { recipientId: prefilledRecipientId, occasion: prefilledOccasion, date: prefilledDate } = await searchParams;
 
-  // Fetch existing recipients for the selector
-  const allRecipients = await prisma.recipient.findMany({
-    where: { messagePack: { ownerId: authUser.id } },
-    select: { id: true, name: true, email: true },
-    distinct: ["email"],
-    orderBy: { createdAt: "desc" },
-    take: 20,
-  });
+  // Fetch existing recipients + groups for the selector
+  const [allRecipients, contactGroups] = await Promise.all([
+    prisma.recipient.findMany({
+      where: { messagePack: { ownerId: authUser.id } },
+      select: { id: true, name: true, email: true, groupId: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+    prisma.contactGroup.findMany({
+      where: { userId: authUser.id },
+      select: { id: true, name: true, color: true, emoji: true },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
 
-  // Deduplicate by name/email
+  // Deduplicate by email/name
   const seen = new Set<string>();
-  const recipients: { id: string; name: string; email: string | null }[] = [];
+  const recipients: { id: string; name: string; email: string | null; groupId: string | null }[] = [];
   for (const r of allRecipients) {
     const key = r.email ?? r.name;
     if (!seen.has(key)) { seen.add(key); recipients.push(r); }
@@ -43,6 +49,7 @@ export default async function NewArcaPage({
   return (
     <ComposeWizard
       recipients={recipients}
+      contactGroups={contactGroups}
       isPro={hasProAccess(resolvedUser)}
       prefilledRecipientId={prefilledRecipientId}
       prefilledOccasion={prefilledOccasion as "birthday" | "anniversary" | undefined}

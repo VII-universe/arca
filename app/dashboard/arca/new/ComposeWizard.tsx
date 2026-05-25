@@ -27,6 +27,8 @@ const IcMic      = IcVoice;
 const IcEye      = () => <Ic><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></Ic>;
 const IcBack     = () => <Ic><path d="M15 6l-6 6 6 6"/></Ic>;
 const IcPlus     = () => <Ic><path d="M12 5v14M5 12h14"/></Ic>;
+const IcX        = () => <Ic size={12}><path d="M18 6L6 18M6 6l12 12"/></Ic>;
+const IcCheck    = () => <Ic size={12}><path d="M5 12l4 4 10-10"/></Ic>;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,14 +36,16 @@ type Kind = "text" | "voice" | "video" | "photo";
 type Trigger = "date" | "event" | "sealed";
 type PackType = "EMOTIONAL" | "PRACTICAL";
 
-interface Recipient { id: string; name: string; email: string | null; }
+interface Recipient { id: string; name: string; email: string | null; groupId?: string | null; }
+interface ContactGroup { id: string; name: string; color: string; emoji: string | null; }
 
 interface Props {
   recipients: Recipient[];
+  contactGroups: ContactGroup[];
   isPro: boolean;
   prefilledRecipientId?: string;
   prefilledOccasion?: "birthday" | "anniversary";
-  prefilledDate?: string; // ISO date e.g. "2025-05-15"
+  prefilledDate?: string;
 }
 
 const KINDS: { id: Kind; label: string; sub: string; Ic: React.ComponentType }[] = [
@@ -202,14 +206,17 @@ const OCCASION_TRIGGER_MAP: Record<string, Trigger> = {
   anniversary: "date",
 };
 
-export default function ComposeWizard({ recipients, isPro, prefilledRecipientId, prefilledOccasion, prefilledDate }: Props) {
+export default function ComposeWizard({ recipients, contactGroups, isPro, prefilledRecipientId, prefilledOccasion, prefilledDate }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [recipientId, setRecipientId] = useState<string | null>(
-    prefilledRecipientId ?? recipients[0]?.id ?? null
+  // Multi-recipient selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    prefilledRecipientId ? new Set([prefilledRecipientId]) : new Set()
   );
-  const [newRecipientName, setNewRecipientName] = useState("");
+  const [newPeople, setNewPeople] = useState<{ name: string; email: string }[]>([]);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [kind, setKind] = useState<Kind>("text");
   const [trigger, setTrigger] = useState<Trigger>(
     prefilledOccasion ? (OCCASION_TRIGGER_MAP[prefilledOccasion] ?? "date") : "date"
@@ -225,16 +232,38 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
     if (prefilledDate) setDateVal(prefilledDate);
   }, [prefilledDate]);
 
-  const selectedRecipient = recipients.find((r) => r.id === recipientId);
-  const displayName = selectedRecipient?.name ?? (newRecipientName.trim() || "příjemce");
+  const selectedRecipients = recipients.filter(r => selectedIds.has(r.id));
+  const allSelected = [...selectedRecipients, ...newPeople];
+  const displayName = allSelected[0]?.name ?? "příjemce";
+
+  function toggleId(id: string) {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  function toggleGroup(groupId: string) {
+    const members = recipients.filter(r => r.groupId === groupId);
+    const allIn = members.every(r => selectedIds.has(r.id));
+    setSelectedIds(prev => {
+      const n = new Set(prev);
+      members.forEach(r => allIn ? n.delete(r.id) : n.add(r.id));
+      return n;
+    });
+  }
+  function addNewPerson() {
+    if (!newName.trim()) return;
+    setNewPeople(prev => [...prev, { name: newName.trim(), email: newEmail.trim() }]);
+    setNewName(""); setNewEmail("");
+  }
+  function removeNewPerson(i: number) {
+    setNewPeople(prev => prev.filter((_, idx) => idx !== i));
+  }
 
   function handleSave(isDraft: boolean) {
     const title = `${displayName} — ${kind === "text" ? "Text" : kind === "voice" ? "Hlas" : kind === "video" ? "Video" : "Fotky"}`;
     const formData = new FormData();
     formData.set("type", packType);
     formData.set("title", title);
-    if (recipientId) formData.set("recipientId", recipientId);
-    if (newRecipientName.trim()) formData.set("newRecipientName", newRecipientName.trim());
+    selectedIds.forEach(id => formData.append("recipientId", id));
+    formData.set("newPeople", JSON.stringify(newPeople));
     formData.set("kind", kind);
     formData.set("trigger", trigger);
     formData.set("date", dateVal);
@@ -248,8 +277,9 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
     });
   }
 
-  const tone = selectedRecipient ? toneFor(selectedRecipient.name) : "clay";
-  const init = selectedRecipient ? initials(selectedRecipient.name) : "?";
+  const previewRecipient = allSelected[0];
+  const tone = previewRecipient ? toneFor(previewRecipient.name) : "clay";
+  const init = previewRecipient ? initials(previewRecipient.name) : "?";
 
   return (
     <div data-arca-theme="" style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
@@ -289,59 +319,71 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
             {/* Step 01 — recipient */}
             <div>
               <Step n="01" label="Pro koho" />
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {recipients.map((r) => {
-                  const t = toneFor(r.name);
-                  const sel = recipientId === r.id;
-                  return (
-                    <button
-                      key={r.id}
-                      type="button"
-                      onClick={() => { setRecipientId(r.id); setNewRecipientName(""); }}
-                      className="arca-card"
-                      style={{
-                        padding: "8px 12px 8px 8px",
-                        display: "flex", alignItems: "center", gap: 8,
-                        background: sel ? "var(--ink)" : "var(--surface)",
-                        color: sel ? "var(--bg)" : "var(--ink)",
-                        border: `1px solid ${sel ? "var(--ink)" : "var(--hairline)"}`,
-                        cursor: "pointer", transition: "all .18s",
-                      }}
-                    >
-                      <span className="arca-avatar sm" style={{ background: sel ? "rgba(255,255,255,0.15)" : TONE_GRADS[t] }}>
-                        {initials(r.name)}
-                      </span>
-                      <span style={{ fontSize: 13, fontWeight: 500 }}>{r.name.split(" ")[0]}</span>
-                    </button>
-                  );
-                })}
-                {/* New person inline */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <button
-                    type="button"
-                    onClick={() => { setRecipientId(null); }}
-                    className="arca-card"
-                    style={{
-                      padding: "8px 14px",
-                      background: recipientId === null && newRecipientName ? "var(--ink)" : "transparent",
-                      color: recipientId === null && newRecipientName ? "var(--bg)" : "var(--muted)",
-                      borderStyle: "dashed", cursor: "pointer",
-                      display: "flex", alignItems: "center", gap: 6, transition: "all .18s",
-                    }}
-                  >
-                    <IcPlus /> nová osoba
-                  </button>
-                  {recipientId === null && (
-                    <input
-                      autoFocus
-                      className="arca-input"
-                      style={{ width: 180, padding: "8px 12px" }}
-                      placeholder="Jméno příjemce…"
-                      value={newRecipientName}
-                      onChange={(e) => setNewRecipientName(e.target.value)}
-                    />
-                  )}
+
+              {/* Selected chips */}
+              {allSelected.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+                  {selectedRecipients.map(r => (
+                    <div key={r.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 8px 5px 6px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 12.5, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
+                      <span className="arca-avatar sm" style={{ background: "rgba(255,255,255,0.15)", fontSize: 9 }}>{initials(r.name)}</span>
+                      {r.name.split(" ")[0]}
+                      <button type="button" onClick={() => toggleId(r.id)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
+                    </div>
+                  ))}
+                  {newPeople.map((p, i) => (
+                    <div key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 8px 5px 6px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 12.5, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
+                      <span className="arca-avatar sm" style={{ background: "rgba(255,255,255,0.15)", fontSize: 9 }}>{initials(p.name)}</span>
+                      {p.name.split(" ")[0]}
+                      <button type="button" onClick={() => removeNewPerson(i)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
+                    </div>
+                  ))}
                 </div>
+              )}
+
+              {/* Groups */}
+              {contactGroups.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 6 }}>Skupiny</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {contactGroups.map(g => {
+                      const members = recipients.filter(r => r.groupId === g.id);
+                      const allIn = members.length > 0 && members.every(r => selectedIds.has(r.id));
+                      return (
+                        <button key={g.id} type="button" onClick={() => toggleGroup(g.id)} disabled={members.length === 0}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: "var(--r-pill)", border: `1.5px solid ${allIn ? "var(--ink)" : "var(--hairline)"}`, background: allIn ? "var(--ink)" : "var(--surface)", color: allIn ? "var(--bg)" : "var(--ink)", fontSize: 12, fontWeight: 500, cursor: members.length === 0 ? "default" : "pointer", opacity: members.length === 0 ? 0.4 : 1, transition: "all .15s", fontFamily: "var(--f-sans)" }}>
+                          {g.emoji && <span>{g.emoji}</span>}
+                          {g.name}
+                          <span style={{ opacity: .6, fontSize: 11 }}>({members.length})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Existing contacts */}
+              {recipients.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                  {recipients.map(r => {
+                    const sel = selectedIds.has(r.id);
+                    const t = toneFor(r.name);
+                    return (
+                      <button key={r.id} type="button" onClick={() => toggleId(r.id)}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px 6px 6px", borderRadius: "var(--r-pill)", border: `1.5px solid ${sel ? "var(--ink)" : "var(--hairline)"}`, background: sel ? "var(--ink)" : "var(--surface)", color: sel ? "var(--bg)" : "var(--ink)", fontSize: 12.5, fontWeight: 500, cursor: "pointer", transition: "all .15s", fontFamily: "var(--f-sans)" }}>
+                        <span className="arca-avatar sm" style={{ background: sel ? "rgba(255,255,255,0.15)" : TONE_GRADS[t] }}>{initials(r.name)}</span>
+                        {r.name.split(" ")[0]}
+                        {sel && <IcCheck />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* New person inline */}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                <input className="arca-input" style={{ width: 150, padding: "7px 10px", fontSize: 13 }} placeholder="Jméno *" value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && addNewPerson()} />
+                <input className="arca-input" style={{ width: 180, padding: "7px 10px", fontSize: 13 }} placeholder="E-mail" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && addNewPerson()} />
+                <button type="button" onClick={addNewPerson} disabled={!newName.trim()} className="arca-btn arca-btn--ghost sm" style={{ whiteSpace: "nowrap" }}><IcPlus /> Přidat</button>
               </div>
             </div>
 
@@ -502,7 +544,7 @@ export default function ComposeWizard({ recipients, isPro, prefilledRecipientId,
 
                 <button
                   type="button"
-                  disabled={isPending || (!recipientId && !newRecipientName.trim())}
+                  disabled={isPending || (selectedIds.size === 0 && newPeople.length === 0)}
                   onClick={() => handleSave(false)}
                   className="arca-btn arca-btn--primary lg"
                   style={{ width: "100%", justifyContent: "center" }}

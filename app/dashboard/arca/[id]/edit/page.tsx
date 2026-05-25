@@ -17,25 +17,46 @@ export default async function EditArcaPage({ params }: { params: Promise<{ id: s
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
 
-  const pack = await prisma.messagePack.findUnique({
-    where: { id, ownerId: authUser.id },
-    select: {
-      id: true, title: true, type: true, status: true,
-      contents: {
-        where: { type: ContentType.TEXT },
-        select: { textBody: true },
-        take: 1,
+  const [pack, allContacts, contactGroups] = await Promise.all([
+    prisma.messagePack.findUnique({
+      where: { id, ownerId: authUser.id },
+      select: {
+        id: true, title: true, type: true, status: true,
+        contents: {
+          where: { type: ContentType.TEXT },
+          select: { textBody: true },
+          take: 1,
+        },
+        recipients: {
+          orderBy: { createdAt: "asc" },
+          select: { id: true, name: true, email: true, phone: true, challengeQuestion: true },
+        },
+        triggerCondition: {
+          select: { type: true, executeAtDate: true, inactivityDaysLimit: true, gracePeriodDays: true },
+        },
       },
-      recipients: {
-        orderBy: { createdAt: "asc" },
-        select: { id: true, name: true, email: true, phone: true, challengeQuestion: true },
-      },
-      triggerCondition: {
-        select: { type: true, executeAtDate: true, inactivityDaysLimit: true, gracePeriodDays: true },
-      },
-    },
-  });
+    }),
+    prisma.recipient.findMany({
+      where: { messagePack: { ownerId: authUser.id } },
+      select: { id: true, name: true, email: true, groupId: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+    prisma.contactGroup.findMany({
+      where: { userId: authUser.id },
+      select: { id: true, name: true, color: true, emoji: true },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
   if (!pack) notFound();
+
+  // Deduplicate contacts by email/name
+  const seenKeys = new Set<string>();
+  const contacts: { id: string; name: string; email: string | null; groupId: string | null }[] = [];
+  for (const r of allContacts) {
+    const key = r.email ?? r.name;
+    if (!seenKeys.has(key)) { seenKeys.add(key); contacts.push(r); }
+  }
 
   const triggerForClient = pack.triggerCondition
     ? {
@@ -56,6 +77,8 @@ export default async function EditArcaPage({ params }: { params: Promise<{ id: s
       initialContent={pack.contents[0]?.textBody ?? ""}
       initialRecipients={pack.recipients}
       initialTrigger={triggerForClient}
+      allContacts={contacts}
+      contactGroups={contactGroups}
     />
   );
 }

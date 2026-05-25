@@ -50,15 +50,20 @@ export async function createPackFull(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const rawType          = (formData.get("type") as string) || "EMOTIONAL";
-  const title            = (formData.get("title") as string)?.trim();
-  const text             = (formData.get("text") as string)?.trim();
-  const trigger          = (formData.get("trigger") as string) || "date";
-  const dateVal          = (formData.get("date") as string) || "";
-  const timeVal          = (formData.get("time") as string) || "08:00";
-  const recipientId      = (formData.get("recipientId") as string) || null;
-  const newRecipientName = ((formData.get("newRecipientName") as string) || "").trim();
-  const isDraft          = formData.get("draft") === "1";
+  const rawType       = (formData.get("type") as string) || "EMOTIONAL";
+  const title         = (formData.get("title") as string)?.trim();
+  const text          = (formData.get("text") as string)?.trim();
+  const trigger       = (formData.get("trigger") as string) || "date";
+  const dateVal       = (formData.get("date") as string) || "";
+  const timeVal       = (formData.get("time") as string) || "08:00";
+  const isDraft       = formData.get("draft") === "1";
+
+  // Multi-recipient: existing IDs
+  const existingIds   = formData.getAll("recipientId").map(v => String(v)).filter(Boolean);
+  // New people as JSON: [{name, email?}]
+  const newPeopleRaw  = (formData.get("newPeople") as string) || "[]";
+  let newPeople: { name: string; email?: string }[] = [];
+  try { newPeople = JSON.parse(newPeopleRaw); } catch { /* ignore */ }
 
   if (!title) return { error: "Zadej název zprávy." };
   if (!Object.values(PackType).includes(rawType as PackType)) {
@@ -95,24 +100,30 @@ export async function createPackFull(
     });
   }
 
-  // 3. Link recipient
-  let finalRecipientId: string | null = null;
-  if (recipientId) {
-    const existing = await prisma.recipient.findFirst({
-      where: { id: recipientId, messagePack: { ownerId: user.id } },
-      select: { name: true, email: true },
+  // 3. Link all recipients
+  let firstRecipientId: string | null = null;
+
+  // 3a. Existing contacts — look up original data, clone into this pack
+  if (existingIds.length > 0) {
+    const existing = await prisma.recipient.findMany({
+      where: { id: { in: existingIds }, messagePack: { ownerId: user.id } },
+      select: { name: true, email: true, phone: true },
     });
-    if (existing) {
-      const r = await prisma.recipient.create({
-        data: { messagePackId: pack.id, name: existing.name, email: existing.email },
+    for (const r of existing) {
+      const created = await prisma.recipient.create({
+        data: { messagePackId: pack.id, name: r.name, email: r.email, phone: r.phone },
       });
-      finalRecipientId = r.id;
+      if (!firstRecipientId) firstRecipientId = created.id;
     }
-  } else if (newRecipientName) {
-    const r = await prisma.recipient.create({
-      data: { messagePackId: pack.id, name: newRecipientName },
+  }
+
+  // 3b. Brand-new people
+  for (const p of newPeople) {
+    if (!p.name?.trim()) continue;
+    const created = await prisma.recipient.create({
+      data: { messagePackId: pack.id, name: p.name.trim(), email: p.email?.trim() || null },
     });
-    finalRecipientId = r.id;
+    if (!firstRecipientId) firstRecipientId = created.id;
   }
 
   // 4. Save trigger
@@ -126,8 +137,7 @@ export async function createPackFull(
     });
   }
 
-  // Redirect to the new recipient or vault
-  redirect(finalRecipientId ? `/dashboard/vault/${finalRecipientId}` : "/dashboard/vault");
+  redirect("/dashboard/vault");
 }
 
 // ─── upsertContent ─────────────────────────────────────────────────────────────
