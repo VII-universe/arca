@@ -258,7 +258,7 @@ export default function ArcaEditorNew({
           </h1>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 28 }}>
+        <div className="arca-compose-split" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 28 }}>
           {/* ── Left: steps ───────────────────────────────────────── */}
           <div className="arca-stack-5">
 
@@ -317,7 +317,7 @@ export default function ArcaEditorNew({
             {/* Step 02 – Kind */}
             <div>
               <Step n="02" label="Forma" />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+              <div className="arca-kind-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
                 {([
                   { id: "text" as Kind, label: "Text",  sub: "Dopis, věta.", Ic: IcText },
                   { id: "voice" as Kind, label: "Hlas", sub: "Nahraný hlas.", Ic: IcVoice },
@@ -350,14 +350,14 @@ export default function ArcaEditorNew({
             {/* Step 04 – Trigger */}
             <div>
               <Step n="04" label="Kdy se otevře" />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              <div className="arca-trigger-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
                 <TriggerCard active={triggerKind === "date"}       onClick={() => setTriggerKind("date")}       Ic={IcCalPlus} title="V daný den"     sub="Konkrétní datum." />
                 <TriggerCard active={triggerKind === "inactivity"} onClick={() => setTriggerKind("inactivity")} Ic={IcLock}    title="Nečinnost"      sub="Po X dnech." />
                 <TriggerCard active={triggerKind === "sealed"}     onClick={() => setTriggerKind("sealed")}     Ic={IcLock}    title="Zapečetit"      sub="Manuální potvrzení." />
               </div>
 
               {triggerKind === "date" && (
-                <div className="arca-card" style={{ padding: 18, marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="arca-card arca-date-grid" style={{ padding: 18, marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
                     <label style={{ display: "block", fontFamily: "var(--f-mono)", color: "var(--muted)", fontSize: 11, marginBottom: 6 }}>Datum</label>
                     <input type="date" className="arca-input" value={dateVal} onChange={e => setDateVal(e.target.value)} />
@@ -388,7 +388,7 @@ export default function ArcaEditorNew({
           </div>
 
           {/* ── Right: preview & actions ──────────────────────────── */}
-          <div style={{ position: "sticky", top: 90, alignSelf: "start" }}>
+          <div className="arca-compose-preview" style={{ position: "sticky", top: 90, alignSelf: "start" }}>
             <div className="arca-card elev" style={{ overflow: "hidden" }}>
               {/* Preview header */}
               <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--hairline)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
