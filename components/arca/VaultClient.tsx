@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createGroup, deleteGroup, updateGroup, assignPersonGroup } from "@/app/actions/groups";
+import { createContact } from "@/app/actions/contacts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -594,6 +595,83 @@ function FilterBar({
   );
 }
 
+// ── AddPersonForm ─────────────────────────────────────────────────────────────
+
+function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
+  const [open, setOpen] = useState(false);
+  const [pending, startT] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (open) nameRef.current?.focus(); }, [open]);
+
+  function handleSubmit(formData: FormData) {
+    setError(null);
+    startT(async () => {
+      const res = await createContact(formData);
+      if ("error" in res) { setError(res.error); return; }
+      onAdded({
+        id: res.id,
+        name: res.name,
+        email: res.email,
+        packs: [{ id: res.packId, type: "EMOTIONAL", status: "DRAFT", executeAtDate: null }],
+        groupId: null,
+        group: null,
+      });
+      toast.success(`${res.name} přidán/a.`);
+      setOpen(false);
+    });
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="arca-recip"
+        style={{ borderStyle: "dashed", justifyContent: "center", background: "transparent", color: "var(--muted)", gap: 8, cursor: "pointer", border: "1px dashed var(--hairline-2)" }}
+      >
+        <IcPlus /> Přidat dalšího člověka
+      </button>
+    );
+  }
+
+  return (
+    <form
+      action={handleSubmit}
+      className="arca-recip"
+      style={{ flexDirection: "column", alignItems: "stretch", gap: 10, padding: "16px 18px" }}
+    >
+      {error && (
+        <p style={{ fontSize: 12, color: "#C0392B", margin: 0 }}>{error}</p>
+      )}
+      <input
+        ref={nameRef}
+        name="name"
+        required
+        placeholder="Jméno *"
+        className="arca-input"
+        style={{ fontSize: 13 }}
+      />
+      <input
+        name="email"
+        type="email"
+        placeholder="E-mail (volitelný)"
+        className="arca-input"
+        style={{ fontSize: 13 }}
+      />
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="submit" disabled={pending} className="arca-btn arca-btn--primary sm" style={{ flex: 1 }}>
+          {pending ? "Ukládám…" : "Přidat"}
+        </button>
+        <button type="button" onClick={() => { setOpen(false); setError(null); }} className="arca-btn arca-btn--ghost sm">
+          Zrušit
+        </button>
+      </div>
+    </form>
+  );
+}
+
 // ── PersonCard ────────────────────────────────────────────────────────────────
 
 function PersonCard({
@@ -765,16 +843,9 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
             />
           ))}
 
-          {/* Add person placeholder */}
+          {/* Add person inline form */}
           {activeGroup === null && (
-            <Link href="/dashboard/arca/new" style={{ textDecoration: "none" }}>
-              <div className="arca-recip" style={{
-                borderStyle: "dashed", justifyContent: "center",
-                background: "transparent", color: "var(--muted)", gap: 8,
-              }}>
-                <IcPlus /> Přidat dalšího člověka
-              </div>
-            </Link>
+            <AddPersonForm onAdded={(p) => setPeople(prev => [...prev, p])} />
           )}
         </div>
       )}
