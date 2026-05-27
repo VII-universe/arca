@@ -82,13 +82,15 @@ async function cropAndUpload(
       canvas.height = Math.round(sh);
       const ctx = canvas.getContext("2d");
       if (!ctx) { resolve(null); return; }
+      // Leave canvas transparent — toBlob with PNG preserves alpha channel.
+      // Do NOT fill with white so PNGs with transparent backgrounds stay transparent.
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(async (blob) => {
         if (!blob) { resolve(null); return; }
-        const file = new File([blob], "cropped.jpg", { type: "image/jpeg" });
+        const file = new File([blob], "cropped.png", { type: "image/png" });
         const url = await uploadToSupabase(file, userId, packId);
         resolve(url);
-      }, "image/jpeg", 0.92);
+      }, "image/png");
     };
     img.onerror = () => resolve(null);
     img.crossOrigin = "anonymous";
@@ -380,6 +382,7 @@ function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps)
           outlineOffset: 2,
           cursor: dragging ? "ew-resize" : "default",
           transition: dragging ? "none" : "outline 0.1s",
+          background: "repeating-conic-gradient(#d0ccca 0% 25%, #f0ede9 0% 50%) 0 0 / 12px 12px",
         }}
       />
 
@@ -956,6 +959,8 @@ export default function ArcaRichEditor({
             border-radius: 8px; max-width: 100%; cursor: pointer;
             box-shadow: 0 2px 8px rgba(28,26,22,0.12);
             transition: outline 0.1s;
+            background: repeating-conic-gradient(#d0ccca 0% 25%, #f0ede9 0% 50%)
+                        0 0 / 12px 12px;
           }
           .arca-prose .tiptap img.ProseMirror-selectednode { outline: 2px solid var(--accent); outline-offset: 2px; }
           .arca-prose .tiptap img[data-align="center"] { display: block; margin: 12px auto; }
