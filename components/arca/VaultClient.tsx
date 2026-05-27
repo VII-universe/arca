@@ -597,13 +597,51 @@ function FilterBar({
 
 // ── AddPersonForm ─────────────────────────────────────────────────────────────
 
+const PERSON_SECTIONS = [
+  {
+    key: "channels",
+    label: "Telefon & messenger",
+    fields: [
+      { name: "phone",     label: "Telefon",   placeholder: "+420 600 000 000", type: "tel"  },
+      { name: "whatsapp",  label: "WhatsApp",  placeholder: "+420 600 000 000", type: "tel"  },
+    ],
+  },
+  {
+    key: "social",
+    label: "Sociální sítě",
+    fields: [
+      { name: "facebook",  label: "Facebook",  placeholder: "facebook.com/…",   type: "text" },
+      { name: "instagram", label: "Instagram", placeholder: "@uživatelskéjméno", type: "text" },
+    ],
+  },
+  {
+    key: "address",
+    label: "Adresa",
+    fields: [
+      { name: "address",   label: "Adresa",    placeholder: "Ulice, město, PSČ", type: "text" },
+    ],
+  },
+  {
+    key: "personal",
+    label: "Osobní info",
+    fields: [
+      { name: "relationship", label: "Vztah",      placeholder: "máma, partner, kamarád…", type: "text" },
+      { name: "birthday",     label: "Narozeniny", placeholder: "",                         type: "date" },
+      { name: "anniversary",  label: "Výročí",     placeholder: "",                         type: "date" },
+    ],
+  },
+];
+
 function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [pending, startT] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (open) nameRef.current?.focus(); }, [open]);
+
+  function toggle(key: string) { setExpanded(e => ({ ...e, [key]: !e[key] })); }
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -620,6 +658,7 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
       });
       toast.success(`${res.name} přidán/a.`);
       setOpen(false);
+      setExpanded({});
     });
   }
 
@@ -640,31 +679,87 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
     <form
       action={handleSubmit}
       className="arca-recip"
-      style={{ flexDirection: "column", alignItems: "stretch", gap: 10, padding: "16px 18px" }}
+      style={{ flexDirection: "column", alignItems: "stretch", gap: 10, padding: "18px 18px", gridColumn: "1 / -1" }}
     >
-      {error && (
-        <p style={{ fontSize: 12, color: "#C0392B", margin: 0 }}>{error}</p>
-      )}
-      <input
-        ref={nameRef}
-        name="name"
-        required
-        placeholder="Jméno *"
-        className="arca-input"
-        style={{ fontSize: 13 }}
-      />
-      <input
-        name="email"
-        type="email"
-        placeholder="E-mail (volitelný)"
-        className="arca-input"
-        style={{ fontSize: 13 }}
-      />
-      <div style={{ display: "flex", gap: 8 }}>
-        <button type="submit" disabled={pending} className="arca-btn arca-btn--primary sm" style={{ flex: 1 }}>
-          {pending ? "Ukládám…" : "Přidat"}
+      {error && <p style={{ fontSize: 12, color: "#C0392B", margin: 0 }}>{error}</p>}
+
+      {/* Required fields */}
+      <div className="arca-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div>
+          <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>Celé jméno *</label>
+          <input ref={nameRef} name="name" required placeholder="Jan Novák" className="arca-input" style={{ fontSize: 13 }} />
+        </div>
+        <div>
+          <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>E-mail</label>
+          <input name="email" type="email" placeholder="jan@example.com" className="arca-input" style={{ fontSize: 13 }} />
+        </div>
+      </div>
+
+      {/* Expandable channel sections */}
+      {PERSON_SECTIONS.map(section => (
+        <div key={section.key}>
+          <button
+            type="button"
+            onClick={() => toggle(section.key)}
+            style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 12.5, fontFamily: "var(--f-sans)", padding: "2px 0", width: "100%", textAlign: "left" }}
+          >
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+              style={{ transition: "transform .15s", transform: expanded[section.key] ? "rotate(90deg)" : undefined }}>
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+            {section.label}
+          </button>
+          {expanded[section.key] && (
+            <div className="arca-form-grid" style={{ display: "grid", gridTemplateColumns: section.fields.length > 1 ? "1fr 1fr" : "1fr", gap: 10, marginTop: 8 }}>
+              {section.fields.map(f => (
+                <div key={f.name}>
+                  <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>{f.label}</label>
+                  <input name={f.name} type={f.type} placeholder={f.placeholder} className="arca-input" style={{ fontSize: 13 }} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Notes */}
+      {expanded.notes ? (
+        <div>
+          <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>Poznámky</label>
+          <textarea name="notes" rows={3} placeholder="Co o tomto člověku chceš pamatovat…" className="arca-input" style={{ fontSize: 13, resize: "vertical" }} />
+        </div>
+      ) : (
+        <button type="button" onClick={() => setExpanded(e => ({ ...e, notes: true }))}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 12.5, fontFamily: "var(--f-sans)", padding: "2px 0", textAlign: "left" }}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M9 6l6 6-6 6"/></svg>
+          Poznámky
         </button>
-        <button type="button" onClick={() => { setOpen(false); setError(null); }} className="arca-btn arca-btn--ghost sm">
+      )}
+
+      {/* Security challenge */}
+      <div>
+        <button type="button" onClick={() => toggle("challenge")}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 12.5, fontFamily: "var(--f-sans)", padding: "2px 0", width: "100%", textAlign: "left" }}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+            style={{ transition: "transform .15s", transform: expanded.challenge ? "rotate(90deg)" : undefined }}>
+            <path d="M9 6l6 6-6 6"/>
+          </svg>
+          Bezpečnostní otázka
+        </button>
+        {expanded.challenge && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+            <p className="arca-sub" style={{ fontSize: 12, margin: 0 }}>Příjemce musí znát odpověď, aby zprávu otevřel.</p>
+            <input name="challengeQuestion" placeholder="Jak se jmenoval náš první pes?" className="arca-input" style={{ fontSize: 13 }} />
+            <input name="challengeAnswer" placeholder="Odpověď" className="arca-input" style={{ fontSize: 13 }} />
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+        <button type="submit" disabled={pending} className="arca-btn arca-btn--primary sm">
+          {pending ? "Ukládám…" : <><IcPlus /> Přidat osobu</>}
+        </button>
+        <button type="button" onClick={() => { setOpen(false); setError(null); setExpanded({}); }} className="arca-btn arca-btn--ghost sm">
           Zrušit
         </button>
       </div>
