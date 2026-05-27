@@ -104,6 +104,7 @@ model User {
   guardians      Guardian[]
   categories     Category[]
   contactGroups  ContactGroup[]
+  blueprintItems BlueprintItem[]
 
   // Executor rows where this user is the pack owner
   ownedExecutors    Executor[] @relation("ExecutorOwner")
@@ -469,4 +470,24 @@ model GuardianToken {
 
   @@index([token])
   @@index([packId])
+}
+
+// ---------------------------------------------------------------------------
+// BlueprintItem  (Manuál k životu — operativní položky)
+// ---------------------------------------------------------------------------
+
+model BlueprintItem {
+  id         String   @id @default(cuid())
+  category   String   // "SUBSCRIPTION" | "DOCUMENT" | "INSTRUCTION" | "PROPERTY"
+  title      String
+  content    String
+  isCritical Boolean  @default(false)
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
 }

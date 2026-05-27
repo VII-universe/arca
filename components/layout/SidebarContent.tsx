@@ -35,6 +35,7 @@ const IcSearch    = () => <Ic><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-
 const IcPlus      = () => <Ic><path d="M12 5v14M5 12h14"/></Ic>;
 const IcSparkle   = () => <Ic><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></Ic>;
 const IcClose     = () => <Ic size={16}><path d="M18 6L6 18M6 6l12 12"/></Ic>;
+const IcBlueprint = () => <Ic><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></Ic>;
 
 const TONE_COLORS: Record<string, string> = {
   clay: "linear-gradient(135deg, #B6754A, #8B5430)",
@@ -72,6 +73,7 @@ export default function SidebarContent({
     { href: "/dashboard/arca/new",  label: "Nová zpráva",icon: <IcCompose /> },
     { href: "/dashboard/calendar",  label: "Kalendář",   icon: <IcCalendar /> },
     { href: "/dashboard/guardians", label: "Strážci",    icon: <IcGuardians />, count: guardianCount },
+    { href: "/dashboard/blueprint", label: "Manuál k životu", icon: <IcBlueprint /> },
   ];
 
   function isActive(item: NavItem) {
