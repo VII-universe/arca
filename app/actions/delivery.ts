@@ -5,6 +5,9 @@ import { scryptSync, randomBytes } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { TriggerType, PackStatus, ActivitySource } from "@/lib/prisma/generated";
+import { render } from "@react-email/render";
+import { resend, FROM_EMAIL, APP_URL } from "@/lib/resend";
+import { SanctuaryInvitation } from "@/emails/SanctuaryInvitation";
 
 // ─── Auth helper ──────────────────────────────────────────────────────────────
 
@@ -239,5 +242,53 @@ export async function cancelDelivery(
   });
 
   revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+// ─── sendSanctuaryInvitation ──────────────────────────────────────────────────
+// Sends the cinematic invitation e-mail to a recipient.
+// All sensitive data (livingLinkHash, email, owner name) is fetched server-side
+// so the client only passes IDs — never the token or email address.
+
+export async function sendSanctuaryInvitation(
+  packId: string,
+  recipientId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const user = await requireUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const pack = await prisma.messagePack.findUnique({
+    where: { id: packId, ownerId: user.id },
+    select: { livingLinkHash: true },
+  });
+  if (!pack) return { error: "Schránka nenalezena." };
+
+  const recipient = await prisma.recipient.findUnique({
+    where: { id: recipientId, messagePackId: packId },
+    select: { name: true, email: true },
+  });
+  if (!recipient) return { error: "Příjemce nenalezen." };
+  if (!recipient.email) return { error: "Příjemce nemá e-mailovou adresu." };
+
+  const owner = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { name: true },
+  });
+
+  // Build URL server-side — never shortened or passed through third parties
+  const sanctuaryUrl = `${APP_URL}/s/${pack.livingLinkHash}`;
+
+  const html = await render(
+    SanctuaryInvitation({ ownerName: owner?.name ?? "ARCA", sanctuaryUrl })
+  );
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: recipient.email,
+    subject: "Zpráva, která čeká právě na tebe.",
+    html,
+  });
+
+  if (error) return { error: (error as { message?: string }).message ?? "Chyba při odesílání." };
   return { ok: true };
 }

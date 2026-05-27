@@ -5,7 +5,9 @@ import { prisma } from "@/lib/prisma/client";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import RecipientTimeline from "@/components/dashboard/RecipientTimeline";
 import RecipientProfileEditor from "@/components/arca/RecipientProfileEditor";
+import DeliverySimulator from "@/components/arca/DeliverySimulator";
 import { getSignedAvatarUrl, getSignedMemoryUrl } from "@/app/actions/recipients";
+import { APP_URL } from "@/lib/resend";
 
 export async function generateMetadata({ params }: { params: Promise<{ personId: string }> }) {
   const { personId } = await params;
@@ -123,7 +125,7 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
     where: { ownerId: authUser.id, recipients: { some: { id: personId } } },
     orderBy: { createdAt: "desc" },
     select: {
-      id: true, title: true, type: true, status: true, createdAt: true,
+      id: true, title: true, type: true, status: true, createdAt: true, livingLinkHash: true,
       triggerCondition: { select: { type: true, executeAtDate: true, inactivityDaysLimit: true } },
       contents: {
         select: { id: true, type: true, textBody: true, s3FileKey: true },
@@ -282,6 +284,19 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
                   </div>
                 </div>
               </div>
+            )}
+
+            {packs.length > 0 && (
+              <DeliverySimulator
+                personId={recipient.id}
+                personEmail={recipient.email}
+                packs={packs.map((p) => ({
+                  id: p.id,
+                  title: p.title,
+                  livingLinkHash: p.livingLinkHash,
+                }))}
+                appUrl={APP_URL}
+              />
             )}
 
             <div className="arca-card flat" style={{ background: "var(--accent-tint)", border: "none" }}>
