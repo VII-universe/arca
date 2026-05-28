@@ -45,7 +45,7 @@ export async function createPack(
 export async function createPackFull(
   _prev: { error: string } | null,
   formData: FormData
-): Promise<{ error: string } | null> {
+): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -137,7 +137,7 @@ export async function createPackFull(
     });
   }
 
-  redirect("/dashboard/vault");
+  return { ok: true };
 }
 
 // ─── upsertContent ─────────────────────────────────────────────────────────────

@@ -226,6 +226,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
   const [dateVal, setDateVal] = useState(prefilledDate ?? "");
   const [timeVal, setTimeVal] = useState("08:00");
   const [showPreview, setShowPreview] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Sync date from URL param — handles App Router component reuse across navigations
   useEffect(() => {
@@ -271,9 +272,14 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
     formData.set("text", text);
     formData.set("draft", isDraft ? "1" : "0");
 
+    setSaveError(null);
     startTransition(async () => {
-      // createPackFull saves all data and redirects to vault
-      await createPackFull(null, formData);
+      const result = await createPackFull(null, formData);
+      if ("error" in result) {
+        setSaveError(result.error);
+        return;
+      }
+      router.push("/dashboard/vault");
     });
   }
 
@@ -561,6 +567,11 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
                 >
                   Uložit jako koncept
                 </button>
+                {saveError && (
+                  <p style={{ fontSize: 12, color: "var(--destructive, #e05454)", margin: "8px 0 0", textAlign: "center" }}>
+                    {saveError}
+                  </p>
+                )}
               </div>
             </div>
 
