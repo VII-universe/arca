@@ -105,6 +105,7 @@ model User {
   categories     Category[]
   contactGroups  ContactGroup[]
   blueprintItems BlueprintItem[]
+  settings       UserSettings?
 
   // Executor rows where this user is the pack owner
   ownedExecutors    Executor[] @relation("ExecutorOwner")
@@ -490,4 +491,26 @@ model BlueprintItem {
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
+}
+
+// ---------------------------------------------------------------------------
+// UserSettings  (Global preferences + dead-man's switch)
+// ---------------------------------------------------------------------------
+
+model UserSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Global dead-man's switch
+  switchEnabled   Boolean   @default(false)
+  switchType      String    @default("INACTIVITY") // "INACTIVITY" | "SPECIFIC_DATE"
+  inactivityDays  Int       @default(90)
+  executeAt       DateTime?
+  gracePeriodDays Int       @default(14)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([switchEnabled, switchType])
 }
