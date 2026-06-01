@@ -4,7 +4,6 @@ node_modules
 
 /generated/prisma
 .next
-lib/prisma/generated/
 .env.local
 .vercel
 *.zip

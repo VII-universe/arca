@@ -1,0 +1,521 @@
+// Final Words — definitive schema
+// PostgreSQL via Prisma ORM
+//
+// Design principles:
+//  - All PKs use cuid() (swap to uuid() if you need RFC-4122 UUIDs)
+//  - Encrypted fields (textBody, challengeAnswerHash) are stored as ciphertext
+//    strings; encryption/decryption is handled at the application layer
+//  - Every column touched by a background cron job has an explicit index
+//  - 1-to-1 relations use @unique on the FK side (TriggerCondition → MessagePack)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/prisma/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URL is configured in prisma.config.ts (Prisma 7+ requirement)
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum PackType {
+  EMOTIONAL // time capsule — opened on a date or after death
+  PRACTICAL // password vault / practical documents
+}
+
+enum PackStatus {
+  DRAFT
+  ACTIVE
+  GRACE_PERIOD // inactivity hit, no guardians — user is notified directly
+  PENDING_GUARDIAN_APPROVAL // inactivity hit, guardians are being consulted
+  TRIGGERED // delivery pipeline running
+  DELIVERED
+  ARCHIVED
+}
+
+enum GuardianActionType {
+  CONFIRM_ALIVE // Guardian says user is fine — reset inactivity timer
+  RELEASE // Guardian authorises immediate delivery
+}
+
+enum ContentType {
+  TEXT
+  VIDEO
+  AUDIO
+  FILE
+}
+
+enum TriggerType {
+  SPECIFIC_DATE // executeAtDate is set
+  INACTIVITY // inactivityDaysLimit is set; cron compares against User.lastActiveAt
+  MANUAL_EMERGENCY // an Executor initiates delivery manually
+}
+
+enum TriggerStatus {
+  PENDING
+  IN_GRACE_PERIOD
+  EXECUTED
+}
+
+enum ExecutorStatus {
+  PENDING_INVITE
+  ACCEPTED
+  REJECTED
+}
+
+enum ActivitySource {
+  APP_LOGIN
+  MANUAL_CHECK_IN
+  PASSIVE_API_SYNC
+}
+
+// ---------------------------------------------------------------------------
+// User
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Core field for the dead-man switch. The inactivity cron filters:
+  //   WHERE lastActiveAt < (NOW() - INTERVAL '<inactivityDaysLimit> days')
+  // Indexed because this comparison runs on every cron tick across all users.
+  lastActiveAt DateTime @default(now())
+
+  // Unique secret used in the heartbeat webhook URL.
+  // Defaults to a UUID so existing rows are populated automatically by the DB.
+  webhookSecret String @unique @default(uuid())
+
+  // Monetization
+  role                 String  @default("USER") // "USER" | "ADMIN"
+  isPremium            Boolean @default(false)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+
+  messagePacks   MessagePack[]
+  activityLogs   ActivityLog[]
+  guardians      Guardian[]
+  categories     Category[]
+  contactGroups  ContactGroup[]
+  blueprintItems BlueprintItem[]
+  settings       UserSettings?
+
+  // Executor rows where this user is the pack owner
+  ownedExecutors    Executor[] @relation("ExecutorOwner")
+  // Executor rows where this user acts as the trusted keymaster
+  assignedExecutors Executor[] @relation("ExecutorKeymaster")
+
+  @@index([lastActiveAt]) // primary target for the inactivity cron job
+  @@index([webhookSecret]) // heartbeat route looks up by this
+  @@index([stripeCustomerId])
+}
+
+// ---------------------------------------------------------------------------
+// ContactGroup  (User-defined groups for recipients and guardians)
+// ---------------------------------------------------------------------------
+
+model ContactGroup {
+  id    String  @id @default(cuid())
+  name  String
+  color String  @default("clay") // "clay" | "sage" | "sky" | "ink"
+  emoji String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  recipients Recipient[]
+  guardians  Guardian[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// MessagePack
+// ---------------------------------------------------------------------------
+
+model MessagePack {
+  id String @id @default(cuid())
+
+  // livingLinkHash is the token embedded in the recipient-facing public URL.
+  // Generated as a crypto-random hex string at the application layer.
+  livingLinkHash String @unique
+
+  title  String
+  type   PackType
+  status PackStatus @default(DRAFT)
+
+  // Pro features
+  isEncrypted      Boolean @default(false)
+  physicalDelivery Boolean @default(false)
+
+  // Optional category grouping
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  contents         MessageContent[]
+  recipients       Recipient[]
+  chapters         Chapter[]
+  journalEntries   RecipientJournal[]
+  guardianTokens   GuardianToken[]
+  // Nullable until the user configures a delivery trigger
+  triggerCondition TriggerCondition?
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([status]) // background jobs filter by status (e.g. find all GRACE_PERIOD packs)
+}
+
+// ---------------------------------------------------------------------------
+// Category  (User-defined labels for organising Arcas)
+// ---------------------------------------------------------------------------
+
+model Category {
+  id    String  @id @default(cuid())
+  name  String
+  color String? // tailwind colour key e.g. "rose", "sky", "violet"
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  messagePacks MessagePack[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Chapter  (Drip Delivery — parts of the Arca that unlock at different times)
+// ---------------------------------------------------------------------------
+
+model Chapter {
+  id      String @id @default(cuid())
+  title   String
+  content String @default("") // HTML from editor
+  order   Int    @default(0)
+
+  // Unlock condition — exactly one of the three is set, or none (= immediate)
+  unlockDate      DateTime? // absolute calendar date
+  unlockDelayDays Int? // N days after the main trigger fires
+
+  messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
+  messagePackId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([messagePackId, order])
+}
+
+// ---------------------------------------------------------------------------
+// RecipientJournal  (Private grief journal attached to a living-link Arca)
+// ---------------------------------------------------------------------------
+
+model RecipientJournal {
+  id      String @id @default(cuid())
+  content String // freeform text
+
+  messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
+  messagePackId String
+
+  createdAt DateTime @default(now())
+
+  @@index([messagePackId])
+}
+
+// ---------------------------------------------------------------------------
+// MessageContent
+// ---------------------------------------------------------------------------
+
+model MessageContent {
+  id String @id @default(cuid())
+
+  type ContentType
+
+  // textBody MUST be encrypted (e.g. AES-256-GCM) before writing to the DB.
+  // Store as base64-encoded ciphertext. Decryption happens in the service layer.
+  textBody  String? // for TEXT type
+  s3FileKey String? // for VIDEO / AUDIO / FILE — object key inside S3/R2 bucket
+
+  // Micro-theming: curated palette for premium letter styling.
+  // null = default (inherits editor/sanctuary theme)
+  backgroundColor String?
+  textColor       String?
+
+  createdAt DateTime @default(now())
+
+  messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
+  messagePackId String
+
+  @@index([messagePackId])
+}
+
+// ---------------------------------------------------------------------------
+// Recipient
+// ---------------------------------------------------------------------------
+
+model Recipient {
+  id    String  @id @default(cuid())
+  name  String
+  email String?
+  phone String?
+
+  // Optional security gate: the recipient must answer a challenge question
+  // before unlocking the pack. Store the answer as an argon2/bcrypt hash.
+  challengeQuestion   String?
+  challengeAnswerHash String?
+
+  // Extended profile
+  birthday     DateTime? // narozeniny
+  anniversary  DateTime? // výročí vztahu (první setkání, svatba...)
+  relationship String? // "máma" | "táta" | "partner" | "kamarád" | custom
+  notes        String? // volné poznámky o člověku
+  avatarUrl    String? // cesta k souboru v Supabase Storage (ne public URL)
+
+  // Additional contact channels
+  whatsapp  String?
+  facebook  String?
+  instagram String?
+  address   String?
+
+  // Optional group assignment (deduped person level)
+  group   ContactGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  groupId String?
+
+  createdAt DateTime @default(now())
+
+  messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
+  messagePackId String
+
+  memories Memory[]
+
+  @@index([messagePackId])
+  @@index([groupId])
+}
+
+// ---------------------------------------------------------------------------
+// Memory  (Galerie okamžiků — vzpomínky navázané na příjemce)
+// ---------------------------------------------------------------------------
+
+model Memory {
+  id         String    @id @default(cuid())
+  title      String?
+  note       String? // příběh / popis
+  mediaUrl   String? // cesta k souboru v Supabase Storage
+  mediaType  String? // "image" | "audio" | "video"
+  happenedAt DateTime? // kdy se to stalo
+
+  recipient   Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+
+  createdAt DateTime @default(now())
+
+  @@index([recipientId])
+  @@index([happenedAt])
+}
+
+// ---------------------------------------------------------------------------
+// TriggerCondition  (1-to-1 with MessagePack)
+// ---------------------------------------------------------------------------
+
+model TriggerCondition {
+  id String @id @default(cuid())
+
+  type   TriggerType
+  status TriggerStatus @default(PENDING)
+
+  // SPECIFIC_DATE: fire when NOW() >= executeAtDate.
+  // Indexed as part of the compound index below — the date cron scans it.
+  executeAtDate DateTime?
+
+  // INACTIVITY: fire when (NOW() - User.lastActiveAt) > inactivityDaysLimit days.
+  inactivityDaysLimit Int?
+
+  // After a trigger fires the pack enters GRACE_PERIOD for this many days,
+  // giving the owner or an executor a window to cancel or confirm delivery.
+  gracePeriodDays Int @default(14)
+
+  // Set when the trigger first fires (marks the start of the grace period).
+  triggeredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // @unique enforces the 1-to-1 at the DB level; Prisma exposes it as a
+  // nullable field on MessagePack rather than a List.
+  messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
+  messagePackId String      @unique
+
+  // Compound index: date cron query is
+  //   WHERE status = 'PENDING' AND executeAtDate <= NOW()
+  @@index([status, executeAtDate])
+  // Separate index for inactivity cron (joins User table, no date column filter)
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Executor  (Klíčník / Keymaster)
+// ---------------------------------------------------------------------------
+//
+// A trusted third-party who can:
+//   a) confirm the owner's death or incapacitation, OR
+//   b) trigger a MANUAL_EMERGENCY delivery.
+//
+// Both owner and executor are Users; executor may be null until the invite
+// is accepted and the invitee creates an account.
+// ---------------------------------------------------------------------------
+
+model Executor {
+  id     String         @id @default(cuid())
+  status ExecutorStatus @default(PENDING_INVITE)
+
+  // Email used to send the invite (may differ from executor.email before
+  // account creation — allows inviting people who aren't yet on the platform)
+  inviteEmail String
+
+  invitedAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  // The user who created this trust relationship
+  owner   User   @relation("ExecutorOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  // The user acting as keymaster (null until they accept and register)
+  executor   User?   @relation("ExecutorKeymaster", fields: [executorId], references: [id], onDelete: SetNull)
+  executorId String?
+
+  @@index([ownerId])
+  @@index([executorId])
+}
+
+// ---------------------------------------------------------------------------
+// ActivityLog
+// ---------------------------------------------------------------------------
+//
+// Append-only audit trail of every signal proving the user is alive.
+// The inactivity cron does NOT read this table directly — it reads the
+// denormalized User.lastActiveAt for speed. This table exists for:
+//   - Compliance and legal audit trails
+//   - Debugging unexpected trigger firings
+//   - User-facing "your activity" history view
+// ---------------------------------------------------------------------------
+
+model ActivityLog {
+  id        String         @id @default(cuid())
+  source    ActivitySource
+  timestamp DateTime       @default(now())
+
+  // Optional JSON metadata: IP address, device fingerprint, user-agent, etc.
+  metadata Json?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([userId, timestamp]) // user timeline queries: "show me my activity"
+  @@index([timestamp]) // global admin / compliance audit queries
+}
+
+// ---------------------------------------------------------------------------
+// Guardian  (Trusted contacts consulted before triggering delivery)
+// ---------------------------------------------------------------------------
+
+model Guardian {
+  id    String  @id @default(cuid())
+  name  String
+  email String
+  phone String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  group   ContactGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  groupId String?
+
+  createdAt DateTime @default(now())
+
+  tokens GuardianToken[]
+
+  @@index([userId])
+  @@index([groupId])
+}
+
+// ---------------------------------------------------------------------------
+// GuardianToken  (Single-use action links sent to guardians via email)
+// ---------------------------------------------------------------------------
+
+model GuardianToken {
+  id    String @id @default(cuid())
+  token String @unique @default(cuid())
+
+  guardian   Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  guardianId String
+
+  messagePack MessagePack @relation(fields: [packId], references: [id], onDelete: Cascade)
+  packId      String
+
+  action    GuardianActionType
+  usedAt    DateTime?
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([packId])
+}
+
+// ---------------------------------------------------------------------------
+// BlueprintItem  (Manuál k životu — operativní položky)
+// ---------------------------------------------------------------------------
+
+model BlueprintItem {
+  id         String  @id @default(cuid())
+  category   String // "SUBSCRIPTION" | "DOCUMENT" | "INSTRUCTION" | "PROPERTY"
+  title      String
+  content    String
+  isCritical Boolean @default(false)
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+// ---------------------------------------------------------------------------
+// UserSettings  (Global preferences + dead-man's switch)
+// ---------------------------------------------------------------------------
+
+model UserSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Global dead-man's switch
+  switchEnabled   Boolean   @default(false)
+  switchType      String    @default("INACTIVITY") // "INACTIVITY" | "SPECIFIC_DATE"
+  inactivityDays  Int       @default(90)
+  executeAt       DateTime?
+  gracePeriodDays Int       @default(14)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([switchEnabled, switchType])
+}
