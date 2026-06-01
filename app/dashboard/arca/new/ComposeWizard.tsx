@@ -223,6 +223,8 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
   );
   const [packType, setPackType] = useState<PackType>("EMOTIONAL");
   const [text, setText] = useState("");
+  const [bgColor,  setBgColor]  = useState<string | null>(null);
+  const [txtColor, setTxtColor] = useState<string | null>(null);
   const [dateVal, setDateVal] = useState(prefilledDate ?? "");
   const [timeVal, setTimeVal] = useState("08:00");
   const [showPreview, setShowPreview] = useState(false);
@@ -271,6 +273,8 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
     formData.set("time", timeVal);
     formData.set("text", text);
     formData.set("draft", isDraft ? "1" : "0");
+    if (bgColor)  formData.set("backgroundColor", bgColor);
+    if (txtColor) formData.set("textColor", txtColor);
 
     setSaveError(null);
     startTransition(async () => {
@@ -433,6 +437,9 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
                   onChange={setText}
                   placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
                   minHeight={260}
+                  backgroundColor={bgColor}
+                  textColor={txtColor}
+                  onThemeChange={(bg, text) => { setBgColor(bg); setTxtColor(text); }}
                 />
               )}
               {kind === "voice" && <VoiceRecorder />}

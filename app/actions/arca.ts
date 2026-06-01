@@ -54,6 +54,8 @@ export async function createPackFull(
   const title         = (formData.get("title") as string)?.trim();
   const text          = (formData.get("text") as string)?.trim();
   const trigger       = (formData.get("trigger") as string) || "date";
+  const backgroundColor = (formData.get("backgroundColor") as string) || null;
+  const textColor       = (formData.get("textColor") as string) || null;
   const dateVal       = (formData.get("date") as string) || "";
   const timeVal       = (formData.get("time") as string) || "08:00";
   const isDraft       = formData.get("draft") === "1";
@@ -96,7 +98,13 @@ export async function createPackFull(
   // 2. Save text content if provided
   if (text) {
     await prisma.messageContent.create({
-      data: { messagePackId: pack.id, type: ContentType.TEXT, textBody: text },
+      data: {
+        messagePackId: pack.id,
+        type: ContentType.TEXT,
+        textBody: text,
+        backgroundColor,
+        textColor,
+      },
     });
   }
 
@@ -143,7 +151,8 @@ export async function createPackFull(
 // ─── upsertContent ─────────────────────────────────────────────────────────────
 export async function upsertContent(
   packId: string,
-  textBody: string
+  textBody: string,
+  opts?: { backgroundColor?: string | null; textColor?: string | null }
 ): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const {
@@ -163,14 +172,19 @@ export async function upsertContent(
     select: { id: true },
   });
 
+  const colorData = {
+    backgroundColor: opts?.backgroundColor ?? null,
+    textColor: opts?.textColor ?? null,
+  };
+
   if (existing) {
     await prisma.messageContent.update({
       where: { id: existing.id },
-      data: { textBody },
+      data: { textBody, ...colorData },
     });
   } else {
     await prisma.messageContent.create({
-      data: { messagePackId: packId, type: ContentType.TEXT, textBody },
+      data: { messagePackId: packId, type: ContentType.TEXT, textBody, ...colorData },
     });
   }
 

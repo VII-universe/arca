@@ -252,6 +252,11 @@ model MessageContent {
   textBody  String? // for TEXT type
   s3FileKey String? // for VIDEO / AUDIO / FILE — object key inside S3/R2 bucket
 
+  // Micro-theming: curated palette for premium letter styling.
+  // null = default (inherits editor/sanctuary theme)
+  backgroundColor String?
+  textColor       String?
+
   createdAt DateTime @default(now())
 
   messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)

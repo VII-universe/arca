@@ -462,17 +462,40 @@ export default function SanctuaryClient({
             <SectionTag roman="I" label="Zpráva" />
 
             {textContent?.textBody && (
-              <div
-                style={{
-                  fontFamily: "var(--font-playfair), Georgia, serif",
-                  fontSize: "clamp(16px, 2vw, 18.5px)",
-                  lineHeight: 1.95,
-                  color: "rgba(245,240,223,0.9)",
-                  fontWeight: 400,
-                  letterSpacing: "0.01em",
-                }}
-                dangerouslySetInnerHTML={{ __html: textContent.textBody }}
-              />
+              textContent.backgroundColor ? (
+                /* ── Physical letter on dark table ── */
+                <div style={{
+                  background: textContent.backgroundColor,
+                  borderRadius: 6,
+                  padding: "52px 60px",
+                  boxShadow: "0 16px 56px rgba(0,0,0,0.45), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)",
+                  transition: "box-shadow .3s",
+                }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-playfair), Georgia, serif",
+                      fontSize: "clamp(15px, 2vw, 18px)",
+                      lineHeight: 1.9,
+                      color: textContent.textColor ?? "#2c2418",
+                      fontWeight: 400,
+                      letterSpacing: "0.01em",
+                    }}
+                    dangerouslySetInnerHTML={{ __html: textContent.textBody }}
+                  />
+                </div>
+              ) : (
+                <div
+                  style={{
+                    fontFamily: "var(--font-playfair), Georgia, serif",
+                    fontSize: "clamp(16px, 2vw, 18.5px)",
+                    lineHeight: 1.95,
+                    color: "rgba(245,240,223,0.9)",
+                    fontWeight: 400,
+                    letterSpacing: "0.01em",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: textContent.textBody }}
+                />
+              )
             )}
 
             {mediaContents.map((item) => (

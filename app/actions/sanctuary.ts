@@ -15,6 +15,8 @@ export interface SanctuaryContent {
   textBody: string | null;
   s3FileKey: string | null;
   signedUrl: string | null;
+  backgroundColor: string | null;
+  textColor: string | null;
 }
 
 export interface SanctuaryMemory {
@@ -90,7 +92,7 @@ export async function getSanctuaryContent(token: string): Promise<SanctuaryResul
       },
       contents: {
         orderBy: { createdAt: "asc" as const },
-        select: { id: true, type: true, textBody: true, s3FileKey: true },
+        select: { id: true, type: true, textBody: true, s3FileKey: true, backgroundColor: true, textColor: true },
       },
     },
   });

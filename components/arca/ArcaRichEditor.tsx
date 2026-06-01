@@ -639,6 +639,103 @@ function AiAssistPanel({
   );
 }
 
+// ── Curated palette ───────────────────────────────────────────────────────────
+
+export const MESSAGE_THEMES = [
+  { id: "default",   bg: null,      text: null,       label: "Výchozí"  },
+  { id: "midnight",  bg: "#16161a", text: "#e8e3d8",  label: "Midnight" },
+  { id: "parchment", bg: "#f5f0dc", text: "#2c2418",  label: "Pergamen" },
+  { id: "slate",     bg: "#2d3748", text: "#e2e8f0",  label: "Slate"    },
+  { id: "forest",    bg: "#142014", text: "#d4c98a",  label: "Forest"   },
+  { id: "wine",      bg: "#2a0a14", text: "#f0d8c8",  label: "Wine"     },
+] as const;
+
+export type MessageThemeId = typeof MESSAGE_THEMES[number]["id"];
+
+// ── Theme Bubbles strip ───────────────────────────────────────────────────────
+
+function ThemeBubbles({
+  bgColor,
+  onSelect,
+}: {
+  bgColor: string | null;
+  onSelect: (bg: string | null, text: string | null) => void;
+}) {
+  const activeId = MESSAGE_THEMES.find(t => t.bg === bgColor)?.id ?? "default";
+
+  return (
+    <div style={{
+      padding: "8px 14px",
+      borderBottom: "1px solid var(--hairline)",
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      background: "var(--bg-tint)",
+    }}>
+      <span style={{
+        fontSize: 10.5,
+        fontFamily: "var(--f-mono)",
+        color: "var(--muted)",
+        letterSpacing: ".08em",
+        textTransform: "uppercase",
+        whiteSpace: "nowrap",
+        flexShrink: 0,
+      }}>
+        Motiv
+      </span>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        {MESSAGE_THEMES.map((theme) => {
+          const isActive = theme.id === activeId;
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              title={theme.label}
+              onClick={() => onSelect(theme.bg ?? null, theme.text ?? null)}
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                border: isActive
+                  ? "2.5px solid var(--accent)"
+                  : "1.5px solid var(--hairline-2)",
+                cursor: "pointer",
+                background: theme.id === "default"
+                  ? "linear-gradient(135deg, var(--bg) 50%, var(--ink) 50%)"
+                  : theme.bg!,
+                boxShadow: isActive ? "0 0 0 3px var(--accent-tint)" : "none",
+                transition: "box-shadow .15s, border-color .15s",
+                flexShrink: 0,
+                padding: 0,
+                position: "relative",
+              }}
+            >
+              {theme.id === "default" && (
+                <span style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, var(--bg) 50%, var(--ink) 50%)",
+                }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {activeId !== "default" && (
+        <span style={{
+          fontSize: 11.5,
+          color: "var(--muted)",
+          fontFamily: "var(--f-sans)",
+          marginLeft: 2,
+        }}>
+          {MESSAGE_THEMES.find(t => t.id === activeId)?.label}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface ArcaRichEditorProps {
@@ -650,6 +747,9 @@ interface ArcaRichEditorProps {
   minHeight?: number;
   recipientName?: string;
   relationship?: string;
+  backgroundColor?: string | null;
+  textColor?: string | null;
+  onThemeChange?: (bg: string | null, text: string | null) => void;
 }
 
 export default function ArcaRichEditor({
@@ -659,6 +759,9 @@ export default function ArcaRichEditor({
   minHeight = 260,
   recipientName,
   relationship,
+  backgroundColor = null,
+  textColor = null,
+  onThemeChange,
 }: ArcaRichEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropImg, setCropImg] = useState<HTMLImageElement | null>(null);
@@ -872,6 +975,14 @@ export default function ArcaRichEditor({
         </button>
       </div>
 
+      {/* Theme Bubbles strip */}
+      {onThemeChange && (
+        <ThemeBubbles
+          bgColor={backgroundColor}
+          onSelect={onThemeChange}
+        />
+      )}
+
       {/* BubbleMenu — floating toolbar above selected image */}
       {editor && (
         <BubbleMenu
@@ -943,18 +1054,26 @@ export default function ArcaRichEditor({
       )}
 
       {/* Editor */}
-      <div ref={wrapRef} style={{ padding: "18px 22px" }}>
+      <div
+        ref={wrapRef}
+        style={{
+          padding: "22px 26px",
+          background: backgroundColor ?? "transparent",
+          borderRadius: backgroundColor ? "0 0 12px 12px" : 0,
+          transition: "background .35s ease",
+        }}
+      >
         <style>{`
-          .arca-prose .tiptap { outline: none; min-height: ${minHeight}px; caret-color: var(--ink); }
-          .arca-prose .tiptap p { font-family: var(--f-serif); font-size: 18px; line-height: 1.65; color: var(--ink); margin: 0 0 10px; }
+          .arca-prose .tiptap { outline: none; min-height: ${minHeight}px; caret-color: ${textColor ?? "var(--ink)"}; }
+          .arca-prose .tiptap p { font-family: var(--f-serif); font-size: 18px; line-height: 1.65; color: ${textColor ?? "var(--ink)"}; margin: 0 0 10px; }
           .arca-prose .tiptap p.is-editor-empty:first-child::before {
             content: attr(data-placeholder);
-            float: left; color: var(--muted-2); pointer-events: none; height: 0;
+            float: left; color: ${textColor ? textColor + "88" : "var(--muted-2)"}; pointer-events: none; height: 0;
             font-family: var(--f-serif); font-size: 18px; font-style: italic;
           }
-          .arca-prose .tiptap strong { font-weight: 700; color: var(--ink); }
+          .arca-prose .tiptap strong { font-weight: 700; color: ${textColor ?? "var(--ink)"}; }
           .arca-prose .tiptap em { font-style: italic; }
-          .arca-prose .tiptap blockquote { border-left: 3px solid var(--accent); margin: 14px 0; padding: 2px 0 2px 16px; color: var(--muted); font-style: italic; font-family: var(--f-serif); }
+          .arca-prose .tiptap blockquote { border-left: 3px solid ${textColor ?? "var(--accent)"}; margin: 14px 0; padding: 2px 0 2px 16px; color: ${textColor ? textColor + "aa" : "var(--muted)"}; font-style: italic; font-family: var(--f-serif); opacity: .8; }
           .arca-prose .tiptap img {
             border-radius: 8px; max-width: 100%; cursor: pointer;
             box-shadow: 0 2px 8px rgba(28,26,22,0.12);

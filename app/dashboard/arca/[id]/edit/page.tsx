@@ -24,7 +24,7 @@ export default async function EditArcaPage({ params }: { params: Promise<{ id: s
         id: true, title: true, type: true, status: true,
         contents: {
           where: { type: ContentType.TEXT },
-          select: { textBody: true },
+          select: { textBody: true, backgroundColor: true, textColor: true },
           take: 1,
         },
         recipients: {
@@ -75,6 +75,8 @@ export default async function EditArcaPage({ params }: { params: Promise<{ id: s
       packStatus={pack.status}
       initialTitle={pack.title}
       initialContent={pack.contents[0]?.textBody ?? ""}
+      initialBackgroundColor={pack.contents[0]?.backgroundColor ?? null}
+      initialTextColor={pack.contents[0]?.textColor ?? null}
       initialRecipients={pack.recipients}
       initialTrigger={triggerForClient}
       allContacts={contacts}

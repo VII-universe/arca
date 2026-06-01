@@ -41,6 +41,8 @@ export interface ArcaEditorNewProps {
   packStatus: string;
   initialTitle: string;
   initialContent: string;
+  initialBackgroundColor?: string | null;
+  initialTextColor?: string | null;
   initialRecipients: Recipient[];
   initialTrigger: {
     type: "SPECIFIC_DATE" | "INACTIVITY" | "MANUAL_EMERGENCY";
@@ -99,7 +101,9 @@ const STATUS_CHIP: Record<string, { label: string; chip: string }> = {
 
 export default function ArcaEditorNew({
   packId, packType, packStatus,
-  initialTitle, initialContent, initialRecipients, initialTrigger,
+  initialTitle, initialContent,
+  initialBackgroundColor = null, initialTextColor = null,
+  initialRecipients, initialTrigger,
   allContacts = [], contactGroups = [],
 }: ArcaEditorNewProps) {
   const router = useRouter();
@@ -121,8 +125,10 @@ export default function ArcaEditorNew({
   // Kind (derived from existing content — default text)
   const [kind] = useState<Kind>("text");
 
-  // Text content
+  // Text content + theme
   const [text, setText] = useState(initialContent);
+  const [bgColor,   setBgColor]   = useState<string | null>(initialBackgroundColor);
+  const [txtColor,  setTxtColor]  = useState<string | null>(initialTextColor);
 
   // Recipients — already added to this pack
   const [recipients, setRecipients] = useState<Recipient[]>(initialRecipients);
@@ -167,8 +173,8 @@ export default function ArcaEditorNew({
   const handleSave = useCallback(() => {
     setError(null);
     startTransition(async () => {
-      // 1. Save text content
-      const r1 = await upsertContent(packId, text);
+      // 1. Save text content + theme
+      const r1 = await upsertContent(packId, text, { backgroundColor: bgColor, textColor: txtColor });
       if ("error" in r1) { setError(r1.error); return; }
 
       // 2. Save trigger
@@ -438,6 +444,9 @@ export default function ArcaEditorNew({
                 placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
                 packId={packId}
                 minHeight={280}
+                backgroundColor={bgColor}
+                textColor={txtColor}
+                onThemeChange={(bg, text) => { setBgColor(bg); setTxtColor(text); }}
               />
             </div>
 
