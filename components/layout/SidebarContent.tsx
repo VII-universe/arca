@@ -105,31 +105,31 @@ export default function SidebarContent({
         )}
       </div>
 
-      {/* ── Search ─────────────────────────────────────────────── */}
-      <div className="arca-search">
-        <IcSearch />
-        <input placeholder="Hledat ve schránce…" />
-        <span className="arca-mono" style={{ fontSize: 10, color: "var(--muted-2)" }}>⌘K</span>
-      </div>
+      {/* ── Scrollable middle: search + nav + recipients ────────── */}
+      <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+        <div className="arca-search">
+          <IcSearch />
+          <input placeholder="Hledat ve schránce…" />
+          <span className="arca-mono" style={{ fontSize: 10, color: "var(--muted-2)" }}>⌘K</span>
+        </div>
 
-      {/* ── Main nav ───────────────────────────────────────────── */}
-      <div className="arca-nav-group">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onClose}
-            className={`arca-nav-item ${isActive(item) ? "active" : ""}`}
-          >
-            <span className="ic">{item.icon}</span>
-            <span>{item.label}</span>
-            {item.count != null && <span className="count">{item.count}</span>}
-          </Link>
-        ))}
-      </div>
+        {/* ── Main nav */}
+        <div className="arca-nav-group">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onClose}
+              className={`arca-nav-item ${isActive(item) ? "active" : ""}`}
+            >
+              <span className="ic">{item.icon}</span>
+              <span>{item.label}</span>
+              {item.count != null && <span className="count">{item.count}</span>}
+            </Link>
+          ))}
+        </div>
 
-      {/* ── Recipients + groups ────────────────────────────────── */}
-      <>
+        {/* ── Recipients + groups */}
         <div className="arca-nav-label">Příjemci</div>
         <div className="arca-nav-group" style={{ paddingTop: 0 }}>
           <Link
@@ -186,10 +186,10 @@ export default function SidebarContent({
             <span>Přidat příjemce</span>
           </Link>
         </div>
-      </>
+      </div>
 
-      {/* ── Bottom: inspiration + appearance + user ────────────── */}
-      <div style={{ marginTop: "auto" }}>
+      {/* ── Bottom: always pinned, never scrolled away ─────────── */}
+      <div style={{ flexShrink: 0, paddingTop: 8 }}>
         <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none", padding: 14, borderRadius: 12, marginBottom: 14 }}>
           <div className="arca-row" style={{ gap: 8, marginBottom: 6 }}>
             <IcSparkle />
@@ -200,7 +200,7 @@ export default function SidebarContent({
           </p>
         </div>
 
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 4 }}>
           <AppearanceButton />
         </div>
 

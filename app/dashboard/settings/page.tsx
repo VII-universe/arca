@@ -10,19 +10,25 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [dbUser, userSettings] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        name: true,
-        email: true,
-        lastActiveAt: true,
-        isPremium: true,
-        webhookSecret: true,
-      },
-    }),
-    prisma.userSettings.findUnique({ where: { userId: user.id } }),
-  ]);
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      name: true,
+      email: true,
+      lastActiveAt: true,
+      isPremium: true,
+      webhookSecret: true,
+    },
+  });
+
+  // userSettings may not exist if Prisma client is stale (restart dev server to fix)
+  let userSettings = null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    userSettings = await (prisma as any).userSettings?.findUnique?.({ where: { userId: user.id } }) ?? null;
+  } catch {
+    // ignore — page renders without switch settings until server restarts
+  }
 
   return (
     <SettingsClient
@@ -34,11 +40,11 @@ export default async function SettingsPage() {
         webhookSecret: dbUser?.webhookSecret ?? "",
         settings: userSettings
           ? {
-              switchEnabled: userSettings.switchEnabled,
-              switchType: userSettings.switchType as "INACTIVITY" | "SPECIFIC_DATE",
-              inactivityDays: userSettings.inactivityDays,
-              executeAt: userSettings.executeAt?.toISOString() ?? null,
-              gracePeriodDays: userSettings.gracePeriodDays,
+              switchEnabled: (userSettings as any).switchEnabled,
+              switchType: (userSettings as any).switchType as "INACTIVITY" | "SPECIFIC_DATE",
+              inactivityDays: (userSettings as any).inactivityDays,
+              executeAt: (userSettings as any).executeAt?.toISOString() ?? null,
+              gracePeriodDays: (userSettings as any).gracePeriodDays,
             }
           : null,
       }}

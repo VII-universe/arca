@@ -222,8 +222,7 @@ html[data-arca-dark="true"] body { background: #15120F; }
   background: var(--bg);
   display: flex; flex-direction: column;
   padding: 22px 18px;
-  overflow-y: auto;
-  overflow-x: visible;
+  overflow: hidden;
   position: relative;
 }
 .arca-brand {
