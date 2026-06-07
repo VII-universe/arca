@@ -26,22 +26,27 @@ export default function LoginForm() {
 
   const supabase = createClient();
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus(null);
     setLoading(true);
 
+    // Read directly from DOM — browser autofill doesn't always fire React onChange
+    const formData = new FormData(e.currentTarget);
+    const emailVal = (formData.get("email") as string) || email;
+    const passwordVal = (formData.get("password") as string) || password;
+
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: emailVal,
+          password: passwordVal,
           options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
         });
         if (error) throw error;
         setStatus({ type: "success", message: "Zkontroluj svůj e-mail — poslali jsme ti potvrzovací odkaz." });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: emailVal, password: passwordVal });
         if (error) throw error;
         fetch("/api/auth/sync-user", { method: "POST" }).catch(() => {});
         router.push("/dashboard");
@@ -111,6 +116,7 @@ export default function LoginForm() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
             required
             autoComplete="email"
@@ -130,6 +136,7 @@ export default function LoginForm() {
           </label>
           <input
             id="password"
+            name="password"
             type="password"
             required
             autoComplete={mode === "login" ? "current-password" : "new-password"}
