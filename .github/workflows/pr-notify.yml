@@ -1,0 +1,45 @@
+name: PR → Telegram
+
+on:
+  pull_request:
+    types: [opened, closed, reopened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram notification
+        run: |
+          ACTION="${{ github.event.action }}"
+          MERGED="${{ github.event.pull_request.merged }}"
+          PR_NUM="${{ github.event.pull_request.number }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_BRANCH="${{ github.event.pull_request.head.ref }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+
+          if [ "$ACTION" = "opened" ]; then
+            EMOJI="🆕"
+            STATUS="NOVÝ PR"
+          elif [ "$ACTION" = "closed" ] && [ "$MERGED" = "true" ]; then
+            EMOJI="✅"
+            STATUS="MERGNUT"
+          elif [ "$ACTION" = "closed" ]; then
+            EMOJI="❌"
+            STATUS="UZAVŘEN"
+          else
+            EMOJI="🔄"
+            STATUS="$(echo $ACTION | tr '[:lower:]' '[:upper:]')"
+          fi
+
+          TEXT="${EMOJI} *ARCA — ${STATUS}*
+
+*#${PR_NUM}* — ${PR_TITLE}
+Autor: ${PR_AUTHOR}
+Branch: \`${PR_BRANCH}\` → \`main\`
+
+[🔗 Otevřít PR](${PR_URL})"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "{\"chat_id\":\"${{ secrets.TELEGRAM_CHAT_ID }}\",\"text\":\"$(echo "$TEXT" | sed 's/"/\\"/g')\",\"parse_mode\":\"Markdown\",\"disable_web_page_preview\":true}"
