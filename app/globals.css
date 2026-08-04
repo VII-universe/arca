@@ -4,26 +4,47 @@
 /* ── shadcn/ui CSS variables ─────────────────────────────────────────────── */
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.12 0.005 285.823);       /* near-black, more contrast */
-  --card: oklch(0.99 0 0);
-  --card-foreground: oklch(0.12 0.005 285.823);
-  --popover: oklch(0.99 0 0);
-  --popover-foreground: oklch(0.12 0.005 285.823);
-  --primary: oklch(0.18 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.94 0.001 286.375);
-  --secondary-foreground: oklch(0.18 0.006 285.885);
-  --muted: oklch(0.94 0.001 286.375);
-  /* Darker in light mode → even at /60 opacity it stays readable */
-  --muted-foreground: oklch(0.38 0.012 285.938);
-  --accent: oklch(0.93 0.002 286.375);
-  --accent-foreground: oklch(0.18 0.006 285.885);
-  --destructive: oklch(0.52 0.245 27.325);
-  --border: oklch(0 0 0 / 14%);                  /* more visible borders */
-  --input: oklch(0 0 0 / 10%);
-  --ring: oklch(0.38 0.012 285.938);
-  --radius: 0.625rem;
+  --bg:          #0a0510;
+  --bg-tint:     #130a1c;
+  --surface:     #0a0510;
+  --ink:         #FFFFFF;
+  --ink-2:       #E0E0E0;
+  --muted:       #A3A3A3;
+  --muted-2:     #7A7A7A;
+  --hairline:    rgba(255,255,255,0.08);
+  --hairline-2:  rgba(255,255,255,0.15);
+  --scrim:       rgba(0,0,0,0.6);
+  --hover:       rgba(255,255,255,0.08);
+  --hover-strong:rgba(255,255,255,0.12);
+
+  /* glassmorphism base (opacity can be overridden by JS) */
+  --glass-opacity: 0.08;
+  --glass-bg:     rgba(255, 255, 255, var(--glass-opacity));
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-blur:   24px;
+  --glass-saturation: 180%;
+
+  --glass-shadow-inset: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  --glass-shadow-glow: 0 8px 32px 0 rgba(255, 0, 255, 0.15);
+
+  /* shadow (adapted for dark glass) */
+  --sh-1: 0 4px 12px rgba(0,0,0,0.2);
+  --sh-2: 0 8px 24px rgba(0,0,0,0.3);
+  --sh-3: 0 12px 48px rgba(0,0,0,0.4);
+
+  /* orbs */
+  --orb-magenta: #ff00ff;
+  --orb-pink: #ff1493;
+  --orb-turquoise: #00ced1;
+  --orb-orange: #ff8c00;
+  --orb-blue: #1e90ff;
+
+  --f-sans: var(--font-inter), system-ui, sans-serif;
+  --f-serif: var(--font-instrument-serif), var(--font-playfair), Georgia, serif;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-pill: 999px;
 }
 
 .dark {
@@ -352,7 +373,7 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 
 /* ── ARCA primitives ─────────────────────────────────────────────── */
 .arca-kicker { font-family: var(--f-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); font-weight: 500; }
-.arca-h1 { font-family: var(--f-serif); font-weight: 400; font-size: 40px; line-height: 1.26; letter-spacing: -.01em; margin: 0; }
+.arca-h1 { font-family: var(--f-serif); font-weight: 400; font-size: 40px; line-height: 1.26; letter-spacing: -.01em; margin: 0; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent; }
 .arca-h1 em { font-style: italic; color: var(--accent); }
 .arca-h2 { font-family: var(--f-serif); font-weight: 400; font-size: 27px; line-height: 1.24; margin: 0; }
 .arca-h3 { font-size: 15px; font-weight: 580; letter-spacing: -.01em; margin: 0; }
@@ -362,11 +383,12 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 /* ── Cards ───────────────────────────────────────────────────────── */
 .arca-card {
   background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
-  box-shadow: var(--sh-1), inset 0 1px 0 rgba(255,255,255,.07);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--glass-shadow-glow), var(--glass-shadow-inset);
+  color: white;
   transition: box-shadow .25s cubic-bezier(.22,1,.36,1), transform .22s cubic-bezier(.22,1,.36,1), border-color .2s;
 }
 .arca-card.elev {
@@ -391,14 +413,16 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 .arca-btn:hover { background: var(--hover); transform: translateY(-1px); }
 .arca-btn:active { transform: translateY(0); }
 .arca-btn--primary {
-  background: linear-gradient(135deg, var(--ink-2), var(--ink));
-  color: var(--bg); border-color: var(--ink);
-  box-shadow: var(--sh-1), inset 0 1px 0 rgba(255,255,255,.08);
+  background: var(--gradient-primary);
+  color: var(--bg);
+  box-shadow: 0 4px 15px rgba(255, 0, 255, 0.3);
+  border: none;
 }
 .arca-btn--primary:hover {
-  background: linear-gradient(135deg, var(--ink), var(--ink-2));
-  box-shadow: var(--sh-2), inset 0 1px 0 rgba(255,255,255,.08);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 0, 255, 0.5);
 }
+
 .arca-btn--clay {
   background: linear-gradient(135deg, var(--accent), var(--accent-deep));
   color: var(--on-accent); border-color: var(--accent-deep);
@@ -490,7 +514,8 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 /* ── Avatars ─────────────────────────────────────────────────────── */
 .arca-avatar {
   width: 32px; height: 32px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  background: var(--gradient-primary);
+  border: 2px solid rgba(255,255,255,0.3);
   color: var(--on-accent); display: grid; place-items: center;
   font-size: 12px; font-weight: 600; letter-spacing: .02em;
   flex-shrink: 0;
@@ -501,10 +526,10 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 .arca-avatar.sm  { width: 24px; height: 24px; font-size: 10px; }
 .arca-avatar.lg  { width: 44px; height: 44px; font-size: 14px; }
 .arca-avatar.xl  { width: 72px; height: 72px; font-size: 22px; font-family: var(--f-serif); font-weight: 400; }
-.arca-avatar.clay { background: linear-gradient(135deg, var(--accent), var(--accent-deep)); }
-.arca-avatar.sage { background: linear-gradient(135deg, var(--sage), #5C6B4D); }
-.arca-avatar.sky  { background: linear-gradient(135deg, var(--sky), #4B6685); }
-.arca-avatar.ink  { background: linear-gradient(135deg, var(--ink-2), var(--ink)); color: var(--bg); }
+.arca-avatar.clay { background: var(--gradient-primary); }
+.arca-avatar.sage { background: var(--gradient-secondary); }
+.arca-avatar.sky  { background: linear-gradient(135deg, var(--orb-blue), var(--orb-pink)); }
+.arca-avatar.ink  { background: linear-gradient(135deg, var(--orb-magenta), var(--orb-pink)); color: var(--bg); }
 
 .arca-divider { height: 1px; background: var(--glass-border); border: 0; margin: 18px 0; }
 .arca-stat .label { font-size: 12px; color: var(--muted); font-weight: 500; }
@@ -853,3 +878,24 @@ html[data-arca-dark="true"] body { background: #100D0A; }
   transition: opacity .35s ease, background .25s ease;
 }
 .sanc-bp-card:hover { background: rgba(245,240,223,.04) !important; }
+
+@media (max-width: 768px) {
+  /* On mobile, reduce blur radius slightly to improve performance */
+  :root {
+    --glass-blur: 16px;
+  }
+}
+
+@supports not (backdrop-filter: blur(10px)) {
+  .arca-card, .arca-mobile-header, .arca-bottom-nav, .arca-sheet-overlay {
+    background: var(--surface-2) !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .arca-card, .arca-mobile-header, .arca-bottom-nav, .arca-sheet-overlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--surface-2) !important;
+  }
+}

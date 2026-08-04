@@ -49,14 +49,34 @@ export function VibeBackground() {
       )}
 
       {/* ── Ambient blobs for the default minimal vibe ───────────── */}
-      {vibe === "minimal" && (
+      {vibe === "nebula" && (
         <div
-          className="fixed inset-0 overflow-hidden pointer-events-none -z-10"
+          className="fixed inset-0 overflow-hidden pointer-events-none -z-10 mix-blend-screen"
           aria-hidden="true"
         >
-          <div className="ambient-blob-1 absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-indigo-700/[0.12] blur-[130px]" />
-          <div className="ambient-blob-2 absolute -bottom-48 -right-24 w-[700px] h-[700px] rounded-full bg-violet-800/[0.10] blur-[160px]" />
-          <div className="ambient-blob-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-blue-900/[0.08] blur-[140px]" />
+          <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full blur-[60px] opacity-40 bg-[var(--orb-magenta)]" />
+          <div className="absolute -bottom-48 -right-24 w-[700px] h-[700px] rounded-full blur-[80px] opacity-30 bg-[var(--orb-turquoise)]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[70px] opacity-25 bg-[var(--orb-pink)]" />
+        </div>
+      )}
+      {vibe === "sunset" && (
+        <div
+          className="fixed inset-0 overflow-hidden pointer-events-none -z-10 mix-blend-screen"
+          aria-hidden="true"
+        >
+          <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full blur-[60px] opacity-40 bg-[var(--orb-orange)]" />
+          <div className="absolute -bottom-48 -right-24 w-[700px] h-[700px] rounded-full blur-[80px] opacity-30 bg-[var(--orb-pink)]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[70px] opacity-25 bg-[var(--orb-magenta)]" />
+        </div>
+      )}
+      {vibe === "deep-sea" && (
+        <div
+          className="fixed inset-0 overflow-hidden pointer-events-none -z-10 mix-blend-screen"
+          aria-hidden="true"
+        >
+          <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full blur-[60px] opacity-40 bg-[var(--orb-turquoise)]" />
+          <div className="absolute -bottom-48 -right-24 w-[700px] h-[700px] rounded-full blur-[80px] opacity-30 bg-[var(--orb-blue)]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[70px] opacity-25 bg-[var(--orb-pink)]" />
         </div>
       )}
     </>
