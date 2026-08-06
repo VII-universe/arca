@@ -12,7 +12,7 @@ export default function LoginPage() {
         minHeight: "100vh",
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
-        background: "var(--bg)",
+        background: "transparent",
         fontFamily: "var(--f-sans)",
       }}
     >
@@ -22,8 +22,8 @@ export default function LoginPage() {
         flexDirection: "column",
         justifyContent: "space-between",
         padding: "48px 56px",
-        background: "var(--bg-tint)",
-        borderRight: "1px solid var(--hairline)",
+        background: "transparent",
+        borderRight: "1px solid var(--glass-border)",
         position: "relative",
         overflow: "hidden",
       }}>
@@ -102,6 +102,8 @@ export default function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         padding: "48px 40px",
+        background: "var(--glass-bg)",
+        backdropFilter: "blur(var(--glass-blur)) saturate(var(--glass-saturation))",
       }}>
         <div style={{ width: "100%", maxWidth: 380 }}>
           {/* Heading */}

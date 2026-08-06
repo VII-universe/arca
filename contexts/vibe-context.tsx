@@ -9,9 +9,10 @@ import {
 } from "react";
 
 export type Vibe =
-  | "minimal"
-  | "ocean"
+  | "nebula"
   | "sunset"
+  | "deep-sea"
+  | "ocean"
   | "midnight"
   | "ember"
   | "aurora"
@@ -22,11 +23,13 @@ export type Vibe =
   | "custom";
 
 const VALID_VIBES: Vibe[] = [
-  "minimal","ocean","sunset","midnight","ember","aurora",
+  "nebula","sunset","deep-sea","ocean","midnight","ember","aurora",
   "forest","mountains","stars","sakura","custom",
 ];
 
 interface VibeContextValue {
+  glassOpacity: number;
+  setGlassOpacity: (o: number) => void;
   vibe: Vibe;
   setVibe: (v: Vibe) => void;
   customImageUrl: string;
@@ -34,21 +37,34 @@ interface VibeContextValue {
 }
 
 const VibeContext = createContext<VibeContextValue>({
-  vibe: "minimal",
+  glassOpacity: 0.08,
+  setGlassOpacity: () => {},
+  vibe: "nebula",
   setVibe: () => {},
   customImageUrl: "",
   setCustomImageUrl: () => {},
 });
 
 export function VibeProvider({ children }: { children: ReactNode }) {
-  const [vibe, setVibeState] = useState<Vibe>("minimal");
+  const [glassOpacity, setGlassOpacityState] = useState(0.08);
+  const [vibe, setVibeState] = useState<Vibe>("nebula");
   const [customImageUrl, setCustomImageUrlState] = useState("");
 
   useEffect(() => {
+    const storedOpacity = localStorage.getItem("arca-glass-opacity");
+    if (storedOpacity) {
+      const parsed = parseFloat(storedOpacity);
+      if (!isNaN(parsed)) setGlassOpacityState(parsed);
+    }
     const storedVibe = localStorage.getItem("arca-vibe") as Vibe | null;
     if (storedVibe && VALID_VIBES.includes(storedVibe)) setVibeState(storedVibe);
     setCustomImageUrlState(localStorage.getItem("arca-custom-image") ?? "");
   }, []);
+
+  const setGlassOpacity = (o: number) => {
+    setGlassOpacityState(o);
+    localStorage.setItem("arca-glass-opacity", o.toString());
+  };
 
   const setVibe = (v: Vibe) => {
     setVibeState(v);
@@ -64,8 +80,12 @@ export function VibeProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    document.documentElement.style.setProperty('--glass-opacity', glassOpacity.toString());
+  }, [glassOpacity]);
+
   return (
-    <VibeContext.Provider value={{ vibe, setVibe, customImageUrl, setCustomImageUrl }}>
+    <VibeContext.Provider value={{ glassOpacity, setGlassOpacity, vibe, setVibe, customImageUrl, setCustomImageUrl }}>
       {children}
     </VibeContext.Provider>
   );

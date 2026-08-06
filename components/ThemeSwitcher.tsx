@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 const SCENES: {
   id: Vibe;
   label: string;
-  type: "gradient" | "photo" | "minimal";
+  type: "gradient" | "photo" | "nebula";
 }[] = [
-  { id: "minimal",   label: "Minimal",   type: "minimal" },
+  { id: "nebula",    label: "Nebula",    type: "nebula" },
   { id: "midnight",  label: "Midnight",  type: "gradient" },
   { id: "ocean",     label: "Ocean",     type: "gradient" },
   { id: "sunset",    label: "Sunset",    type: "gradient" },
@@ -38,7 +38,7 @@ const MINIMAL_PREVIEW =
   "radial-gradient(circle,#3f3f46 1px,transparent 1px) 0 0/16px 16px,#09090b";
 
 function getPreviewStyle(scene: (typeof SCENES)[0]): React.CSSProperties {
-  if (scene.type === "minimal") {
+  if (scene.type === "nebula") {
     return { background: MINIMAL_PREVIEW };
   }
   if (scene.type === "gradient" && GRADIENTS[scene.id]) {
@@ -64,7 +64,7 @@ export function ThemeSwitcher() {
   function handleUrlCommit() {
     const val = urlInputRef.current?.value.trim() ?? "";
     setCustomImageUrl(val);
-    if (!val) setVibe("minimal");
+    if (!val) setVibe("nebula");
   }
 
   return (
@@ -182,7 +182,7 @@ export function ThemeSwitcher() {
               onClick={() => {
                 if (urlInputRef.current) urlInputRef.current.value = "";
                 setCustomImageUrl("");
-                setVibe("minimal");
+                setVibe("nebula");
               }}
               className="mt-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
             >
