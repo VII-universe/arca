@@ -7,16 +7,18 @@ import { useVibe, GRADIENTS, PHOTOS } from "@/contexts/vibe-context";
 // body.style. This means page containers no longer need to be transparent —
 // any element WITHOUT a background will naturally show the fixed layer below.
 
-export function VibeBackground() {
+export function VibeBackground({ groupVibeUrl }: { groupVibeUrl?: string | null }) {
   const { vibe, customImageUrl } = useVibe();
 
-  const isPhoto = vibe in PHOTOS || (vibe === "custom" && !!customImageUrl);
+  const activeImageUrl = groupVibeUrl || customImageUrl;
+
+  const isPhoto = vibe in PHOTOS || (vibe === "custom" && !!activeImageUrl) || !!groupVibeUrl;
   const isGradient = vibe in GRADIENTS;
 
   // Build inline style for the background div
   const bgStyle: React.CSSProperties = {};
-  if (vibe === "custom" && customImageUrl) {
-    bgStyle.backgroundImage = `url(${customImageUrl})`;
+  if (groupVibeUrl || (vibe === "custom" && activeImageUrl)) {
+    bgStyle.backgroundImage = `url(${activeImageUrl})`;
     bgStyle.backgroundSize = "cover";
     bgStyle.backgroundPosition = "center";
     bgStyle.backgroundRepeat = "no-repeat";

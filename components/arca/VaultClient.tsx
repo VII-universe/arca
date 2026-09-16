@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createGroup, deleteGroup, updateGroup, assignPersonGroup } from "@/app/actions/groups";
+import { VibeBackground } from "@/components/VibeBackground";
 import { createContact } from "@/app/actions/contacts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -13,6 +14,7 @@ export interface VaultGroup {
   name: string;
   color: string;
   emoji: string | null;
+  vibeImageUrl?: string | null;
 }
 
 export interface VaultPerson {
@@ -880,6 +882,10 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
 
   return (
     <div data-arca-theme="">
+
+
+      {/* Vibe pro skupinu */}
+      <VibeBackground groupVibeUrl={activeGroup ? groups.find(g => g.id === activeGroup)?.vibeImageUrl : null} />
 
       {/* Filter bar */}
       <FilterBar

@@ -122,10 +122,11 @@ model User {
 // ---------------------------------------------------------------------------
 
 model ContactGroup {
-  id    String  @id @default(cuid())
-  name  String
-  color String  @default("clay") // "clay" | "sage" | "sky" | "ink"
-  emoji String?
+  id           String  @id @default(cuid())
+  name         String
+  color        String  @default("clay") // "clay" | "sage" | "sky" | "ink"
+  emoji        String?
+  vibeImageUrl String?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
@@ -281,11 +282,13 @@ model Recipient {
   challengeAnswerHash String?
 
   // Extended profile
-  birthday     DateTime? // narozeniny
-  anniversary  DateTime? // výročí vztahu (první setkání, svatba...)
-  relationship String? // "máma" | "táta" | "partner" | "kamarád" | custom
-  notes        String? // volné poznámky o člověku
-  avatarUrl    String? // cesta k souboru v Supabase Storage (ne public URL)
+  birthday       DateTime? // narozeniny
+  anniversary    DateTime? // výročí vztahu (první setkání, svatba...)
+  relationship   String? // "máma" | "táta" | "partner" | "kamarád" | custom
+  notes          String? // volné poznámky o člověku
+  avatarUrl      String? // cesta k souboru v Supabase Storage (ne public URL)
+  coverUrl       String?
+  coverPositionY Int?      @default(50)
 
   // Additional contact channels
   whatsapp  String?

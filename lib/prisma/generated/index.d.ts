@@ -4023,6 +4023,7 @@ export namespace Prisma {
     name: string | null
     color: string | null
     emoji: string | null
+    vibeImageUrl: string | null
     userId: string | null
     createdAt: Date | null
   }
@@ -4032,6 +4033,7 @@ export namespace Prisma {
     name: string | null
     color: string | null
     emoji: string | null
+    vibeImageUrl: string | null
     userId: string | null
     createdAt: Date | null
   }
@@ -4041,6 +4043,7 @@ export namespace Prisma {
     name: number
     color: number
     emoji: number
+    vibeImageUrl: number
     userId: number
     createdAt: number
     _all: number
@@ -4052,6 +4055,7 @@ export namespace Prisma {
     name?: true
     color?: true
     emoji?: true
+    vibeImageUrl?: true
     userId?: true
     createdAt?: true
   }
@@ -4061,6 +4065,7 @@ export namespace Prisma {
     name?: true
     color?: true
     emoji?: true
+    vibeImageUrl?: true
     userId?: true
     createdAt?: true
   }
@@ -4070,6 +4075,7 @@ export namespace Prisma {
     name?: true
     color?: true
     emoji?: true
+    vibeImageUrl?: true
     userId?: true
     createdAt?: true
     _all?: true
@@ -4152,6 +4158,7 @@ export namespace Prisma {
     name: string
     color: string
     emoji: string | null
+    vibeImageUrl: string | null
     userId: string
     createdAt: Date
     _count: ContactGroupCountAggregateOutputType | null
@@ -4178,6 +4185,7 @@ export namespace Prisma {
     name?: boolean
     color?: boolean
     emoji?: boolean
+    vibeImageUrl?: boolean
     userId?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -4191,6 +4199,7 @@ export namespace Prisma {
     name?: boolean
     color?: boolean
     emoji?: boolean
+    vibeImageUrl?: boolean
     userId?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -4201,6 +4210,7 @@ export namespace Prisma {
     name?: boolean
     color?: boolean
     emoji?: boolean
+    vibeImageUrl?: boolean
     userId?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -4211,11 +4221,12 @@ export namespace Prisma {
     name?: boolean
     color?: boolean
     emoji?: boolean
+    vibeImageUrl?: boolean
     userId?: boolean
     createdAt?: boolean
   }
 
-  export type ContactGroupOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "color" | "emoji" | "userId" | "createdAt", ExtArgs["result"]["contactGroup"]>
+  export type ContactGroupOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "color" | "emoji" | "vibeImageUrl" | "userId" | "createdAt", ExtArgs["result"]["contactGroup"]>
   export type ContactGroupInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     recipients?: boolean | ContactGroup$recipientsArgs<ExtArgs>
@@ -4241,6 +4252,7 @@ export namespace Prisma {
       name: string
       color: string
       emoji: string | null
+      vibeImageUrl: string | null
       userId: string
       createdAt: Date
     }, ExtArgs["result"]["contactGroup"]>
@@ -4673,6 +4685,7 @@ export namespace Prisma {
     readonly name: FieldRef<"ContactGroup", 'String'>
     readonly color: FieldRef<"ContactGroup", 'String'>
     readonly emoji: FieldRef<"ContactGroup", 'String'>
+    readonly vibeImageUrl: FieldRef<"ContactGroup", 'String'>
     readonly userId: FieldRef<"ContactGroup", 'String'>
     readonly createdAt: FieldRef<"ContactGroup", 'DateTime'>
   }
@@ -10879,8 +10892,18 @@ export namespace Prisma {
 
   export type AggregateRecipient = {
     _count: RecipientCountAggregateOutputType | null
+    _avg: RecipientAvgAggregateOutputType | null
+    _sum: RecipientSumAggregateOutputType | null
     _min: RecipientMinAggregateOutputType | null
     _max: RecipientMaxAggregateOutputType | null
+  }
+
+  export type RecipientAvgAggregateOutputType = {
+    coverPositionY: number | null
+  }
+
+  export type RecipientSumAggregateOutputType = {
+    coverPositionY: number | null
   }
 
   export type RecipientMinAggregateOutputType = {
@@ -10895,6 +10918,8 @@ export namespace Prisma {
     relationship: string | null
     notes: string | null
     avatarUrl: string | null
+    coverUrl: string | null
+    coverPositionY: number | null
     whatsapp: string | null
     facebook: string | null
     instagram: string | null
@@ -10916,6 +10941,8 @@ export namespace Prisma {
     relationship: string | null
     notes: string | null
     avatarUrl: string | null
+    coverUrl: string | null
+    coverPositionY: number | null
     whatsapp: string | null
     facebook: string | null
     instagram: string | null
@@ -10937,6 +10964,8 @@ export namespace Prisma {
     relationship: number
     notes: number
     avatarUrl: number
+    coverUrl: number
+    coverPositionY: number
     whatsapp: number
     facebook: number
     instagram: number
@@ -10947,6 +10976,14 @@ export namespace Prisma {
     _all: number
   }
 
+
+  export type RecipientAvgAggregateInputType = {
+    coverPositionY?: true
+  }
+
+  export type RecipientSumAggregateInputType = {
+    coverPositionY?: true
+  }
 
   export type RecipientMinAggregateInputType = {
     id?: true
@@ -10960,6 +10997,8 @@ export namespace Prisma {
     relationship?: true
     notes?: true
     avatarUrl?: true
+    coverUrl?: true
+    coverPositionY?: true
     whatsapp?: true
     facebook?: true
     instagram?: true
@@ -10981,6 +11020,8 @@ export namespace Prisma {
     relationship?: true
     notes?: true
     avatarUrl?: true
+    coverUrl?: true
+    coverPositionY?: true
     whatsapp?: true
     facebook?: true
     instagram?: true
@@ -11002,6 +11043,8 @@ export namespace Prisma {
     relationship?: true
     notes?: true
     avatarUrl?: true
+    coverUrl?: true
+    coverPositionY?: true
     whatsapp?: true
     facebook?: true
     instagram?: true
@@ -11049,6 +11092,18 @@ export namespace Prisma {
     _count?: true | RecipientCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to average
+    **/
+    _avg?: RecipientAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to sum
+    **/
+    _sum?: RecipientSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the minimum value
     **/
@@ -11080,6 +11135,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: RecipientCountAggregateInputType | true
+    _avg?: RecipientAvgAggregateInputType
+    _sum?: RecipientSumAggregateInputType
     _min?: RecipientMinAggregateInputType
     _max?: RecipientMaxAggregateInputType
   }
@@ -11096,6 +11153,8 @@ export namespace Prisma {
     relationship: string | null
     notes: string | null
     avatarUrl: string | null
+    coverUrl: string | null
+    coverPositionY: number | null
     whatsapp: string | null
     facebook: string | null
     instagram: string | null
@@ -11104,6 +11163,8 @@ export namespace Prisma {
     createdAt: Date
     messagePackId: string
     _count: RecipientCountAggregateOutputType | null
+    _avg: RecipientAvgAggregateOutputType | null
+    _sum: RecipientSumAggregateOutputType | null
     _min: RecipientMinAggregateOutputType | null
     _max: RecipientMaxAggregateOutputType | null
   }
@@ -11134,6 +11195,8 @@ export namespace Prisma {
     relationship?: boolean
     notes?: boolean
     avatarUrl?: boolean
+    coverUrl?: boolean
+    coverPositionY?: boolean
     whatsapp?: boolean
     facebook?: boolean
     instagram?: boolean
@@ -11159,6 +11222,8 @@ export namespace Prisma {
     relationship?: boolean
     notes?: boolean
     avatarUrl?: boolean
+    coverUrl?: boolean
+    coverPositionY?: boolean
     whatsapp?: boolean
     facebook?: boolean
     instagram?: boolean
@@ -11182,6 +11247,8 @@ export namespace Prisma {
     relationship?: boolean
     notes?: boolean
     avatarUrl?: boolean
+    coverUrl?: boolean
+    coverPositionY?: boolean
     whatsapp?: boolean
     facebook?: boolean
     instagram?: boolean
@@ -11205,6 +11272,8 @@ export namespace Prisma {
     relationship?: boolean
     notes?: boolean
     avatarUrl?: boolean
+    coverUrl?: boolean
+    coverPositionY?: boolean
     whatsapp?: boolean
     facebook?: boolean
     instagram?: boolean
@@ -11214,7 +11283,7 @@ export namespace Prisma {
     messagePackId?: boolean
   }
 
-  export type RecipientOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "phone" | "challengeQuestion" | "challengeAnswerHash" | "birthday" | "anniversary" | "relationship" | "notes" | "avatarUrl" | "whatsapp" | "facebook" | "instagram" | "address" | "groupId" | "createdAt" | "messagePackId", ExtArgs["result"]["recipient"]>
+  export type RecipientOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "phone" | "challengeQuestion" | "challengeAnswerHash" | "birthday" | "anniversary" | "relationship" | "notes" | "avatarUrl" | "coverUrl" | "coverPositionY" | "whatsapp" | "facebook" | "instagram" | "address" | "groupId" | "createdAt" | "messagePackId", ExtArgs["result"]["recipient"]>
   export type RecipientInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     group?: boolean | Recipient$groupArgs<ExtArgs>
     messagePack?: boolean | MessagePackDefaultArgs<ExtArgs>
@@ -11249,6 +11318,8 @@ export namespace Prisma {
       relationship: string | null
       notes: string | null
       avatarUrl: string | null
+      coverUrl: string | null
+      coverPositionY: number | null
       whatsapp: string | null
       facebook: string | null
       instagram: string | null
@@ -11693,6 +11764,8 @@ export namespace Prisma {
     readonly relationship: FieldRef<"Recipient", 'String'>
     readonly notes: FieldRef<"Recipient", 'String'>
     readonly avatarUrl: FieldRef<"Recipient", 'String'>
+    readonly coverUrl: FieldRef<"Recipient", 'String'>
+    readonly coverPositionY: FieldRef<"Recipient", 'Int'>
     readonly whatsapp: FieldRef<"Recipient", 'String'>
     readonly facebook: FieldRef<"Recipient", 'String'>
     readonly instagram: FieldRef<"Recipient", 'String'>
@@ -21152,6 +21225,7 @@ export namespace Prisma {
     name: 'name',
     color: 'color',
     emoji: 'emoji',
+    vibeImageUrl: 'vibeImageUrl',
     userId: 'userId',
     createdAt: 'createdAt'
   };
@@ -21238,6 +21312,8 @@ export namespace Prisma {
     relationship: 'relationship',
     notes: 'notes',
     avatarUrl: 'avatarUrl',
+    coverUrl: 'coverUrl',
+    coverPositionY: 'coverPositionY',
     whatsapp: 'whatsapp',
     facebook: 'facebook',
     instagram: 'instagram',
@@ -21715,6 +21791,7 @@ export namespace Prisma {
     name?: StringFilter<"ContactGroup"> | string
     color?: StringFilter<"ContactGroup"> | string
     emoji?: StringNullableFilter<"ContactGroup"> | string | null
+    vibeImageUrl?: StringNullableFilter<"ContactGroup"> | string | null
     userId?: StringFilter<"ContactGroup"> | string
     createdAt?: DateTimeFilter<"ContactGroup"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -21727,6 +21804,7 @@ export namespace Prisma {
     name?: SortOrder
     color?: SortOrder
     emoji?: SortOrderInput | SortOrder
+    vibeImageUrl?: SortOrderInput | SortOrder
     userId?: SortOrder
     createdAt?: SortOrder
     user?: UserOrderByWithRelationInput
@@ -21742,6 +21820,7 @@ export namespace Prisma {
     name?: StringFilter<"ContactGroup"> | string
     color?: StringFilter<"ContactGroup"> | string
     emoji?: StringNullableFilter<"ContactGroup"> | string | null
+    vibeImageUrl?: StringNullableFilter<"ContactGroup"> | string | null
     userId?: StringFilter<"ContactGroup"> | string
     createdAt?: DateTimeFilter<"ContactGroup"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -21754,6 +21833,7 @@ export namespace Prisma {
     name?: SortOrder
     color?: SortOrder
     emoji?: SortOrderInput | SortOrder
+    vibeImageUrl?: SortOrderInput | SortOrder
     userId?: SortOrder
     createdAt?: SortOrder
     _count?: ContactGroupCountOrderByAggregateInput
@@ -21769,6 +21849,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"ContactGroup"> | string
     color?: StringWithAggregatesFilter<"ContactGroup"> | string
     emoji?: StringNullableWithAggregatesFilter<"ContactGroup"> | string | null
+    vibeImageUrl?: StringNullableWithAggregatesFilter<"ContactGroup"> | string | null
     userId?: StringWithAggregatesFilter<"ContactGroup"> | string
     createdAt?: DateTimeWithAggregatesFilter<"ContactGroup"> | Date | string
   }
@@ -22149,6 +22230,8 @@ export namespace Prisma {
     relationship?: StringNullableFilter<"Recipient"> | string | null
     notes?: StringNullableFilter<"Recipient"> | string | null
     avatarUrl?: StringNullableFilter<"Recipient"> | string | null
+    coverUrl?: StringNullableFilter<"Recipient"> | string | null
+    coverPositionY?: IntNullableFilter<"Recipient"> | number | null
     whatsapp?: StringNullableFilter<"Recipient"> | string | null
     facebook?: StringNullableFilter<"Recipient"> | string | null
     instagram?: StringNullableFilter<"Recipient"> | string | null
@@ -22173,6 +22256,8 @@ export namespace Prisma {
     relationship?: SortOrderInput | SortOrder
     notes?: SortOrderInput | SortOrder
     avatarUrl?: SortOrderInput | SortOrder
+    coverUrl?: SortOrderInput | SortOrder
+    coverPositionY?: SortOrderInput | SortOrder
     whatsapp?: SortOrderInput | SortOrder
     facebook?: SortOrderInput | SortOrder
     instagram?: SortOrderInput | SortOrder
@@ -22200,6 +22285,8 @@ export namespace Prisma {
     relationship?: StringNullableFilter<"Recipient"> | string | null
     notes?: StringNullableFilter<"Recipient"> | string | null
     avatarUrl?: StringNullableFilter<"Recipient"> | string | null
+    coverUrl?: StringNullableFilter<"Recipient"> | string | null
+    coverPositionY?: IntNullableFilter<"Recipient"> | number | null
     whatsapp?: StringNullableFilter<"Recipient"> | string | null
     facebook?: StringNullableFilter<"Recipient"> | string | null
     instagram?: StringNullableFilter<"Recipient"> | string | null
@@ -22224,6 +22311,8 @@ export namespace Prisma {
     relationship?: SortOrderInput | SortOrder
     notes?: SortOrderInput | SortOrder
     avatarUrl?: SortOrderInput | SortOrder
+    coverUrl?: SortOrderInput | SortOrder
+    coverPositionY?: SortOrderInput | SortOrder
     whatsapp?: SortOrderInput | SortOrder
     facebook?: SortOrderInput | SortOrder
     instagram?: SortOrderInput | SortOrder
@@ -22232,8 +22321,10 @@ export namespace Prisma {
     createdAt?: SortOrder
     messagePackId?: SortOrder
     _count?: RecipientCountOrderByAggregateInput
+    _avg?: RecipientAvgOrderByAggregateInput
     _max?: RecipientMaxOrderByAggregateInput
     _min?: RecipientMinOrderByAggregateInput
+    _sum?: RecipientSumOrderByAggregateInput
   }
 
   export type RecipientScalarWhereWithAggregatesInput = {
@@ -22251,6 +22342,8 @@ export namespace Prisma {
     relationship?: StringNullableWithAggregatesFilter<"Recipient"> | string | null
     notes?: StringNullableWithAggregatesFilter<"Recipient"> | string | null
     avatarUrl?: StringNullableWithAggregatesFilter<"Recipient"> | string | null
+    coverUrl?: StringNullableWithAggregatesFilter<"Recipient"> | string | null
+    coverPositionY?: IntNullableWithAggregatesFilter<"Recipient"> | number | null
     whatsapp?: StringNullableWithAggregatesFilter<"Recipient"> | string | null
     facebook?: StringNullableWithAggregatesFilter<"Recipient"> | string | null
     instagram?: StringNullableWithAggregatesFilter<"Recipient"> | string | null
@@ -22965,6 +23058,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     createdAt?: Date | string
     user: UserCreateNestedOneWithoutContactGroupsInput
     recipients?: RecipientCreateNestedManyWithoutGroupInput
@@ -22976,6 +23070,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     userId: string
     createdAt?: Date | string
     recipients?: RecipientUncheckedCreateNestedManyWithoutGroupInput
@@ -22987,6 +23082,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutContactGroupsNestedInput
     recipients?: RecipientUpdateManyWithoutGroupNestedInput
@@ -22998,6 +23094,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     recipients?: RecipientUncheckedUpdateManyWithoutGroupNestedInput
@@ -23009,6 +23106,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     userId: string
     createdAt?: Date | string
   }
@@ -23018,6 +23116,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -23026,6 +23125,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -23428,6 +23528,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -23450,6 +23552,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -23472,6 +23576,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23494,6 +23600,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23516,6 +23624,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -23537,6 +23647,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23556,6 +23668,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -24406,6 +24520,7 @@ export namespace Prisma {
     name?: SortOrder
     color?: SortOrder
     emoji?: SortOrder
+    vibeImageUrl?: SortOrder
     userId?: SortOrder
     createdAt?: SortOrder
   }
@@ -24415,6 +24530,7 @@ export namespace Prisma {
     name?: SortOrder
     color?: SortOrder
     emoji?: SortOrder
+    vibeImageUrl?: SortOrder
     userId?: SortOrder
     createdAt?: SortOrder
   }
@@ -24424,6 +24540,7 @@ export namespace Prisma {
     name?: SortOrder
     color?: SortOrder
     emoji?: SortOrder
+    vibeImageUrl?: SortOrder
     userId?: SortOrder
     createdAt?: SortOrder
   }
@@ -24806,6 +24923,8 @@ export namespace Prisma {
     relationship?: SortOrder
     notes?: SortOrder
     avatarUrl?: SortOrder
+    coverUrl?: SortOrder
+    coverPositionY?: SortOrder
     whatsapp?: SortOrder
     facebook?: SortOrder
     instagram?: SortOrder
@@ -24813,6 +24932,10 @@ export namespace Prisma {
     groupId?: SortOrder
     createdAt?: SortOrder
     messagePackId?: SortOrder
+  }
+
+  export type RecipientAvgOrderByAggregateInput = {
+    coverPositionY?: SortOrder
   }
 
   export type RecipientMaxOrderByAggregateInput = {
@@ -24827,6 +24950,8 @@ export namespace Prisma {
     relationship?: SortOrder
     notes?: SortOrder
     avatarUrl?: SortOrder
+    coverUrl?: SortOrder
+    coverPositionY?: SortOrder
     whatsapp?: SortOrder
     facebook?: SortOrder
     instagram?: SortOrder
@@ -24848,6 +24973,8 @@ export namespace Prisma {
     relationship?: SortOrder
     notes?: SortOrder
     avatarUrl?: SortOrder
+    coverUrl?: SortOrder
+    coverPositionY?: SortOrder
     whatsapp?: SortOrder
     facebook?: SortOrder
     instagram?: SortOrder
@@ -24855,6 +24982,10 @@ export namespace Prisma {
     groupId?: SortOrder
     createdAt?: SortOrder
     messagePackId?: SortOrder
+  }
+
+  export type RecipientSumOrderByAggregateInput = {
+    coverPositionY?: SortOrder
   }
 
   export type RecipientScalarRelationFilter = {
@@ -26951,6 +27082,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     createdAt?: Date | string
     recipients?: RecipientCreateNestedManyWithoutGroupInput
     guardians?: GuardianCreateNestedManyWithoutGroupInput
@@ -26961,6 +27093,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     createdAt?: Date | string
     recipients?: RecipientUncheckedCreateNestedManyWithoutGroupInput
     guardians?: GuardianUncheckedCreateNestedManyWithoutGroupInput
@@ -27229,6 +27362,7 @@ export namespace Prisma {
     name?: StringFilter<"ContactGroup"> | string
     color?: StringFilter<"ContactGroup"> | string
     emoji?: StringNullableFilter<"ContactGroup"> | string | null
+    vibeImageUrl?: StringNullableFilter<"ContactGroup"> | string | null
     userId?: StringFilter<"ContactGroup"> | string
     createdAt?: DateTimeFilter<"ContactGroup"> | Date | string
   }
@@ -27402,6 +27536,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -27423,6 +27559,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -27558,6 +27696,8 @@ export namespace Prisma {
     relationship?: StringNullableFilter<"Recipient"> | string | null
     notes?: StringNullableFilter<"Recipient"> | string | null
     avatarUrl?: StringNullableFilter<"Recipient"> | string | null
+    coverUrl?: StringNullableFilter<"Recipient"> | string | null
+    coverPositionY?: IntNullableFilter<"Recipient"> | number | null
     whatsapp?: StringNullableFilter<"Recipient"> | string | null
     facebook?: StringNullableFilter<"Recipient"> | string | null
     instagram?: StringNullableFilter<"Recipient"> | string | null
@@ -27695,6 +27835,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -27716,6 +27858,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -28547,6 +28691,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     createdAt?: Date | string
     user: UserCreateNestedOneWithoutContactGroupsInput
     guardians?: GuardianCreateNestedManyWithoutGroupInput
@@ -28557,6 +28702,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     userId: string
     createdAt?: Date | string
     guardians?: GuardianUncheckedCreateNestedManyWithoutGroupInput
@@ -28656,6 +28802,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutContactGroupsNestedInput
     guardians?: GuardianUpdateManyWithoutGroupNestedInput
@@ -28666,6 +28813,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     guardians?: GuardianUncheckedUpdateManyWithoutGroupNestedInput
@@ -28762,6 +28910,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -28783,6 +28933,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -28820,6 +28972,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28841,6 +28995,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -29308,6 +29464,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     createdAt?: Date | string
     user: UserCreateNestedOneWithoutContactGroupsInput
     recipients?: RecipientCreateNestedManyWithoutGroupInput
@@ -29318,6 +29475,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     userId: string
     createdAt?: Date | string
     recipients?: RecipientUncheckedCreateNestedManyWithoutGroupInput
@@ -29429,6 +29587,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutContactGroupsNestedInput
     recipients?: RecipientUpdateManyWithoutGroupNestedInput
@@ -29439,6 +29598,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     recipients?: RecipientUncheckedUpdateManyWithoutGroupNestedInput
@@ -29857,6 +30017,7 @@ export namespace Prisma {
     name: string
     color?: string
     emoji?: string | null
+    vibeImageUrl?: string | null
     createdAt?: Date | string
   }
 
@@ -30017,6 +30178,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     recipients?: RecipientUpdateManyWithoutGroupNestedInput
     guardians?: GuardianUpdateManyWithoutGroupNestedInput
@@ -30027,6 +30189,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     recipients?: RecipientUncheckedUpdateManyWithoutGroupNestedInput
     guardians?: GuardianUncheckedUpdateManyWithoutGroupNestedInput
@@ -30037,6 +30200,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     emoji?: NullableStringFieldUpdateOperationsInput | string | null
+    vibeImageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -30136,6 +30300,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -30165,6 +30331,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30186,6 +30354,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30207,6 +30377,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30266,6 +30438,8 @@ export namespace Prisma {
     relationship?: string | null
     notes?: string | null
     avatarUrl?: string | null
+    coverUrl?: string | null
+    coverPositionY?: number | null
     whatsapp?: string | null
     facebook?: string | null
     instagram?: string | null
@@ -30343,6 +30517,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30364,6 +30540,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30385,6 +30563,8 @@ export namespace Prisma {
     relationship?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    coverPositionY?: NullableIntFieldUpdateOperationsInput | number | null
     whatsapp?: NullableStringFieldUpdateOperationsInput | string | null
     facebook?: NullableStringFieldUpdateOperationsInput | string | null
     instagram?: NullableStringFieldUpdateOperationsInput | string | null

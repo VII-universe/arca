@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useTransition } from "react";
+import { uploadGlobalVibe } from "@/app/actions/settings";
 import { Sun, Moon, Palette, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,6 +61,8 @@ export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
   const { vibe, setVibe, customImageUrl, setCustomImageUrl } = useVibe();
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, startUpload] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleUrlCommit() {
     const val = urlInputRef.current?.value.trim() ?? "";
@@ -157,26 +160,58 @@ export function ThemeSwitcher() {
 
         <DropdownMenuSeparator className="-mx-3" />
 
+
         {/* ── Custom image URL ──────────────────────────────────── */}
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
             <ImageIcon className="size-3" />
             Custom image URL
           </p>
-          <input
-            ref={urlInputRef}
-            type="url"
-            defaultValue={customImageUrl}
-            placeholder="https://images.unsplash.com/…"
-            onBlur={handleUrlCommit}
-            onKeyDown={(e) => e.key === "Enter" && handleUrlCommit()}
-            className={cn(
-              "w-full rounded-lg border px-2.5 py-2 text-[11px]",
-              "bg-background border-border text-foreground placeholder:text-muted-foreground/50",
-              "outline-none focus:ring-1 focus:ring-ring/60 transition-colors",
-              vibe === "custom" && customImageUrl && "border-ring/60"
-            )}
-          />
+          <div className="flex gap-2">
+            <input
+              ref={urlInputRef}
+              type="url"
+              defaultValue={customImageUrl}
+              placeholder="https://images.unsplash.com/…"
+              onBlur={handleUrlCommit}
+              onKeyDown={(e) => e.key === "Enter" && handleUrlCommit()}
+              className={cn(
+                "w-full rounded-lg border px-2.5 py-2 text-[11px]",
+                "bg-background border-border text-foreground placeholder:text-muted-foreground/50",
+                "outline-none focus:ring-1 focus:ring-ring/60 transition-colors",
+                vibe === "custom" && customImageUrl && "border-ring/60"
+              )}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 h-[34px] w-[34px]"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? "..." : <Palette className="size-3.5" />}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                startUpload(async () => {
+                  const fd = new FormData();
+                  fd.set("file", file);
+                  const res = await uploadGlobalVibe(fd);
+                  if ("ok" in res) {
+                    setCustomImageUrl(res.vibeImageUrl);
+                    if (urlInputRef.current) urlInputRef.current.value = res.vibeImageUrl;
+                  }
+                  e.target.value = "";
+                });
+              }}
+            />
+          </div>
           {vibe === "custom" && customImageUrl && (
             <button
               onClick={() => {
@@ -190,9 +225,10 @@ export function ThemeSwitcher() {
             </button>
           )}
           <p className="mt-1 text-[10px] text-muted-foreground/60 leading-snug">
-            Press Enter or click away to apply.
+            Press Enter or click away to apply, or upload an image.
           </p>
         </div>
+
       </DropdownMenuContent>
     </DropdownMenu>
   );
