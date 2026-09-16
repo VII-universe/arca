@@ -153,7 +153,7 @@ export default async function GuardiansPage() {
           {/* Heartbeat webhook */}
           <HeartbeatWidget
             webhookSecret={user.webhookSecret ?? ""}
-            appUrl={process.env.NEXT_PUBLIC_SITE_URL ?? "https://arca-navy.vercel.app"}
+            appUrl={process.env.NEXT_PUBLIC_SITE_URL ?? "https://arca-taupe.vercel.app"}
           />
         </div>
 
