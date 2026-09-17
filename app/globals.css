@@ -39,6 +39,9 @@
   --orb-orange: #ff8c00;
   --orb-blue: #1e90ff;
 
+  --gradient-primary: linear-gradient(135deg, var(--orb-magenta), var(--orb-pink));
+  --gradient-secondary: linear-gradient(135deg, var(--orb-turquoise), var(--orb-blue));
+
   --f-sans: var(--font-inter), system-ui, sans-serif;
   --f-serif: var(--font-instrument-serif), var(--font-playfair), Georgia, serif;
   --r-sm: 8px;
@@ -388,7 +391,7 @@ html[data-arca-dark="true"] body { background: #100D0A; }
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
   box-shadow: var(--glass-shadow-glow), var(--glass-shadow-inset);
-  color: white;
+  color: var(--ink);
   transition: box-shadow .25s cubic-bezier(.22,1,.36,1), transform .22s cubic-bezier(.22,1,.36,1), border-color .2s;
 }
 .arca-card.elev {
