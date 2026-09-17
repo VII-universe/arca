@@ -229,7 +229,10 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 .arca-app, .arca-app * { box-sizing: border-box; }
 .arca-app {
   display: grid;
-  grid-template-columns: 264px 1fr;
+  /* Sidebar is a hover-expanding overlay rail (see .arca-side below) —
+     reserve just a thin trigger strip in the grid; the full sidebar
+     floats on top of the main content when expanded, it doesn't push it. */
+  grid-template-columns: 16px 1fr;
   height: 100vh;
   width: 100%;
   background: var(--bg);
@@ -253,7 +256,7 @@ html[data-arca-dark="true"] body { background: #100D0A; }
     radial-gradient(ellipse 40% 40% at 60% 30%,  color-mix(in srgb, var(--sky)    4%, transparent),  transparent);
 }
 
-/* ── Glass Sidebar ───────────────────────────────────────────────── */
+/* ── Glass Sidebar — hover-expanding overlay rail ──────────────────── */
 .arca-side {
   background: var(--glass-bg);
   backdrop-filter: blur(32px) saturate(180%);
@@ -262,11 +265,31 @@ html[data-arca-dark="true"] body { background: #100D0A; }
   display: flex; flex-direction: column;
   padding: 20px 16px;
   overflow: hidden;
-  position: relative;
-  z-index: 1;
+  /* Sits in the grid's first (16px) track at rest, then floats over the
+     main content on hover instead of pushing it — width/position stay
+     fixed, only the transform slides it off/on screen. */
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 264px;
+  height: 100vh;
+  transform: translateX(calc(-100% + 16px));
+  transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s ease;
+  z-index: 50;
   /* inner right-edge highlight */
   box-shadow: inset -1px 0 0 rgba(255,255,255,.06);
 }
+.arca-side:hover,
+.arca-side:focus-within {
+  transform: translateX(0);
+  box-shadow: var(--sh-3), inset -1px 0 0 rgba(255,255,255,.06);
+}
+/* Scrollable nav/recipients list — keep scroll, hide the visible scrollbar track */
+.arca-side__scroll {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* old Edge */
+}
+.arca-side__scroll::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
 .arca-brand {
   display: flex; align-items: center; gap: 10px;
   padding: 4px 8px 20px;
