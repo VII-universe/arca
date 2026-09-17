@@ -375,6 +375,10 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 
 /* ── Main area ───────────────────────────────────────────────────── */
 .arca-main {
+  /* .arca-side is now position:fixed (hover-expanding rail) and no longer
+     participates in grid layout, so auto-placement alone can no longer be
+     trusted to put this in the second (1fr) track — pin it explicitly. */
+  grid-column: 2;
   overflow-y: auto;
   position: relative;
   background: transparent;
