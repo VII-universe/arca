@@ -17,6 +17,10 @@ export default function LoginPage() {
       }}
     >
       {/* ── Left — brand panel ─────────────────────────────────────── */}
+      {/* Backdrop here is the always-dark VibeBackground showing through
+          (background: transparent), independent of the user's light/dark
+          preference — pin --ink/--muted/--accent to the dark-mode values
+          so text stays legible against it regardless of that preference. */}
       <div style={{
         display: "flex",
         flexDirection: "column",
@@ -26,6 +30,11 @@ export default function LoginPage() {
         borderRight: "1px solid var(--glass-border)",
         position: "relative",
         overflow: "hidden",
+        ["--ink" as string]: "#F0EAE0",
+        ["--ink-2" as string]: "#CCB89E",
+        ["--muted" as string]: "#8A7D6E",
+        ["--muted-2" as string]: "#5A5044",
+        ["--accent" as string]: "#D08848",
       }}>
         {/* Decorative arc waves */}
         <svg

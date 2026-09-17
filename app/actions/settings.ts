@@ -105,13 +105,6 @@ export async function uploadGlobalVibe(
 
   const { data: publicData } = supabaseAdmin.storage.from("vibe-backgrounds").getPublicUrl(path);
 
-
-  await prisma.userSettings.upsert({
-    where: { userId: user.id },
-    update: { switchType: "INACTIVITY" }, // Just touching to keep it alive, actually we should store the URL if there was a field for it.
-    create: { userId: user.id, switchType: "INACTIVITY" }
-  });
-
   return { ok: true, vibeImageUrl: publicData?.publicUrl ?? "" };
 }
 
