@@ -2,7 +2,7 @@
 
 import { useState, useRef, useTransition, useCallback } from "react";
 import { toast } from "sonner";
-import { updateRecipientProfile, uploadRecipientAvatar, addMemory, deleteMemory } from "@/app/actions/recipients";
+import { updateRecipientProfile, uploadRecipientAvatar, uploadRecipientCover, addMemory, deleteMemory } from "@/app/actions/recipients";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const Ic = ({ d, size = 14 }: { d: string; size?: number }) => (
@@ -387,7 +387,9 @@ export interface RecipientProfileEditorProps {
   recipientId: string;
   recipientName: string;
   initialProfile: ProfileData;
-  initialAvatarUrl: string | null; // already signed URL or null
+  initialAvatarUrl: string | null;
+  initialCoverUrl?: string | null;
+  initialCoverPositionY?: number | null; // already signed URL or null
   initialMemories: Array<{
     id: string;
     title: string | null;
@@ -418,7 +420,21 @@ export default function RecipientProfileEditor({
   const [dragOver, setDragOver] = useState(false);
   const [pendingDropFile, setPendingDropFile] = useState<File | null>(null);
   const [uploadingAvatar, startAvatarUpload] = useTransition();
+  const [uploadingCover, startCoverUpload] = useTransition();
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Cover upload
+  const handleCoverFile = useCallback((file: File) => {
+    startCoverUpload(async () => {
+      const fd = new FormData();
+      fd.set("file", file);
+      const res = await uploadRecipientCover(recipientId, fd);
+      if ("error" in res) { toast.error(res.error); return; }
+      toast.success("Úvodní fotka uložena.");
+      window.location.reload();
+    });
+  }, [recipientId]);
 
   // Avatar upload
   const handleAvatarFile = useCallback((file: File) => {
@@ -457,7 +473,24 @@ export default function RecipientProfileEditor({
   return (
     <div data-arca-theme="" style={{ color: "var(--ink)" }}>
 
+
+      {/* ── Cover action ───────────────────────────────────────── */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -60, marginBottom: 40, position: "relative", zIndex: 10 }}>
+        <button
+          type="button"
+          onClick={() => coverInputRef.current?.click()}
+          className="arca-btn sm arca-btn--ghost"
+          style={{ background: "rgba(0,0,0,0.5)", color: "#fff", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(10px)", opacity: uploadingCover ? 0.5 : 1 }}
+          disabled={uploadingCover}
+        >
+          {uploadingCover ? "Nahrávám..." : "Změnit úvodní fotku"}
+        </button>
+        <input ref={coverInputRef} type="file" accept="image/*" style={{ display: "none" }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleCoverFile(f); e.target.value = ""; }} />
+      </div>
+
       {/* ── Avatar section ───────────────────────────────────────── */}
+
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         <div style={{ position: "relative" }}>
           {avatarUrl ? (

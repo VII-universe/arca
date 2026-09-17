@@ -106,7 +106,7 @@ export default function SidebarContent({
       </div>
 
       {/* ── Scrollable middle: search + nav + recipients ────────── */}
-      <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+      <div className="arca-side__scroll" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
         <div className="arca-search">
           <IcSearch />
           <input placeholder="Hledat ve schránce…" />

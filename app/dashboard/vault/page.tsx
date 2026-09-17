@@ -62,7 +62,7 @@ export default async function VaultPage({
     prisma.contactGroup.findMany({
       where: { userId: authUser.id },
       orderBy: { createdAt: "asc" },
-      select: { id: true, name: true, color: true, emoji: true },
+      select: { id: true, name: true, color: true, emoji: true, vibeImageUrl: true },
     }),
   ]);
 
@@ -113,7 +113,7 @@ export default async function VaultPage({
 
         <VaultClient
           initialPeople={people}
-          initialGroups={groups as VaultGroup[]}
+          initialGroups={groups as any}
           initialGroupId={initialGroupId}
         />
 
