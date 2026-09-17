@@ -25,6 +25,12 @@ export const CATEGORIES: {
   label: string;
   sub: string;
   color: string;
+  // --sky-soft/--sage-soft are pastel tokens with no dark-mode variant
+  // (unlike --accent-tint/--bg-tint, which do flip). Pin readable text
+  // colors for those two so it doesn't inherit the page's dark-mode ink
+  // (which would render light text on the still-light card).
+  text?: string;
+  sub_text?: string;
   icon: React.ReactNode;
 }[] = [
   {
@@ -32,6 +38,8 @@ export const CATEGORIES: {
     label: "Předplatné",
     sub: "Netflix, Spotify, pojistky, nájmy…",
     color: "var(--sky-soft)",
+    text: "#3E5A7E",
+    sub_text: "#5A7391",
     icon: (
       <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="5" width="20" height="14" rx="2"/>
@@ -56,6 +64,8 @@ export const CATEGORIES: {
     label: "Majetek",
     sub: "Nemovitosti, vozidla, účty, klíče…",
     color: "var(--sage-soft)",
+    text: "#4E5B3F",
+    sub_text: "#6B7A57",
     icon: (
       <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 12.5L12 4l9 8.5"/>
@@ -467,10 +477,10 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--sh-2)"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = ""; }}
           >
-            <span style={{ color: "var(--ink-2)" }}>{cat.icon}</span>
+            <span style={{ color: cat.text ?? "var(--ink-2)" }}>{cat.icon}</span>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>{cat.label}</div>
-              <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 3, lineHeight: 1.4 }}>{cat.sub}</div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: cat.text ?? "var(--ink)" }}>{cat.label}</div>
+              <div style={{ fontSize: 11.5, color: cat.sub_text ?? "var(--muted)", marginTop: 3, lineHeight: 1.4 }}>{cat.sub}</div>
             </div>
           </button>
         ))}

@@ -377,7 +377,7 @@ export default async function DashboardPage() {
             <div className="arca-card flat" style={{ background: "var(--ink)", color: "var(--bg)", border: "none" }}>
               <div style={{ padding: "20px 22px" }}>
                 <div className="arca-row arca-between" style={{ marginBottom: 10 }}>
-                  <span className="arca-kicker" style={{ color: "rgba(255,255,255,0.5)" }}>Týdenní rituál</span>
+                  <span className="arca-kicker" style={{ color: "color-mix(in srgb, var(--bg) 50%, transparent)" }}>Týdenní rituál</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>
                 </div>
                 <p style={{ fontFamily: "var(--f-serif)", fontSize: 22, lineHeight: 1.2, margin: "0 0 18px" }}>
