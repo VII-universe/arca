@@ -117,11 +117,27 @@ export default async function DashboardPage() {
   // Recent
   const recent = packs.slice(0, 4);
 
-  // Signed avatar URLs for the primary recipient of each recent/upcoming pack
+  // People strip — every unique recipient across all packs, most messages first
+  type PersonSummary = { id: string; name: string; avatarUrl: string | null; packCount: number };
+  const peopleMap = new Map<string, PersonSummary>();
+  for (const p of packs) {
+    for (const r of p.recipients) {
+      const key = r.email ?? r.name;
+      const existing = peopleMap.get(key);
+      if (existing) existing.packCount += 1;
+      else peopleMap.set(key, { id: r.id, name: r.name, avatarUrl: r.avatarUrl, packCount: 1 });
+    }
+  }
+  const people = [...peopleMap.values()].sort((a, b) => b.packCount - a.packCount);
+
+  // Signed avatar URLs — primary recipient of each recent/upcoming pack, plus everyone in the people strip
   const avatarPaths = new Set<string>();
   for (const p of [...recent, ...upcoming]) {
     const path = p.recipients[0]?.avatarUrl;
     if (path) avatarPaths.add(path);
+  }
+  for (const person of people) {
+    if (person.avatarUrl) avatarPaths.add(person.avatarUrl);
   }
   const avatarEntries = await Promise.all(
     [...avatarPaths].map(async (path) => [path, await getSignedAvatarUrl(path)] as const)
@@ -304,6 +320,46 @@ export default async function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* ── People strip — horizontally swipeable, esp. on mobile ── */}
+        {people.length > 0 && (
+          <div style={{ marginBottom: 36 }}>
+            <h3 className="arca-h3" style={{ marginBottom: 12 }}>Podle koho</h3>
+            <div
+              className="arca-side__scroll"
+              style={{
+                display: "flex", gap: 18, overflowX: "auto",
+                scrollSnapType: "x proximity", paddingBottom: 4,
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              {people.map((person) => (
+                <Link
+                  key={person.id}
+                  href={`/dashboard/vault/${person.id}`}
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+                    textDecoration: "none", flexShrink: 0, width: 76,
+                    scrollSnapAlign: "start",
+                  }}
+                >
+                  <Avatar
+                    src={person.avatarUrl ? avatarUrlByPath.get(person.avatarUrl) : null}
+                    initials={initialsFor(person.name)}
+                    tone={toneFor(person.name)}
+                    size="xl"
+                  />
+                  <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 76 }}>
+                    {person.name.split(" ")[0]}
+                  </span>
+                  <span className="arca-mono" style={{ fontSize: 10, color: "var(--muted)" }}>
+                    {person.packCount} {person.packCount === 1 ? "zpráva" : person.packCount < 5 ? "zprávy" : "zpráv"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Stats row ───────────────────────────────────────────── */}
         <div className="arca-stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 36 }}>
