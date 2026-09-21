@@ -1021,7 +1021,7 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
               </button>
             ))}
 
-            <div style={{ width: 1, background: "rgba(255,255,255,0.15)", height: 16, margin: "0 4px" }} />
+            <div style={{ width: 1, background: "color-mix(in srgb, var(--bg) 15%, transparent)", height: 16, margin: "0 4px" }} />
 
             {/* Crop */}
             <button type="button" title="Ořezat obrázek"

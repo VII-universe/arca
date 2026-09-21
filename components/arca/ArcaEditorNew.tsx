@@ -75,7 +75,7 @@ function TriggerCard({ active, onClick, Ic: Icon, title, sub }: { active: boolea
     }}>
       <span style={{ color: "var(--accent)" }}><Icon /></span>
       <div style={{ fontWeight: 550, fontSize: 13 }}>{title}</div>
-      <div style={{ fontSize: 12, color: active ? "rgba(255,255,255,0.6)" : "var(--muted)", marginTop: -2 }}>{sub}</div>
+      <div style={{ fontSize: 12, color: active ? "color-mix(in srgb, var(--bg) 60%, transparent)" : "var(--muted)", marginTop: -2 }}>{sub}</div>
     </button>
   );
 }
@@ -390,7 +390,7 @@ export default function ArcaEditorNew({
                           return (
                             <button key={c.id} type="button" onClick={() => handleToggleContact(c)} disabled={recipientPending}
                               style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px 6px 6px", borderRadius: "var(--r-pill)", border: `1.5px solid ${added ? "var(--ink)" : "var(--hairline)"}`, background: added ? "var(--ink)" : "var(--surface)", color: added ? "var(--bg)" : "var(--ink)", fontSize: 12.5, fontWeight: 500, cursor: "pointer", transition: "all .15s", fontFamily: "var(--f-sans)" }}>
-                              <span className={`arca-avatar sm ${toneFor(c.name)}`} style={{ background: added ? "rgba(255,255,255,0.15)" : undefined }}>{initials(c.name)}</span>
+                              <span className={`arca-avatar sm ${toneFor(c.name)}`} style={{ background: added ? "color-mix(in srgb, var(--bg) 15%, transparent)" : undefined }}>{initials(c.name)}</span>
                               {c.name.split(" ")[0]}
                               {added && <IcCheck />}
                             </button>

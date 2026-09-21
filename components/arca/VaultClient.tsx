@@ -411,12 +411,12 @@ function GroupEditModal({
                   onClick={() => toggleMember(p.id)}
                   style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: "var(--r-md)", border: `1.5px solid ${isMember ? "var(--ink)" : "var(--hairline)"}`, background: isMember ? "var(--ink)" : "var(--surface)", color: isMember ? "var(--bg)" : "var(--ink)", cursor: "pointer", transition: "all .15s", textAlign: "left", fontFamily: "var(--f-sans)" }}
                 >
-                  <span className={`arca-avatar sm ${toneFor(p.name)}`} style={{ background: isMember ? "rgba(255,255,255,0.15)" : undefined, flexShrink: 0 }}>{initials(p.name)}</span>
+                  <span className={`arca-avatar sm ${toneFor(p.name)}`} style={{ background: isMember ? "color-mix(in srgb, var(--bg) 15%, transparent)" : undefined, flexShrink: 0 }}>{initials(p.name)}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 550, fontSize: 13.5 }}>{p.name}</div>
                     {p.email && <div style={{ fontSize: 12, opacity: .65 }}>{p.email}</div>}
                   </div>
-                  <div style={{ width: 20, height: 20, borderRadius: "50%", border: `1.5px solid ${isMember ? "rgba(255,255,255,0.4)" : "var(--hairline-2)"}`, display: "grid", placeItems: "center", flexShrink: 0, background: isMember ? "rgba(255,255,255,0.15)" : "transparent" }}>
+                  <div style={{ width: 20, height: 20, borderRadius: "50%", border: `1.5px solid ${isMember ? "color-mix(in srgb, var(--bg) 40%, transparent)" : "var(--hairline-2)"}`, display: "grid", placeItems: "center", flexShrink: 0, background: isMember ? "color-mix(in srgb, var(--bg) 15%, transparent)" : "transparent" }}>
                     {isMember && <IcCheck />}
                   </div>
                 </button>

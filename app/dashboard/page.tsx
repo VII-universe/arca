@@ -472,13 +472,13 @@ export default async function DashboardPage() {
             <div className="arca-card flat" style={{ background: "var(--ink)", color: "var(--bg)", border: "none" }}>
               <div style={{ padding: "20px 22px" }}>
                 <div className="arca-row arca-between" style={{ marginBottom: 10 }}>
-                  <span className="arca-kicker" style={{ color: "rgba(255,255,255,0.5)" }}>Týdenní rituál</span>
+                  <span className="arca-kicker" style={{ color: "color-mix(in srgb, var(--bg) 55%, transparent)" }}>Týdenní rituál</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>
                 </div>
                 <p style={{ fontFamily: "var(--f-serif)", fontSize: 22, lineHeight: 1.2, margin: "0 0 18px" }}>
                   Co bys chtěl, aby si dnes <em style={{ color: "var(--accent)" }}>někdo</em> pamatoval?
                 </p>
-                <Link href="/dashboard/arca/new" className="arca-btn" style={{ background: "rgba(255,255,255,0.08)", color: "var(--bg)", borderColor: "rgba(255,255,255,0.12)" }}>
+                <Link href="/dashboard/arca/new" className="arca-btn" style={{ background: "color-mix(in srgb, var(--bg) 8%, transparent)", color: "var(--bg)", borderColor: "color-mix(in srgb, var(--bg) 12%, transparent)" }}>
                   Tříminutové psaní
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </Link>

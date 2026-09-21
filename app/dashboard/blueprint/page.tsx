@@ -75,7 +75,7 @@ export default async function BlueprintPage() {
               <div style={{ fontFamily: "var(--f-serif)", fontSize: 18, fontWeight: 400 }}>
                 Informace vidíš jen ty. <em style={{ color: "var(--accent)" }}>Vždy.</em>
               </div>
-              <p style={{ margin: "4px 0 0", color: "rgba(255,255,255,.6)", fontSize: 12.5 }}>
+              <p style={{ margin: "4px 0 0", color: "color-mix(in srgb, var(--bg) 65%, transparent)", fontSize: 12.5 }}>
                 Strážci ani příjemci nemají k manuálu přístup. Data jsou součástí tvého uzamčeného profilu.
               </p>
             </div>

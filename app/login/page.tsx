@@ -63,7 +63,7 @@ export default function LoginPage() {
               boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
             }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M5 19c0-8 3.5-14 7-14s7 6 7 14" stroke="rgba(255,255,255,0.5)" strokeWidth="1.8" strokeLinecap="round"/>
+                <path d="M5 19c0-8 3.5-14 7-14s7 6 7 14" stroke="color-mix(in srgb, var(--bg) 50%, transparent)" strokeWidth="1.8" strokeLinecap="round"/>
                 <circle cx="12" cy="20" r="1.8" fill="var(--accent)"/>
               </svg>
             </div>

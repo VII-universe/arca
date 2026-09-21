@@ -195,7 +195,7 @@ function TriggerCard({ active, onClick, Ic: IconComp, title, sub }: {
     >
       <span style={{ color: "var(--accent)" }}><IconComp /></span>
       <div style={{ fontWeight: 550, fontSize: 14 }}>{title}</div>
-      <div style={{ fontSize: 12, color: active ? "rgba(255,255,255,0.6)" : "var(--muted)", marginTop: -4 }}>{sub}</div>
+      <div style={{ fontSize: 12, color: active ? "color-mix(in srgb, var(--bg) 60%, transparent)" : "var(--muted)", marginTop: -4 }}>{sub}</div>
     </button>
   );
 }
@@ -337,16 +337,16 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
                   {selectedRecipients.map(r => (
                     <div key={r.id} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 10px 4px 4px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 13, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
-                      <Avatar src={r.avatarUrl} initials={initials(r.name)} tone={toneFor(r.name)} size="sm" style={{ border: "1.5px solid rgba(255,255,255,0.25)" }} />
+                      <Avatar src={r.avatarUrl} initials={initials(r.name)} tone={toneFor(r.name)} size="sm" style={{ border: "1.5px solid color-mix(in srgb, var(--bg) 25%, transparent)" }} />
                       {r.name.split(" ")[0]}
-                      <button type="button" onClick={() => toggleId(r.id)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
+                      <button type="button" onClick={() => toggleId(r.id)} style={{ background: "none", border: "none", color: "color-mix(in srgb, var(--bg) 60%, transparent)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
                     </div>
                   ))}
                   {newPeople.map((p, i) => (
                     <div key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 10px 4px 4px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 13, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
-                      <span className="arca-avatar sm" style={{ background: "rgba(255,255,255,0.15)", fontSize: 9 }}>{initials(p.name)}</span>
+                      <span className="arca-avatar sm" style={{ background: "color-mix(in srgb, var(--bg) 15%, transparent)", fontSize: 9 }}>{initials(p.name)}</span>
                       {p.name.split(" ")[0]}
-                      <button type="button" onClick={() => removeNewPerson(i)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
+                      <button type="button" onClick={() => removeNewPerson(i)} style={{ background: "none", border: "none", color: "color-mix(in srgb, var(--bg) 60%, transparent)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
                     </div>
                   ))}
                 </div>
