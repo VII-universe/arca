@@ -193,6 +193,14 @@
   /* glass */
   --glass-bg:     color-mix(in srgb, var(--surface) 78%, transparent);
   --glass-border: color-mix(in srgb, var(--hairline) 70%, transparent);
+  /* Primary buttons/headings/CTA badges all key off these two — they
+     used to be hardcoded to the orb magenta/pink regardless of the
+     chosen accent, which is why "primary" UI stayed pink no matter
+     what Appearance → Akcent was set to. Tie them to the live accent
+     (including its custom-picked value) so switching accent actually
+     recolors everything that reads as "primary". */
+  --gradient-primary:   linear-gradient(135deg, var(--accent), var(--accent-deep));
+  --gradient-secondary: linear-gradient(135deg, var(--sage), var(--sky));
 }
 
 /* ── Accent palettes ─────────────────────────────────────────────── */
@@ -204,6 +212,21 @@ html[data-accent="sage"]  { --accent:#7C8A6B; --accent-soft:#D7DCCB; --accent-ti
 html[data-accent="dusk"]  { --accent:#9B6A8B; --accent-soft:#E2D0DD; --accent-tint:#EDE0E8; --accent-deep:#6B4561; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
 html[data-accent="sea"]   { --accent:#4F8B95; --accent-soft:#C8DDE0; --accent-tint:#DEEAEC; --accent-deep:#2F5E66; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
 html[data-accent="ink"]   { --accent:#4A4540; --accent-soft:#D6D1C8; --accent-tint:#E8E3D9; --accent-deep:#2A2520; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
+
+/* ── Custom accent (picked via a native color input in Appearance) ──
+   --accent-custom is a raw hex set inline on <html> by JS; everything
+   else derives from it with color-mix against the *local* --surface/
+   --ink already in scope at each [data-arca-theme] subtree, so one
+   picked color produces correct light AND dark variants automatically
+   — no separate JS-computed dark palette needed, unlike the 5 presets
+   above which hardcode both. */
+html[data-accent="custom"] { --accent: var(--accent-custom, #B6754A); --clay: var(--accent); }
+html[data-accent="custom"] [data-arca-theme] {
+  --accent-soft: color-mix(in srgb, var(--accent-custom, #B6754A) 38%, var(--surface));
+  --accent-tint: color-mix(in srgb, var(--accent-custom, #B6754A) 16%, var(--surface));
+  --accent-deep: color-mix(in srgb, var(--accent-custom, #B6754A) 62%, var(--ink));
+  --clay-soft: var(--accent-soft); --clay-tint: var(--accent-tint);
+}
 
 /* ── Dark mode ───────────────────────────────────────────────────── */
 html[data-arca-dark="true"] [data-arca-theme],
@@ -227,6 +250,13 @@ html[data-arca-dark="true"][data-accent="sage"]  { --accent:#9AAF80; --accent-so
 html[data-arca-dark="true"][data-accent="dusk"]  { --accent:#B880A0; --accent-soft:#4A2C44; --accent-tint:#2A1828; --accent-deep:#D8A8C0; }
 html[data-arca-dark="true"][data-accent="sea"]   { --accent:#70AABC; --accent-soft:#224855; --accent-tint:#142C35; --accent-deep:#98CDD8; }
 html[data-arca-dark="true"][data-accent="ink"]   { --accent:#B0A898; --accent-soft:#38322A; --accent-tint:#22201A; --accent-deep:#D8CFC0; }
+/* The bare html[data-arca-dark="true"] rule above (shared with the clay
+   dark fallback) would otherwise stomp --accent back to clay's dark
+   value here too, since it has no [data-accent="custom"] condition —
+   restore the picked color. --accent-soft/tint/deep don't need this:
+   they're already derived generically further up via color-mix against
+   --surface/--ink, which are already dark-mode-correct at this point. */
+html[data-arca-dark="true"][data-accent="custom"] { --accent: var(--accent-custom, #B6754A); --clay: var(--accent); }
 
 html[data-arca-dark="true"] body { background: #100D0A; }
 
@@ -463,13 +493,13 @@ html[data-arca-glow="off"] {
 .arca-btn:active { transform: translateY(0); }
 .arca-btn--primary {
   background: var(--gradient-primary);
-  color: var(--bg);
-  box-shadow: 0 4px 15px rgba(255, 0, 255, 0.3);
+  color: var(--on-accent);
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 30%, transparent);
   border: none;
 }
 .arca-btn--primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 0, 255, 0.5);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 .arca-btn--clay {

@@ -6,7 +6,9 @@ import { useVibe, GRADIENTS, PHOTOS, type Vibe } from "@/contexts/vibe-context";
 import { uploadGlobalVibe } from "@/app/actions/settings";
 
 type Theme = "light" | "dark" | "auto";
-type Accent = "clay" | "sage" | "dusk" | "sea" | "ink";
+type Accent = "clay" | "sage" | "dusk" | "sea" | "ink" | "custom";
+
+const DEFAULT_CUSTOM = "#B6754A";
 
 const SCENES: { id: Vibe; label: string }[] = [
   { id: "nebula", label: "Výchozí" },
@@ -66,6 +68,13 @@ function applyAccent(accent: Accent) {
   localStorage.setItem("arca.accent", accent);
 }
 
+function applyCustomAccent(hex: string) {
+  document.documentElement.style.setProperty("--accent-custom", hex);
+  document.documentElement.setAttribute("data-accent", "custom");
+  localStorage.setItem("arca.accent", "custom");
+  localStorage.setItem("arca.accentCustom", hex);
+}
+
 function applyGlow(on: boolean) {
   if (on) document.documentElement.removeAttribute("data-arca-glow");
   else document.documentElement.setAttribute("data-arca-glow", "off");
@@ -75,11 +84,13 @@ function applyGlow(on: boolean) {
 export default function AppearanceButton() {
   const [theme, setTheme]     = useState<Theme>("light");
   const [accent, setAccent]   = useState<Accent>("clay");
+  const [customColor, setCustomColor] = useState(DEFAULT_CUSTOM);
   const [glowOn, setGlowOn]   = useState(true);
   const [open, setOpen]       = useState(false);
   const [panelPos, setPanelPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef   = useRef<HTMLDivElement>(null);
+  const customColorRef = useRef<HTMLInputElement>(null);
   const { vibe, setVibe, customImageUrl, setCustomImageUrl } = useVibe();
   const [uploading, startUpload] = useTransition();
   const bgFileRef = useRef<HTMLInputElement>(null);
@@ -87,7 +98,13 @@ export default function AppearanceButton() {
 
   useEffect(() => {
     setTheme((localStorage.getItem("arca.theme") as Theme | null) ?? "light");
-    setAccent((localStorage.getItem("arca.accent") as Accent | null) ?? "clay");
+    const savedAccent = (localStorage.getItem("arca.accent") as Accent | null) ?? "clay";
+    setAccent(savedAccent);
+    const savedCustom = localStorage.getItem("arca.accentCustom") ?? DEFAULT_CUSTOM;
+    setCustomColor(savedCustom);
+    if (savedAccent === "custom") {
+      document.documentElement.style.setProperty("--accent-custom", savedCustom);
+    }
     setGlowOn((localStorage.getItem("arca.glow") ?? "on") !== "off");
   }, []);
 
@@ -131,6 +148,11 @@ export default function AppearanceButton() {
   function handleTheme(t: Theme) { setTheme(t); applyTheme(t); }
   function handleAccent(a: Accent) { setAccent(a); applyAccent(a); }
   function handleGlow(on: boolean) { setGlowOn(on); applyGlow(on); }
+  function handleCustomColor(hex: string) {
+    setCustomColor(hex);
+    setAccent("custom");
+    applyCustomAccent(hex);
+  }
 
   function handleBgFile(file: File) {
     startUpload(async () => {
@@ -241,6 +263,40 @@ export default function AppearanceButton() {
                   {accent === a.id && <span style={{ color: "var(--accent-deep)" }}><CheckIc /></span>}
                 </button>
               ))}
+
+              {/* Custom accent — pick any color, not just the 5 presets */}
+              <button
+                type="button"
+                onClick={() => customColorRef.current?.click()}
+                style={{
+                  width: "100%", padding: "8px 10px", borderRadius: 10,
+                  display: "flex", alignItems: "center", gap: 12,
+                  background: accent === "custom" ? "var(--accent-tint)" : "transparent",
+                  border: `1px solid ${accent === "custom" ? "var(--accent-soft)" : "transparent"}`,
+                  cursor: "pointer", fontFamily: "var(--f-sans)",
+                }}
+              >
+                <span style={{
+                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                  background: accent === "custom"
+                    ? customColor
+                    : "conic-gradient(from 0deg, #B6754A, #7C8A6B, #4F8B95, #9B6A8B, #B6754A)",
+                  boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.1)",
+                }} />
+                <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500, color: accent === "custom" ? "var(--accent-deep)" : "var(--ink)" }}>
+                  Vlastní barva
+                </span>
+                {accent === "custom" && <span style={{ color: "var(--accent-deep)" }}><CheckIc /></span>}
+                <input
+                  ref={customColorRef}
+                  type="color"
+                  value={customColor}
+                  onChange={(e) => handleCustomColor(e.target.value)}
+                  style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+              </button>
             </div>
 
             {/* Podsvícení (glow) */}

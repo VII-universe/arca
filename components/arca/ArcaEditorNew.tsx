@@ -525,7 +525,15 @@ export default function ArcaEditorNew({
                   {recipients.length === 0 && <span className="arca-sub" style={{ fontSize: 12 }}>Žádný příjemce</span>}
                 </div>
                 {text ? (
-                  <div dangerouslySetInnerHTML={{ __html: text }} style={{ fontFamily: "var(--f-serif)", fontSize: 14, lineHeight: 1.55, color: "var(--ink-2)", maxHeight: 140, overflow: "hidden" }} />
+                  <div
+                    dangerouslySetInnerHTML={{ __html: text }}
+                    style={{
+                      fontFamily: "var(--f-serif)", fontSize: 14, lineHeight: 1.55,
+                      maxHeight: 140, overflow: "hidden",
+                      color: txtColor ?? "var(--ink-2)",
+                      ...(bgColor ? { background: bgColor, borderRadius: 10, padding: "14px 16px", margin: "-2px -2px 0" } : {}),
+                    }}
+                  />
                 ) : (
                   <p style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", fontSize: 14, color: "var(--muted-2)", margin: 0 }}>Začni psát…</p>
                 )}

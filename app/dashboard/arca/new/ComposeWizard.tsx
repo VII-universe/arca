@@ -552,7 +552,12 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
                 {kind === "text" && text ? (
                   <div
                     dangerouslySetInnerHTML={{ __html: text }}
-                    style={{ fontFamily: "var(--f-serif)", fontSize: 14, lineHeight: 1.55, color: "var(--ink-2)", maxHeight: 160, overflow: "hidden" }}
+                    style={{
+                      fontFamily: "var(--f-serif)", fontSize: 14, lineHeight: 1.55,
+                      maxHeight: 160, overflow: "hidden",
+                      color: txtColor ?? "var(--ink-2)",
+                      ...(bgColor ? { background: bgColor, borderRadius: 10, padding: "14px 16px", margin: "-2px -2px 0" } : {}),
+                    }}
                   />
                 ) : (
                   <p className="arca-sub" style={{ fontSize: 13, margin: 0, fontStyle: "italic" }}>
