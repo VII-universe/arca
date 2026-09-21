@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import { createPortal } from "react-dom";
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
@@ -516,44 +517,50 @@ function AiAssistPanel({
     }
   }
 
-  return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 500, display: "flex",
-    }}>
-      {/* backdrop */}
-      <div onClick={onClose} style={{ flex: 1, background: "rgba(28,26,22,.45)", backdropFilter: "blur(3px)" }} />
-
+  const modal = (
+    <div
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 600,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 24,
+        background: "rgba(20,16,12,.5)", backdropFilter: "blur(4px)",
+        animation: "arca-fadeUp .18s ease both",
+      }}
+    >
       {/* panel */}
       <div
         data-arca-theme=""
         style={{
-          width: 440, background: "var(--surface)", borderLeft: "1px solid var(--hairline)",
-          display: "flex", flexDirection: "column", overflowY: "auto",
+          width: "min(600px, 100%)", maxHeight: "min(720px, 90vh)",
+          background: "var(--surface)", borderRadius: "var(--r-xl)",
+          border: "1px solid var(--hairline)",
+          display: "flex", flexDirection: "column", overflow: "hidden",
           boxShadow: "var(--sh-3)", fontFamily: "var(--f-sans)",
+          animation: "arca-aiModalIn .22s cubic-bezier(.22,1,.36,1) both",
         }}
       >
         {/* Header */}
-        <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--hairline)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>
-            <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 19, margin: 0 }}>AI Pomoc</h3>
-            <button type="button" onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}>
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-          {/* Privacy disclaimer */}
-          <div style={{
-            background: "var(--bg-tint)", borderRadius: "var(--r-md)", padding: "10px 14px",
-            border: "1px solid var(--hairline)",
+        <div style={{ padding: "20px 26px", borderBottom: "1px solid var(--hairline)", flexShrink: 0, display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{
+            width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+            display: "grid", placeItems: "center",
+            background: "var(--gradient-primary)", color: "var(--on-accent)",
+            boxShadow: "0 3px 10px color-mix(in srgb, var(--accent) 35%, transparent)",
           }}>
-            <p style={{ margin: 0, fontSize: 11.5, color: "var(--muted)", lineHeight: 1.55 }}>
-              <strong style={{ color: "var(--ink-2)" }}>Soukromí</strong> — ARCA dbá na absolutní soukromí. Text, který zadáš do tohoto pole, bude anonymně zpracován AI modelem pro vygenerování inspirace a není nikde ukládán na našich serverech.
-            </p>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 19, margin: 0 }}>AI Pomoc</h3>
+            <p style={{ margin: "1px 0 0", fontSize: 12, color: "var(--muted)" }}>Pár vět, a AI ti napíše první verzi.</p>
           </div>
+          <button type="button" onClick={onClose} title="Zavřít" style={{ background: "var(--bg-tint)", border: "1px solid var(--hairline)", borderRadius: "50%", width: 30, height: 30, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--muted)", flexShrink: 0 }}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
         </div>
 
-        {/* Form */}
-        <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
+        {/* Body — the only scrollable region */}
+        <div style={{ padding: "22px 26px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
           {/* Occasion */}
           <div>
             <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>Příležitost</label>
@@ -584,6 +591,7 @@ function AiAssistPanel({
             <textarea
               className="arca-input"
               rows={4}
+              autoFocus
               placeholder={"Napiš pár slov, co chceš vyjádřit… např. chci jí poděkovat za to, jak mě podržela"}
               value={userNotes}
               onChange={e => setUserNotes(e.target.value)}
@@ -633,10 +641,24 @@ function AiAssistPanel({
               ))}
             </div>
           )}
+
+          {/* Privacy disclaimer — tucked at the bottom, out of the way */}
+          <p style={{ margin: 0, fontSize: 11, color: "var(--muted-2)", lineHeight: 1.5, display: "flex", gap: 6 }}>
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{ flexShrink: 0, marginTop: 1 }}><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            Text z tohoto pole je anonymně zpracován AI modelem pro vygenerování inspirace a není nikde ukládán na našich serverech.
+          </p>
         </div>
       </div>
     </div>
   );
+
+  // Rendered as-fixed inside a card with a real (blurred) backdrop-filter
+  // — like the editor's own toolbar shell — the ancestor's backdrop-filter
+  // becomes the containing block for position:fixed, so without a portal
+  // this modal would be trapped inside the editor's own small box instead
+  // of centered over the whole page. Escape to <body> to guarantee it's
+  // always a true full-viewport overlay.
+  return createPortal(modal, document.body);
 }
 
 // ── Curated palette ───────────────────────────────────────────────────────────

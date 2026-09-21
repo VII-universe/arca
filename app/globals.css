@@ -722,6 +722,7 @@ html[data-arca-glow="off"] {
 
 /* ── Animations ──────────────────────────────────────────────────── */
 @keyframes arca-fadeUp  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@keyframes arca-aiModalIn { from { opacity:0; transform:scale(.96) translateY(6px); } to { opacity:1; transform:none; } }
 @keyframes arca-pageIn  { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 @keyframes arca-spin    { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes arca-pulse   {
