@@ -319,13 +319,20 @@ function ItemCard({
       className="arca-card"
       style={{
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
         border: item.isCritical
           ? "1px solid rgba(211,84,0,.35)"
           : "1px solid var(--hairline)",
+        borderLeft: item.isCritical ? "1px solid rgba(211,84,0,.35)" : `3px solid ${cat?.color ?? "var(--hairline)"}`,
         background: item.isCritical ? "rgba(211,84,0,.03)" : undefined,
       }}
     >
-      <div style={{ padding: "14px 18px" }}>
+      <div style={{ padding: "14px 18px", flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, color: "var(--muted)" }}>
+          <span style={{ opacity: .75 }}>{cat?.icon}</span>
+          <span className="arca-mono" style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em" }}>{cat?.label}</span>
+        </div>
         {/* Top row */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -404,7 +411,7 @@ function CategorySection({
           + přidat
         </button>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
         {items.map(item => (
           <ItemCard key={item.id} item={item} onEdit={onEdit} onDelete={onDelete} />
         ))}

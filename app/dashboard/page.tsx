@@ -349,6 +349,7 @@ export default async function DashboardPage() {
                             src={recipient.avatarUrl ? avatarUrlByPath.get(recipient.avatarUrl) : null}
                             initials={initialsFor(recipient.name)}
                             tone={toneFor(recipient.name)}
+                            size="lg"
                           />
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -446,9 +447,10 @@ export default async function DashboardPage() {
                           src={recipient.avatarUrl ? avatarUrlByPath.get(recipient.avatarUrl) : null}
                           initials={initialsFor(recipient.name)}
                           tone={toneFor(recipient.name)}
+                          size="lg"
                         />
                       ) : (
-                        <div style={{ width: 32, height: 32, borderRadius: 9, background: "var(--bg-tint)", display: "grid", placeItems: "center", color: "var(--ink-2)", fontSize: 16, flexShrink: 0 }}>
+                        <div style={{ width: 56, height: 56, borderRadius: 14, background: "var(--bg-tint)", display: "grid", placeItems: "center", color: "var(--ink-2)", fontSize: 22, flexShrink: 0 }}>
                           {kindIcon(pack.type)}
                         </div>
                       )}

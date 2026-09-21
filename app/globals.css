@@ -25,7 +25,12 @@
   --glass-saturation: 180%;
 
   --glass-shadow-inset: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
-  --glass-shadow-glow: 0 8px 32px 0 rgba(255, 0, 255, 0.15);
+  /* "Neon" card glow — follows the active accent so it isn't stuck on
+     magenta regardless of theme; --arca-glow-opacity is what the
+     on/off toggle in Appearance actually flips (see [data-arca-glow]
+     below), so both this and the ambient layer respond to one knob. */
+  --arca-glow-opacity: 0.22;
+  --glass-shadow-glow: 0 8px 32px 0 color-mix(in srgb, var(--accent) calc(var(--arca-glow-opacity) * 100%), transparent);
 
   /* shadow (adapted for dark glass) */
   --sh-1: 0 4px 12px rgba(0,0,0,0.2);
@@ -235,7 +240,14 @@ html[data-arca-dark="true"] body { background: #100D0A; }
   grid-template-columns: 16px 1fr;
   height: 100vh;
   width: 100%;
-  background: var(--bg);
+  /* Translucent (not opaque) so the global VibeBackground layer — custom
+     photo/gradient, picked in Appearance → Pozadí — actually shows
+     through instead of being fully hidden behind a solid fill. Matches
+     the sidebar/topbar's own --glass-bg ratio so it reads as one
+     consistent glass surface rather than two different levels of see-
+     through, and stays subtle enough that text on plain (non-card)
+     areas — page titles, intro copy — is still comfortably readable. */
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
   font-family: var(--f-sans);
   color: var(--ink) !important;
   font-size: 14px;
@@ -250,10 +262,17 @@ html[data-arca-dark="true"] body { background: #100D0A; }
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  opacity: calc(var(--arca-glow-opacity, 0.22) / 0.22);
+  transition: opacity .25s ease;
   background:
     radial-gradient(ellipse 55% 45% at 15% 10%,  color-mix(in srgb, var(--accent) 7%, transparent),  transparent),
     radial-gradient(ellipse 50% 55% at 88% 85%,  color-mix(in srgb, var(--sage)   5%, transparent),  transparent),
     radial-gradient(ellipse 40% 40% at 60% 30%,  color-mix(in srgb, var(--sky)    4%, transparent),  transparent);
+}
+
+/* ── "Podsvícení" (glow) toggle — set on <html> by AppearanceButton ── */
+html[data-arca-glow="off"] {
+  --arca-glow-opacity: 0;
 }
 
 /* ── Glass Sidebar — hover-expanding overlay rail ──────────────────── */
@@ -543,19 +562,21 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 
 /* ── Avatars ─────────────────────────────────────────────────────── */
 .arca-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
+  /* Sized up across the board — photos read as thumbnails, not favicons,
+     the way a modern app shows them. */
+  width: 40px; height: 40px; border-radius: 50%;
   background: var(--gradient-primary);
   border: 2px solid rgba(255,255,255,0.3);
   color: var(--on-accent); display: grid; place-items: center;
-  font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  font-size: 13px; font-weight: 600; letter-spacing: .02em;
   flex-shrink: 0;
   box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 28%, transparent);
   transition: box-shadow .2s ease, transform .2s ease;
 }
 .arca-avatar:hover { box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 40%, transparent); transform: scale(1.06); }
-.arca-avatar.sm  { width: 24px; height: 24px; font-size: 10px; }
-.arca-avatar.lg  { width: 44px; height: 44px; font-size: 14px; }
-.arca-avatar.xl  { width: 72px; height: 72px; font-size: 22px; font-family: var(--f-serif); font-weight: 400; }
+.arca-avatar.sm  { width: 30px; height: 30px; font-size: 11.5px; }
+.arca-avatar.lg  { width: 56px; height: 56px; font-size: 17px; }
+.arca-avatar.xl  { width: 88px; height: 88px; font-size: 26px; font-family: var(--f-serif); font-weight: 400; }
 .arca-avatar.clay { background: var(--gradient-primary); }
 .arca-avatar.sage { background: var(--gradient-secondary); }
 .arca-avatar.sky  { background: linear-gradient(135deg, var(--orb-blue), var(--orb-pink)); }
