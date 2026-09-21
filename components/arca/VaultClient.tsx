@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { createGroup, deleteGroup, updateGroup, assignPersonGroup } from "@/app/actions/groups";
 import { VibeBackground } from "@/components/VibeBackground";
 import { createContact } from "@/app/actions/contacts";
+import { Avatar } from "@/components/arca/Avatar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ export interface VaultPerson {
   packs: { id: string; type: string; status: string; executeAtDate: Date | null }[];
   groupId: string | null;
   group: VaultGroup | null;
+  avatarSignedUrl?: string | null;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -795,7 +797,13 @@ function PersonCard({
           className="arca-recip"
           style={{ color: "var(--ink)", alignItems: "flex-start", paddingTop: 16, paddingBottom: 16, gap: 14 }}
         >
-          <span className={`arca-avatar lg ${tone}`} style={{ flexShrink: 0, marginTop: 2 }}>{init}</span>
+          <Avatar
+            src={person.avatarSignedUrl}
+            initials={init}
+            tone={tone}
+            size="lg"
+            style={{ flexShrink: 0, marginTop: 2 }}
+          />
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 550, fontSize: 14.5 }}>{person.name}</div>

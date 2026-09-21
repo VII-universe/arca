@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
 import AppearanceButton from "./AppearanceButton";
+import { Avatar } from "@/components/arca/Avatar";
 import type { ResolvedUser } from "@/lib/auth/user";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -12,7 +13,7 @@ export interface SidebarContentProps {
   user: ResolvedUser;
   packCount: number;
   guardianCount: number;
-  recentRecipients: { id: string; name: string; initials: string; tone: string; messageCount: number }[];
+  recentRecipients: { id: string; name: string; initials: string; tone: string; messageCount: number; avatarSignedUrl?: string | null }[];
   contactGroups: { id: string; name: string; color: string; emoji: string | null }[];
   onClose?: () => void; // called by ✕ button + nav link clicks (for Sheet context)
 }
@@ -171,12 +172,13 @@ export default function SidebarContent({
               onClick={onClose}
               className={`arca-nav-item ${pathname === `/dashboard/vault/${r.id}` ? "active" : ""}`}
             >
-              <span
-                className="arca-avatar sm"
-                style={TONE_COLORS[r.tone] ? { background: TONE_COLORS[r.tone] } : {}}
-              >
-                {r.initials}
-              </span>
+              <Avatar
+                src={r.avatarSignedUrl}
+                initials={r.initials}
+                tone={r.tone}
+                size="sm"
+                style={TONE_COLORS[r.tone] ? { background: TONE_COLORS[r.tone] } : undefined}
+              />
               <span>{r.name}</span>
             </Link>
           ))}

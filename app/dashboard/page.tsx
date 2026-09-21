@@ -2,7 +2,19 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { getSignedAvatarUrl } from "@/app/actions/recipients";
+import { Avatar } from "@/components/arca/Avatar";
 export const metadata = { title: "Přehled — ARCA" };
+
+function initialsFor(name: string): string {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+}
+const TONES = ["clay", "sage", "sky", "ink"];
+function toneFor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return TONES[Math.abs(h) % TONES.length];
+}
 
 // ── Reminder helpers ──────────────────────────────────────────────────────────
 function daysUntilNextOccurrence(date: Date): number {
@@ -69,7 +81,7 @@ export default async function DashboardPage() {
       select: {
         id: true, title: true, type: true, status: true,
         updatedAt: true, createdAt: true,
-        recipients: { select: { id: true, name: true, email: true }, take: 3 },
+        recipients: { select: { id: true, name: true, email: true, avatarUrl: true }, take: 3 },
         triggerCondition: { select: { type: true, executeAtDate: true, inactivityDaysLimit: true, triggeredAt: true, gracePeriodDays: true } },
       },
     }),
@@ -104,6 +116,17 @@ export default async function DashboardPage() {
 
   // Recent
   const recent = packs.slice(0, 4);
+
+  // Signed avatar URLs for the primary recipient of each recent/upcoming pack
+  const avatarPaths = new Set<string>();
+  for (const p of [...recent, ...upcoming]) {
+    const path = p.recipients[0]?.avatarUrl;
+    if (path) avatarPaths.add(path);
+  }
+  const avatarEntries = await Promise.all(
+    [...avatarPaths].map(async (path) => [path, await getSignedAvatarUrl(path)] as const)
+  );
+  const avatarUrlByPath = new Map(avatarEntries);
 
   // Smart reminders — dedupe by email/name, then build reminder items
   type ReminderItem = { recipientId: string; name: string; relationship: string | null; label: string; days: number; occasion: "birthday" | "anniversary"; urgent: boolean };
@@ -312,7 +335,8 @@ export default async function DashboardPage() {
                   const d = pack.triggerCondition!.executeAtDate!;
                   const dayLabel = d.toLocaleDateString("cs-CZ", { weekday: "short" });
                   const dateLabel = d.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" });
-                  const recipientName = pack.recipients[0]?.name ?? "—";
+                  const recipient = pack.recipients[0];
+                  const recipientName = recipient?.name ?? "—";
                   return (
                     <Link key={pack.id} href={`/dashboard/arca/${pack.id}/edit`} style={{ textDecoration: "none" }}>
                       <div className="arca-card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer" }}>
@@ -320,6 +344,13 @@ export default async function DashboardPage() {
                           <div className="arca-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{dayLabel}</div>
                           <div style={{ fontFamily: "var(--f-serif)", fontSize: 20, lineHeight: 1.1 }}>{dateLabel}</div>
                         </div>
+                        {recipient && (
+                          <Avatar
+                            src={recipient.avatarUrl ? avatarUrlByPath.get(recipient.avatarUrl) : null}
+                            initials={initialsFor(recipient.name)}
+                            tone={toneFor(recipient.name)}
+                          />
+                        )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 550, fontSize: 14 }}>{pack.title}</div>
                           <div className="arca-sub" style={{ fontSize: 12.5 }}>pro {recipientName}</div>
@@ -403,14 +434,24 @@ export default async function DashboardPage() {
               </Link>
             </div>
             <div className="arca-card">
-              {recent.map((pack, i) => (
+              {recent.map((pack, i) => {
+                const recipient = pack.recipients[0];
+                return (
                 <div key={pack.id}>
                   {i > 0 && <hr style={{ height: 1, background: "var(--hairline)", border: 0, margin: 0 }} />}
                   <Link href={`/dashboard/arca/${pack.id}/edit`} style={{ textDecoration: "none" }}>
                     <div style={{ padding: "14px 22px", display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 9, background: "var(--bg-tint)", display: "grid", placeItems: "center", color: "var(--ink-2)", fontSize: 16 }}>
-                        {kindIcon(pack.type)}
-                      </div>
+                      {recipient ? (
+                        <Avatar
+                          src={recipient.avatarUrl ? avatarUrlByPath.get(recipient.avatarUrl) : null}
+                          initials={initialsFor(recipient.name)}
+                          tone={toneFor(recipient.name)}
+                        />
+                      ) : (
+                        <div style={{ width: 32, height: 32, borderRadius: 9, background: "var(--bg-tint)", display: "grid", placeItems: "center", color: "var(--ink-2)", fontSize: 16, flexShrink: 0 }}>
+                          {kindIcon(pack.type)}
+                        </div>
+                      )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 500, fontSize: 14 }}>{pack.title}</div>
                         <div className="arca-sub" style={{ fontSize: 12 }}>
@@ -424,7 +465,8 @@ export default async function DashboardPage() {
                     </div>
                   </Link>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
