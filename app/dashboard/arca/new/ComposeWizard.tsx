@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createPackFull } from "@/app/actions/arca";
 import ArcaRichEditor from "@/components/arca/ArcaRichEditor";
+import { Avatar } from "@/components/arca/Avatar";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ type Kind = "text" | "voice" | "video" | "photo";
 type Trigger = "date" | "event" | "sealed";
 type PackType = "EMOTIONAL" | "PRACTICAL";
 
-interface Recipient { id: string; name: string; email: string | null; groupId?: string | null; }
+interface Recipient { id: string; name: string; email: string | null; groupId?: string | null; avatarUrl?: string | null; }
 interface ContactGroup { id: string; name: string; color: string; emoji: string | null; }
 
 interface Props {
@@ -334,14 +335,14 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
               {allSelected.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
                   {selectedRecipients.map(r => (
-                    <div key={r.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 8px 5px 6px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 12.5, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
-                      <span className="arca-avatar sm" style={{ background: "rgba(255,255,255,0.15)", fontSize: 9 }}>{initials(r.name)}</span>
+                    <div key={r.id} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 10px 4px 4px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 13, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
+                      <Avatar src={r.avatarUrl} initials={initials(r.name)} tone={toneFor(r.name)} size="sm" style={{ border: "1.5px solid rgba(255,255,255,0.25)" }} />
                       {r.name.split(" ")[0]}
                       <button type="button" onClick={() => toggleId(r.id)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
                     </div>
                   ))}
                   {newPeople.map((p, i) => (
-                    <div key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 8px 5px 6px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 12.5, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
+                    <div key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 10px 4px 4px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 13, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
                       <span className="arca-avatar sm" style={{ background: "rgba(255,255,255,0.15)", fontSize: 9 }}>{initials(p.name)}</span>
                       {p.name.split(" ")[0]}
                       <button type="button" onClick={() => removeNewPerson(i)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
@@ -371,18 +372,38 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
                 </div>
               )}
 
-              {/* Existing contacts */}
+              {/* Existing contacts — bigger photo cards, easy to scan/tap */}
               {recipients.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
                   {recipients.map(r => {
                     const sel = selectedIds.has(r.id);
                     const t = toneFor(r.name);
                     return (
                       <button key={r.id} type="button" onClick={() => toggleId(r.id)}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px 6px 6px", borderRadius: "var(--r-pill)", border: `1.5px solid ${sel ? "var(--ink)" : "var(--hairline)"}`, background: sel ? "var(--ink)" : "var(--surface)", color: sel ? "var(--bg)" : "var(--ink)", fontSize: 12.5, fontWeight: 500, cursor: "pointer", transition: "all .15s", fontFamily: "var(--f-sans)" }}>
-                        <span className="arca-avatar sm" style={{ background: sel ? "rgba(255,255,255,0.15)" : TONE_GRADS[t] }}>{initials(r.name)}</span>
-                        {r.name.split(" ")[0]}
-                        {sel && <IcCheck />}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: 7,
+                          width: 76, padding: "10px 6px 8px", borderRadius: 14,
+                          border: `1.5px solid ${sel ? "var(--accent)" : "var(--hairline)"}`,
+                          background: sel ? "var(--accent-tint)" : "var(--surface)",
+                          cursor: "pointer", transition: "all .15s", fontFamily: "var(--f-sans)",
+                        }}>
+                        <div style={{ position: "relative" }}>
+                          <Avatar src={r.avatarUrl} initials={initials(r.name)} tone={t} size="lg"
+                            style={sel ? { boxShadow: "0 0 0 2.5px var(--accent-tint), 0 0 0 4.5px var(--accent)" } : undefined} />
+                          {sel && (
+                            <span style={{
+                              position: "absolute", right: -2, bottom: -2, width: 18, height: 18, borderRadius: "50%",
+                              background: "var(--accent)", color: "var(--on-accent)", display: "grid", placeItems: "center",
+                              border: "2px solid var(--surface)",
+                            }}><IcCheck /></span>
+                          )}
+                        </div>
+                        <span style={{
+                          fontSize: 12, fontWeight: 500, color: sel ? "var(--accent-deep)" : "var(--ink)",
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%",
+                        }}>
+                          {r.name.split(" ")[0]}
+                        </span>
                       </button>
                     );
                   })}
@@ -514,8 +535,8 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
               </div>
 
               <div style={{ padding: "20px 22px", background: "var(--bg-tint)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                  <span className="arca-avatar" style={{ background: TONE_GRADS[tone] }}>{init}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                  <Avatar src={previewRecipient && "avatarUrl" in previewRecipient ? previewRecipient.avatarUrl : null} initials={init} tone={tone} size="lg" />
                   <div>
                     <div style={{ fontWeight: 550, fontSize: 13.5 }}>Pro {displayName}</div>
                     <div className="arca-sub" style={{ fontSize: 11.5 }}>
