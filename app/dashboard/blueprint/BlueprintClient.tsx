@@ -258,12 +258,12 @@ function Sheet({
           </div>
 
           {/* Critical toggle */}
-          <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", padding: "12px 14px", borderRadius: "var(--r-md)", background: isCritical ? "rgba(211,84,0,.06)" : "var(--surface-2)", border: `1px solid ${isCritical ? "rgba(211,84,0,.25)" : "var(--hairline-2)"}`, transition: "all .15s" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", padding: "12px 14px", borderRadius: "var(--r-md)", background: isCritical ? "var(--danger-tint)" : "var(--surface-2)", border: `1px solid ${isCritical ? "var(--danger-soft)" : "var(--hairline-2)"}`, transition: "all .15s" }}>
             <div
               onClick={() => setIsCritical(v => !v)}
               style={{
                 width: 36, height: 20, borderRadius: 10, flexShrink: 0,
-                background: isCritical ? "#D35400" : "var(--hairline-2)",
+                background: isCritical ? "var(--danger)" : "var(--hairline-2)",
                 position: "relative", transition: "background .15s", cursor: "pointer",
               }}
             >
@@ -274,7 +274,7 @@ function Sheet({
               }} />
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 550, color: isCritical ? "#D35400" : "var(--ink)" }}>Kritické — řešit urgentně</div>
+              <div style={{ fontSize: 13, fontWeight: 550, color: isCritical ? "var(--danger-deep)" : "var(--ink)" }}>Kritické — řešit urgentně</div>
               <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 1 }}>Zobrazí se s výrazným upozorněním</div>
             </div>
           </label>
@@ -312,71 +312,70 @@ function ItemCard({
   }
 
   const cat = CAT_MAP[item.category as Category];
-  const preview = item.content.length > 110 ? item.content.slice(0, 110) + "…" : item.content;
+  const preview = item.content.length > 130 ? item.content.slice(0, 130) + "…" : item.content;
+  const barColor = item.isCritical ? "var(--danger)" : (cat?.color ?? "var(--hairline)");
 
   return (
     <div
+      id={`bp-item-${item.id}`}
       className="arca-card"
       style={{
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        border: item.isCritical
-          ? "1px solid rgba(211,84,0,.35)"
-          : "1px solid var(--hairline)",
-        borderLeft: item.isCritical ? "1px solid rgba(211,84,0,.35)" : `3px solid ${cat?.color ?? "var(--hairline)"}`,
-        background: item.isCritical ? "rgba(211,84,0,.03)" : undefined,
+        borderLeft: `3px solid ${barColor}`,
+        transition: "box-shadow .5s ease, border-color .5s ease",
       }}
     >
-      <div style={{ padding: "14px 18px", flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, color: "var(--muted)" }}>
-          <span style={{ opacity: .75 }}>{cat?.icon}</span>
-          <span className="arca-mono" style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em" }}>{cat?.label}</span>
+      <div style={{ padding: "16px 18px", flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Meta row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--muted)" }}>
+            <span style={{ opacity: .8, display: "flex" }}>{cat?.icon}</span>
+            <span className="arca-mono" style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em" }}>{cat?.label}</span>
+          </span>
+          {item.isCritical && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 600, color: "var(--danger-deep)", background: "var(--danger-tint)", padding: "2px 8px", borderRadius: 20, fontFamily: "var(--f-mono)", marginLeft: "auto" }}>
+              <IcAlert /> Urgentní
+            </span>
+          )}
         </div>
-        {/* Top row */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              {item.isCritical && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 600, color: "#D35400", background: "rgba(211,84,0,.10)", padding: "2px 7px", borderRadius: 20, fontFamily: "var(--f-mono)" }}>
-                  <IcAlert /> Urgentní
-                </span>
-              )}
-              <span style={{ fontWeight: 550, fontSize: 14 }}>{item.title}</span>
-            </div>
-            <p style={{ margin: "5px 0 0", fontSize: 12.5, color: "var(--muted)", lineHeight: 1.5 }}>
-              {expanded ? item.content : preview}
-            </p>
-            {item.content.length > 110 && (
-              <button
-                type="button"
-                onClick={() => setExpanded(v => !v)}
-                style={{ fontSize: 11.5, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: "4px 0 0", fontFamily: "var(--f-sans)" }}
-              >
-                {expanded ? "Méně ▲" : "Celý text ▼"}
-              </button>
-            )}
-          </div>
 
-          {/* Actions */}
-          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-            <button type="button" onClick={() => onEdit(item)} className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "6px 8px" }} title="Upravit">
-              <IcEdit />
+        {/* Title + body */}
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 14.5, lineHeight: 1.35 }}>{item.title}</div>
+          <p style={{ margin: "5px 0 0", fontSize: 12.5, color: "var(--muted)", lineHeight: 1.55 }}>
+            {expanded ? item.content : preview}
+          </p>
+          {item.content.length > 130 && (
+            <button
+              type="button"
+              onClick={() => setExpanded(v => !v)}
+              style={{ fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: "5px 0 0", fontFamily: "var(--f-sans)" }}
+            >
+              {expanded ? "Méně ▲" : "Celý text ▼"}
             </button>
-            {confirming ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ fontSize: 11, color: "var(--muted)" }}>Smazat?</span>
-                <button type="button" onClick={handleDelete} disabled={deleting} className="arca-btn sm" style={{ color: "#c00", borderColor: "#fcc", padding: "4px 8px" }}>
-                  {deleting ? <IcSpin /> : "Ano"}
-                </button>
-                <button type="button" onClick={() => setConfirming(false)} className="arca-btn sm arca-btn--ghost" style={{ padding: "4px 8px" }}>Ne</button>
-              </div>
-            ) : (
-              <button type="button" onClick={() => setConfirming(true)} className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "6px 8px" }} title="Smazat">
-                <IcTrash />
+          )}
+        </div>
+
+        {/* Actions — pinned to the bottom so cards of different text length still align */}
+        <div style={{ display: "flex", gap: 4, marginTop: "auto", paddingTop: 4 }}>
+          <button type="button" onClick={() => onEdit(item)} className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "5px 9px" }} title="Upravit">
+            <IcEdit /> Upravit
+          </button>
+          {confirming ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
+              <span style={{ fontSize: 11.5, color: "var(--muted)" }}>Smazat?</span>
+              <button type="button" onClick={handleDelete} disabled={deleting} className="arca-btn sm" style={{ color: "var(--danger-deep)", borderColor: "var(--danger-soft)", background: "var(--danger-tint)", padding: "4px 10px" }}>
+                {deleting ? <IcSpin /> : "Ano"}
               </button>
-            )}
-          </div>
+              <button type="button" onClick={() => setConfirming(false)} className="arca-btn sm arca-btn--ghost" style={{ padding: "4px 10px" }}>Ne</button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setConfirming(true)} className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "5px 9px", marginLeft: "auto" }} title="Smazat">
+              <IcTrash />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -398,9 +397,15 @@ function CategorySection({
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <span style={{ color: "var(--accent)", opacity: .7 }}>{category.icon}</span>
-        <span style={{ fontWeight: 600, fontSize: 13.5 }}>{category.label}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <span style={{
+          width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+          display: "grid", placeItems: "center",
+          background: category.color, color: "var(--ink-2)",
+        }}>
+          {category.icon}
+        </span>
+        <span style={{ fontWeight: 600, fontSize: 14 }}>{category.label}</span>
         <span className="arca-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{items.length}</span>
         <div style={{ flex: 1, height: 1, background: "var(--hairline)" }} />
         <button
@@ -445,16 +450,49 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
     CATEGORIES.map(c => [c.id, items.filter(i => i.category === c.id)])
   );
 
+  function focusItem(id: string) {
+    const el = document.getElementById(`bp-item-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.style.boxShadow = "0 0 0 3px var(--danger-soft)";
+    setTimeout(() => { el.style.boxShadow = ""; }, 1400);
+  }
+
   return (
     <div data-arca-theme="">
 
       {/* ── Critical alert banner ──────────────────────────────── */}
       {criticalItems.length > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", background: "rgba(211,84,0,.08)", border: "1px solid rgba(211,84,0,.25)", borderRadius: "var(--r-lg)", marginBottom: 24 }}>
-          <span style={{ color: "#D35400", flexShrink: 0 }}><IcAlert /></span>
-          <p style={{ margin: 0, fontSize: 13, color: "#D35400", fontWeight: 500 }}>
-            {criticalItems.length} urgentní {criticalItems.length === 1 ? "položka vyžaduje" : "položky vyžadují"} okamžitou pozornost.
-          </p>
+        <div style={{ display: "flex", gap: 14, padding: "16px 20px", background: "var(--danger-tint)", border: "1px solid var(--danger-soft)", borderRadius: "var(--r-lg)", marginBottom: 24 }}>
+          <span style={{
+            width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+            display: "grid", placeItems: "center",
+            background: "var(--danger)", color: "#fff",
+          }}>
+            <IcAlert />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 13.5, color: "var(--danger-deep)", fontWeight: 600 }}>
+              {criticalItems.length} urgentní {criticalItems.length === 1 ? "položka vyžaduje" : "položky vyžadují"} okamžitou pozornost
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+              {criticalItems.map(i => (
+                <button
+                  key={i.id}
+                  type="button"
+                  onClick={() => focusItem(i.id)}
+                  style={{
+                    fontSize: 12, fontWeight: 500, color: "var(--danger-deep)",
+                    background: "color-mix(in srgb, var(--danger) 12%, var(--surface))",
+                    border: "1px solid var(--danger-soft)", borderRadius: "var(--r-pill)",
+                    padding: "3px 11px", cursor: "pointer", fontFamily: "var(--f-sans)",
+                  }}
+                >
+                  {i.title}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -474,7 +512,13 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--sh-2)"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = ""; }}
           >
-            <span style={{ color: "var(--ink-2)" }}>{cat.icon}</span>
+            <span style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              display: "grid", placeItems: "center",
+              background: "color-mix(in srgb, var(--ink) 8%, transparent)", color: "var(--ink-2)",
+            }}>
+              {cat.icon}
+            </span>
             <div>
               <div style={{ fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>{cat.label}</div>
               <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 3, lineHeight: 1.4 }}>{cat.sub}</div>

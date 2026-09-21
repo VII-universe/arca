@@ -181,6 +181,13 @@
   --sage-soft: #D7DCCB;
   --sky:       #6F8AA8;
   --sky-soft:  #D5DEE7;
+  /* "Urgent/critical" tone — a muted brick red that sits inside the
+     app's earthy palette, not the raw construction-orange (#D35400)
+     that used to be hardcoded at every call site. */
+  --danger:      #B8452F;
+  --danger-soft: #E6C4B6;
+  --danger-tint: #F3E1D8;
+  --danger-deep: #8A2E1C;
   /* richer layered shadows */
   --sh-1: 0 1px 2px rgba(26,24,20,.06), 0 0 0 1px rgba(26,24,20,.04);
   --sh-2: 0 4px 16px -4px rgba(26,24,20,.14), 0 1px 4px rgba(26,24,20,.06), 0 0 0 1px rgba(26,24,20,.04);
@@ -241,6 +248,10 @@ html[data-arca-dark="true"][data-arca-theme] {
   --sh-3: 0 28px 70px -20px rgba(0,0,0,.75), 0 8px 24px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.05);
   --glass-bg:     color-mix(in srgb, var(--surface) 72%, transparent);
   --glass-border: color-mix(in srgb, rgba(255,240,210,.12) 100%, transparent);
+  --danger:      #E0805F;
+  --danger-soft: #5C2A18;
+  --danger-tint: #3A1A10;
+  --danger-deep: #F0A080;
 }
 html[data-arca-dark="true"], html[data-arca-dark="true"][data-accent="clay"] {
   --accent:#D08848; --accent-soft:#5A3318; --accent-tint:#321C0A; --accent-deep:#F0A86A;
