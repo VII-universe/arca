@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { upsertContent, updatePackTitle } from "@/app/actions/arca";
-import ArcaRichEditor from "./ArcaRichEditor";
+import ArcaRichEditor, { type ArcaRichEditorHandle } from "./ArcaRichEditor";
 import { upsertTrigger, activatePack, cancelDelivery, addRecipient, removeRecipient } from "@/app/actions/delivery";
 import AppearanceButton from "@/components/layout/AppearanceButton";
 
@@ -127,6 +127,7 @@ export default function ArcaEditorNew({
 
   // Text content + theme
   const [text, setText] = useState(initialContent);
+  const richEditorRef = useRef<ArcaRichEditorHandle>(null);
   const [bgColor,   setBgColor]   = useState<string | null>(initialBackgroundColor);
   const [txtColor,  setTxtColor]  = useState<string | null>(initialTextColor);
 
@@ -439,11 +440,13 @@ export default function ArcaEditorNew({
             <div>
               <Step n="03" label="Obsah" />
               <ArcaRichEditor
+                ref={richEditorRef}
                 content={text}
                 onChange={setText}
                 placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
                 packId={packId}
                 minHeight={280}
+                recipientName={displayName}
                 backgroundColor={bgColor}
                 textColor={txtColor}
                 onThemeChange={(bg, text) => { setBgColor(bg); setTxtColor(text); }}
@@ -572,6 +575,21 @@ export default function ArcaEditorNew({
                 </Link>
               </div>
             </div>
+
+            {kind === "text" && (
+              <button
+                type="button"
+                onClick={() => richEditorRef.current?.openAiAssist()}
+                className="arca-ai-cta"
+              >
+                <span className="arca-ai-cta__icon"><IcSparkle /></span>
+                <span className="arca-ai-cta__body">
+                  <span className="arca-ai-cta__title">Nevíš, jak začít?</span>
+                  <span className="arca-ai-cta__sub">Popiš pár myšlenek a AI z nich napíše návrh dopisu.</span>
+                </span>
+                <span className="arca-ai-cta__arrow"><IcArrow /></span>
+              </button>
+            )}
 
             <p style={{ fontSize: 11.5, textAlign: "center", marginTop: 14, color: "var(--muted-2)" }}>
               <IcLock /> Šifrováno end-to-end.

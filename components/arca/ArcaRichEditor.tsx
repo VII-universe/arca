@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useEffect, useState } from "react";
+import { useRef, useCallback, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
@@ -752,7 +752,11 @@ interface ArcaRichEditorProps {
   onThemeChange?: (bg: string | null, text: string | null) => void;
 }
 
-export default function ArcaRichEditor({
+export interface ArcaRichEditorHandle {
+  openAiAssist: () => void;
+}
+
+const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(function ArcaRichEditor({
   content, onChange,
   placeholder = "Začni psát…",
   packId, userId,
@@ -762,10 +766,14 @@ export default function ArcaRichEditor({
   backgroundColor = null,
   textColor = null,
   onThemeChange,
-}: ArcaRichEditorProps) {
+}, ref) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropImg, setCropImg] = useState<HTMLImageElement | null>(null);
   const [showAiPanel, setShowAiPanel] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    openAiAssist: () => setShowAiPanel(true),
+  }));
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -952,27 +960,6 @@ export default function ArcaRichEditor({
         <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted-2)", fontFamily: "var(--f-mono)" }}>
           {charCount} znaků
         </span>
-        <TDivider />
-        <button
-          type="button"
-          title="AI Pomoc — vygeneruje inspiraci pro tvůj text"
-          onMouseDown={e => { e.preventDefault(); setShowAiPanel(o => !o); }}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            padding: "3px 10px", borderRadius: "var(--r-pill)",
-            background: showAiPanel ? "var(--accent-tint)" : "var(--surface-2)",
-            border: "1px solid",
-            borderColor: showAiPanel ? "var(--accent-soft)" : "var(--hairline-2)",
-            color: showAiPanel ? "var(--accent-deep)" : "var(--ink-2)",
-            fontSize: 11.5, fontFamily: "var(--f-sans)", cursor: "pointer",
-            fontWeight: 500, flexShrink: 0, height: 26, transition: "all .15s",
-          }}
-        >
-          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-            <path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/>
-          </svg>
-          Nevím, jak začít
-        </button>
       </div>
 
       {/* Theme Bubbles strip */}
@@ -1092,4 +1079,6 @@ export default function ArcaRichEditor({
       </div>
     </div>
   );
-}
+});
+
+export default ArcaRichEditor;

@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createPackFull } from "@/app/actions/arca";
-import ArcaRichEditor from "@/components/arca/ArcaRichEditor";
+import ArcaRichEditor, { type ArcaRichEditorHandle } from "@/components/arca/ArcaRichEditor";
 import { Avatar } from "@/components/arca/Avatar";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -230,6 +230,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
   const [timeVal, setTimeVal] = useState("08:00");
   const [showPreview, setShowPreview] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const richEditorRef = useRef<ArcaRichEditorHandle>(null);
 
   // Sync date from URL param — handles App Router component reuse across navigations
   useEffect(() => {
@@ -454,10 +455,12 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
               <Step n="03" label="Obsah" />
               {kind === "text" && (
                 <ArcaRichEditor
+                  ref={richEditorRef}
                   content={text}
                   onChange={setText}
                   placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
                   minHeight={260}
+                  recipientName={displayName}
                   backgroundColor={bgColor}
                   textColor={txtColor}
                   onThemeChange={(bg, text) => { setBgColor(bg); setTxtColor(text); }}
@@ -602,6 +605,21 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
                 )}
               </div>
             </div>
+
+            {kind === "text" && (
+              <button
+                type="button"
+                onClick={() => richEditorRef.current?.openAiAssist()}
+                className="arca-ai-cta"
+              >
+                <span className="arca-ai-cta__icon"><IcSparkle /></span>
+                <span className="arca-ai-cta__body">
+                  <span className="arca-ai-cta__title">Nevíš, jak začít?</span>
+                  <span className="arca-ai-cta__sub">Popiš pár myšlenek a AI z nich napíše návrh dopisu.</span>
+                </span>
+                <span className="arca-ai-cta__arrow"><IcArrow /></span>
+              </button>
+            )}
 
             <p className="arca-sub" style={{ fontSize: 12, textAlign: "center", marginTop: 14, padding: "0 8px" }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>

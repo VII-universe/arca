@@ -682,6 +682,44 @@ html[data-arca-glow="off"] {
 }
 .arca-compose-tile.active .arca-sub { color: var(--muted); }
 
+/* ── AI-assist entry point (compose sidebar, under the preview) ────
+   Was a cramped pill wedged into the rich-text toolbar, where it got
+   its own right edge clipped by the editor card's overflow:hidden on
+   any toolbar row narrower than its content. Moved to its own
+   full-width call-to-action below the delivery preview instead, with
+   room to actually explain what it does. */
+.arca-ai-cta {
+  width: 100%; margin-top: 16px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; border-radius: var(--r-lg);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--glass-border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--glass-bg)), var(--glass-bg));
+  backdrop-filter: blur(12px);
+  cursor: pointer; text-align: left; font-family: var(--f-sans);
+  transition: all .22s cubic-bezier(.22,1,.36,1);
+}
+.arca-ai-cta:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--sh-2), 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.arca-ai-cta__icon {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 11px;
+  display: grid; place-items: center;
+  background: var(--gradient-primary); color: var(--on-accent);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.arca-ai-cta__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.arca-ai-cta__title { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.arca-ai-cta__sub { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.arca-ai-cta__arrow {
+  flex-shrink: 0; color: var(--accent);
+  display: grid; place-items: center;
+  transition: transform .22s cubic-bezier(.22,1,.36,1);
+}
+.arca-ai-cta:hover .arca-ai-cta__arrow { transform: translateX(3px); }
+
 /* ── Animations ──────────────────────────────────────────────────── */
 @keyframes arca-fadeUp  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 @keyframes arca-pageIn  { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
