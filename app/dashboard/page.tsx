@@ -335,8 +335,8 @@ export default async function DashboardPage() {
                 // own clipping box and gets its edge cut off. The negative
                 // margin cancels the padding out visually so the row still
                 // lines up with the heading above it.
-                padding: "6px 6px 10px",
-                margin: "-6px -6px 0",
+                padding: "8px 8px 10px",
+                margin: "-8px -8px 0",
                 WebkitOverflowScrolling: "touch",
               }}
             >
@@ -346,7 +346,7 @@ export default async function DashboardPage() {
                   href={`/dashboard/vault/${person.id}`}
                   style={{
                     display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                    textDecoration: "none", flexShrink: 0, width: 76,
+                    textDecoration: "none", flexShrink: 0, width: 88,
                     scrollSnapAlign: "start",
                   }}
                 >
@@ -356,7 +356,7 @@ export default async function DashboardPage() {
                     tone={toneFor(person.name)}
                     size="xl"
                   />
-                  <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 76 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 88 }}>
                     {person.name.split(" ")[0]}
                   </span>
                   <span className="arca-mono" style={{ fontSize: 10, color: "var(--muted)" }}>

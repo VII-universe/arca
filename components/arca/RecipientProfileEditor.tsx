@@ -3,6 +3,7 @@
 import { useState, useRef, useTransition, useCallback } from "react";
 import { toast } from "sonner";
 import { updateRecipientProfile, uploadRecipientAvatar, uploadRecipientCover, addMemory, deleteMemory } from "@/app/actions/recipients";
+import { Avatar } from "@/components/arca/Avatar";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const Ic = ({ d, size = 14 }: { d: string; size?: number }) => (
@@ -492,25 +493,18 @@ export default function RecipientProfileEditor({
       {/* ── Avatar section ───────────────────────────────────────── */}
 
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
-        <div style={{ position: "relative" }}>
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={recipientName}
-              style={{
-                width: 68, height: 68, borderRadius: "50%", objectFit: "cover",
-                border: "3px solid var(--surface)", boxShadow: "var(--sh-2)",
-                opacity: uploadingAvatar ? 0.5 : 1,
-              }}
-            />
-          ) : (
-            <span
-              className={`arca-avatar xl ${tone}`}
-              style={{ border: "3px solid var(--surface)", boxShadow: "var(--sh-2)", opacity: uploadingAvatar ? 0.5 : 1 }}
-            >
-              {initials}
-            </span>
-          )}
+        <div style={{ position: "relative", width: 68, height: 68, flexShrink: 0 }}>
+          <Avatar
+            src={avatarUrl}
+            initials={initials}
+            tone={tone}
+            title={recipientName}
+            style={{
+              width: 68, height: 68, borderRadius: "50%",
+              border: "3px solid var(--surface)", boxShadow: "var(--sh-2)",
+              opacity: uploadingAvatar ? 0.5 : 1,
+            }}
+          />
           <button
             type="button"
             title="Změnit foto"
