@@ -565,6 +565,12 @@ html[data-arca-glow="off"] {
   /* Sized up across the board — photos read as thumbnails, not favicons,
      the way a modern app shows them. */
   width: 40px; height: 40px; border-radius: 50%;
+  /* Tailwind's preflight resets <img> to max-width:100% — when a photo
+     avatar sits inside a narrower flex/text column (e.g. the "Podle
+     koho" strip, whose card is narrower than the xl avatar), that caps
+     the rendered width below the fixed height above, squashing the
+     circle into an oval. Photos always ignore their container's width. */
+  max-width: none; max-height: none;
   background: var(--gradient-primary);
   border: 2px solid rgba(255,255,255,0.3);
   color: var(--on-accent); display: grid; place-items: center;
