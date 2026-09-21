@@ -329,7 +329,14 @@ export default async function DashboardPage() {
               className="arca-side__scroll"
               style={{
                 display: "flex", gap: 18, overflowX: "auto",
-                scrollSnapType: "x proximity", paddingBottom: 4,
+                scrollSnapType: "x proximity",
+                // Avatars scale up ~6% on hover; without this, the first/last
+                // item has nowhere to grow into within the scroll container's
+                // own clipping box and gets its edge cut off. The negative
+                // margin cancels the padding out visually so the row still
+                // lines up with the heading above it.
+                padding: "6px 6px 10px",
+                margin: "-6px -6px 0",
                 WebkitOverflowScrolling: "touch",
               }}
             >
