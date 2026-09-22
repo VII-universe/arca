@@ -108,7 +108,6 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
-  const previewUrl = useRef<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -117,8 +116,21 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
     return () => clearInterval(id);
   }, [recording]);
 
+  // Regenerate the preview URL from the lifted `blob` prop whenever it
+  // changes — including on mount. The blob itself lives in the parent
+  // (ComposeWizard), so it survives switching away to another "Forma" tab
+  // and back; without this, only the local previewSrc was reset on that
+  // remount, so a recording that was still there internally looked lost —
+  // the UI dropped back to the empty "start recording" state instead of
+  // showing playback.
+  useEffect(() => {
+    if (!blob) { setPreviewSrc(null); return; }
+    const url = URL.createObjectURL(blob);
+    setPreviewSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [blob]);
+
   useEffect(() => () => {
-    if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
     streamRef.current?.getTracks().forEach((tr) => tr.stop());
   }, []);
 
@@ -136,9 +148,6 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
         const b = new Blob(chunksRef.current, { type: recorder.mimeType });
         stream.getTracks().forEach((tr) => tr.stop());
         streamRef.current = null;
-        if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
-        previewUrl.current = URL.createObjectURL(b);
-        setPreviewSrc(previewUrl.current);
         onChange(b);
       };
       recorder.start(250);
@@ -153,8 +162,6 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
     setRecording(false);
   }
   function discard() {
-    if (previewUrl.current) { URL.revokeObjectURL(previewUrl.current); previewUrl.current = null; }
-    setPreviewSrc(null);
     setT(0);
     onChange(null);
   }
@@ -167,7 +174,7 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
       <div className="arca-card" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: "var(--accent)" }}><IcCheck /></span>
-          <span style={{ fontSize: 13, fontWeight: 500 }}>Nahrávka připravena · {mm}:{ss}</span>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>Nahrávka připravena — přehraj si ji</span>
         </div>
         <audio controls src={previewSrc} style={{ width: "100%" }} />
         <button type="button" onClick={discard} className="arca-btn sm arca-btn--ghost" style={{ alignSelf: "flex-start" }}>
@@ -223,18 +230,23 @@ function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
   const streamRef = useRef<MediaStream | null>(null);
   const liveRef = useRef<HTMLVideoElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const previewUrl = useRef<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
+  // Same reasoning as VoiceRecorder: derive the preview from the lifted
+  // `blob` prop so switching to another "Forma" tab and back still shows
+  // the recorded video instead of an empty recorder.
+  useEffect(() => {
+    if (!blob) { setPreviewSrc(null); return; }
+    const url = URL.createObjectURL(blob);
+    setPreviewSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [blob]);
+
   useEffect(() => () => {
-    if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
     streamRef.current?.getTracks().forEach((tr) => tr.stop());
   }, []);
 
   function setResult(b: Blob) {
-    if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
-    previewUrl.current = URL.createObjectURL(b);
-    setPreviewSrc(previewUrl.current);
     onChange(b);
   }
 
@@ -266,8 +278,6 @@ function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
     setRecording(false);
   }
   function discard() {
-    if (previewUrl.current) { URL.revokeObjectURL(previewUrl.current); previewUrl.current = null; }
-    setPreviewSrc(null);
     onChange(null);
   }
   function handleFile(f: File) {
@@ -325,13 +335,20 @@ function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
 
 function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: File[]) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const replaceRef = useRef<HTMLInputElement>(null);
   const [urls, setUrls] = useState<string[]>([]);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const next = photos.map((f) => URL.createObjectURL(f));
     setUrls(next);
     return () => { next.forEach((u) => URL.revokeObjectURL(u)); };
   }, [photos]);
+
+  // Close the lightbox if its photo got removed from elsewhere
+  useEffect(() => {
+    if (openIndex !== null && openIndex >= photos.length) setOpenIndex(null);
+  }, [photos.length, openIndex]);
 
   function addFiles(files: FileList) {
     const images = Array.from(files).filter((f) => f.type.startsWith("image/"));
@@ -340,26 +357,36 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
   function removeAt(i: number) {
     onChange(photos.filter((_, idx) => idx !== i));
   }
+  function replaceAt(i: number, f: File) {
+    if (!f.type.startsWith("image/")) return;
+    onChange(photos.map((p, idx) => idx === i ? f : p));
+  }
 
   return (
     <div className="arca-card" style={{ padding: 22 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
         {photos.map((f, i) => (
-          <div key={i} style={{ position: "relative", aspectRatio: "1" }}>
-            <img src={urls[i]} alt={f.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 10, display: "block" }} />
-            <button
-              type="button"
-              onClick={() => removeAt(i)}
+          <button
+            key={i}
+            type="button"
+            onClick={() => setOpenIndex(i)}
+            title="Zobrazit / nahradit"
+            style={{ position: "relative", aspectRatio: "1", padding: 0, border: "none", cursor: "pointer", borderRadius: 10, overflow: "hidden" }}
+          >
+            <img src={urls[i]} alt={f.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <span
+              onClick={(e) => { e.stopPropagation(); removeAt(i); }}
+              role="button"
               title="Odebrat"
               style={{
                 position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%",
-                background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", cursor: "pointer",
+                background: "rgba(0,0,0,0.55)", color: "#fff",
                 display: "grid", placeItems: "center",
               }}
             >
               <IcX />
-            </button>
-          </div>
+            </span>
+          </button>
         ))}
         <button
           type="button"
@@ -373,8 +400,48 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
       </div>
       <hr className="arca-divider" />
       <span className="arca-sub" style={{ fontSize: 12 }}>
-        {photos.length} {photos.length === 1 ? "fotka" : photos.length < 5 ? "fotky" : "fotek"}
+        {photos.length} {photos.length === 1 ? "fotka" : photos.length < 5 ? "fotky" : "fotek"} · klikni na fotku pro náhled nebo nahrazení
       </span>
+
+      {/* Lightbox — view full size, replace or remove */}
+      {openIndex !== null && photos[openIndex] && (
+        <div
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setOpenIndex(null); }}
+          style={{
+            position: "fixed", inset: 0, zIndex: 600,
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+            background: "rgba(20,16,12,.7)", backdropFilter: "blur(4px)",
+          }}
+        >
+          <div style={{ width: "min(560px, 100%)", display: "flex", flexDirection: "column", gap: 14 }}>
+            <img
+              src={urls[openIndex]}
+              alt={photos[openIndex].name}
+              style={{ width: "100%", maxHeight: "70vh", objectFit: "contain", borderRadius: 12, background: "#000" }}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <button type="button" onClick={() => replaceRef.current?.click()} className="arca-btn sm arca-btn--outline" style={{ background: "var(--surface)" }}>
+                Nahradit
+              </button>
+              <button
+                type="button"
+                onClick={() => { removeAt(openIndex); setOpenIndex(null); }}
+                className="arca-btn sm"
+                style={{ color: "var(--danger-deep, #B8452F)", borderColor: "var(--danger-soft, #E6C4B6)", background: "var(--surface)" }}
+              >
+                Odebrat
+              </button>
+              <button type="button" onClick={() => setOpenIndex(null)} className="arca-btn sm arca-btn--ghost" style={{ background: "var(--surface)" }}>
+                Zavřít
+              </button>
+            </div>
+            <input
+              ref={replaceRef} type="file" accept="image/*" style={{ display: "none" }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f && openIndex !== null) replaceAt(openIndex, f); e.target.value = ""; }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
