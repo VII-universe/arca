@@ -81,9 +81,31 @@ function SectionTag({ roman, label }: { roman: string; label: string }) {
 
 // ── Message content media ─────────────────────────────────────────────────────
 
+function isImageKey(key: string) {
+  const ext = (key.split(".").pop() ?? "").toLowerCase();
+  return ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
+}
+
 function MediaItem({ item }: { item: SanctuaryContent }) {
   if (!item.signedUrl || !item.s3FileKey) return null;
   const filename = (item.s3FileKey.split("/").pop() ?? "").replace(/^\d+_/, "");
+
+  if (item.type === "FILE" && isImageKey(item.s3FileKey)) {
+    return (
+      <figure style={{ margin: "36px 0" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.signedUrl}
+          alt={filename}
+          style={{ width: "100%", borderRadius: 8, border: "1px solid rgba(245,240,223,0.06)" }}
+          loading="lazy"
+        />
+        <figcaption style={{ fontSize: 11, color: "#a1a1aa", marginTop: 8, fontFamily: "var(--font-inter), sans-serif" }}>
+          {filename}
+        </figcaption>
+      </figure>
+    );
+  }
 
   if (item.type === "VIDEO") {
     return (

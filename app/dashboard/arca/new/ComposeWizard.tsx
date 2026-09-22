@@ -2,7 +2,9 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createPackFull } from "@/app/actions/arca";
+import { toast } from "sonner";
+import { createPackFull, addMediaContent } from "@/app/actions/arca";
+import { createClient } from "@/lib/supabase/client";
 import ArcaRichEditor, { type ArcaRichEditorHandle } from "@/components/arca/ArcaRichEditor";
 import { Avatar } from "@/components/arca/Avatar";
 
@@ -84,23 +86,102 @@ function Step({ n, label }: { n: string; label: string }) {
   );
 }
 
-// ── Voice recorder demo ───────────────────────────────────────────────────────
+// ── Voice recorder — real mic capture via MediaRecorder ────────────────────────
 
-function VoiceRecorder() {
+function bestAudioMime(): string {
+  for (const t of ["audio/webm;codecs=opus", "audio/webm", "audio/ogg", "audio/mp4"]) {
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return "";
+}
+function bestVideoMime(): string {
+  for (const t of ["video/webm;codecs=vp9,opus", "video/webm", "video/mp4"]) {
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return "";
+}
+
+function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Blob | null) => void }) {
   const [recording, setRecording] = useState(false);
   const [t, setT] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const previewUrl = useRef<string | null>(null);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
   useEffect(() => {
     if (!recording) return;
     const id = setInterval(() => setT((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [recording]);
+
+  useEffect(() => () => {
+    if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+    streamRef.current?.getTracks().forEach((tr) => tr.stop());
+  }, []);
+
+  async function start() {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mime = bestAudioMime();
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      recorderRef.current = recorder;
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        const b = new Blob(chunksRef.current, { type: recorder.mimeType });
+        stream.getTracks().forEach((tr) => tr.stop());
+        streamRef.current = null;
+        if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+        previewUrl.current = URL.createObjectURL(b);
+        setPreviewSrc(previewUrl.current);
+        onChange(b);
+      };
+      recorder.start(250);
+      setT(0);
+      setRecording(true);
+    } catch {
+      setError("Nepodařilo se získat přístup k mikrofonu.");
+    }
+  }
+  function stop() {
+    recorderRef.current?.stop();
+    setRecording(false);
+  }
+  function discard() {
+    if (previewUrl.current) { URL.revokeObjectURL(previewUrl.current); previewUrl.current = null; }
+    setPreviewSrc(null);
+    setT(0);
+    onChange(null);
+  }
+
   const mm = String(Math.floor(t / 60)).padStart(2, "0");
   const ss = String(t % 60).padStart(2, "0");
+
+  if (blob && previewSrc) {
+    return (
+      <div className="arca-card" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ color: "var(--accent)" }}><IcCheck /></span>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>Nahrávka připravena · {mm}:{ss}</span>
+        </div>
+        <audio controls src={previewSrc} style={{ width: "100%" }} />
+        <button type="button" onClick={discard} className="arca-btn sm arca-btn--ghost" style={{ alignSelf: "flex-start" }}>
+          <IcX /> Nahrát znovu
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="arca-card" style={{ padding: 28, display: "flex", alignItems: "center", gap: 28 }}>
       <button
         type="button"
-        onClick={() => setRecording((r) => !r)}
+        onClick={recording ? stop : start}
         style={{
           width: 64, height: 64, borderRadius: "50%",
           background: recording ? "var(--accent)" : "var(--ink)",
@@ -126,51 +207,174 @@ function VoiceRecorder() {
             return <div key={i} style={{ width: 3, height: h, background: active ? "var(--accent)" : "var(--hairline-2)", borderRadius: 2 }} />;
           })}
         </div>
+        {error && <p style={{ fontSize: 12, color: "var(--danger-deep, #B8452F)", margin: "8px 0 0" }}>{error}</p>}
       </div>
     </div>
   );
 }
 
-// ── Video placeholder ─────────────────────────────────────────────────────────
+// ── Video recorder — real webcam capture, or pick an existing file ─────────────
 
-function VideoRecorder() {
+function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Blob | null) => void }) {
+  const [recording, setRecording] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const liveRef = useRef<HTMLVideoElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const previewUrl = useRef<string | null>(null);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
+  useEffect(() => () => {
+    if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+    streamRef.current?.getTracks().forEach((tr) => tr.stop());
+  }, []);
+
+  function setResult(b: Blob) {
+    if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+    previewUrl.current = URL.createObjectURL(b);
+    setPreviewSrc(previewUrl.current);
+    onChange(b);
+  }
+
+  async function start() {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: 1280, height: 720 } });
+      streamRef.current = stream;
+      if (liveRef.current) liveRef.current.srcObject = stream;
+      const mime = bestVideoMime();
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      recorderRef.current = recorder;
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        const b = new Blob(chunksRef.current, { type: recorder.mimeType });
+        stream.getTracks().forEach((tr) => tr.stop());
+        streamRef.current = null;
+        setResult(b);
+      };
+      recorder.start(250);
+      setRecording(true);
+    } catch {
+      setError("Nepodařilo se získat přístup ke kameře.");
+    }
+  }
+  function stop() {
+    recorderRef.current?.stop();
+    setRecording(false);
+  }
+  function discard() {
+    if (previewUrl.current) { URL.revokeObjectURL(previewUrl.current); previewUrl.current = null; }
+    setPreviewSrc(null);
+    onChange(null);
+  }
+  function handleFile(f: File) {
+    if (!f.type.startsWith("video/")) { setError("Vyber prosím video soubor."); return; }
+    setError(null);
+    setResult(f);
+  }
+
+  if (blob && previewSrc) {
+    return (
+      <div className="arca-card" style={{ padding: 0, overflow: "hidden" }}>
+        <video controls src={previewSrc} style={{ width: "100%", aspectRatio: "16/9", background: "#111", display: "block" }} />
+        <div style={{ padding: 14, display: "flex", justifyContent: "center" }}>
+          <button type="button" onClick={discard} className="arca-btn sm arca-btn--ghost">
+            <IcX /> Nahrát znovu / vybrat jiné
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="arca-card" style={{ padding: 0, overflow: "hidden" }}>
       <div style={{ aspectRatio: "16/9", background: "linear-gradient(135deg, #2A241C, #1C1A16)", position: "relative", display: "grid", placeItems: "center" }}>
-        <div style={{ color: "rgba(255,255,255,0.4)", textAlign: "center" }}>
-          <IcVideo />
-          <div style={{ marginTop: 12, fontSize: 13 }}>Nahrát z webkamery / přetáhnout soubor</div>
-        </div>
-        <span className="arca-mono" style={{ position: "absolute", top: 12, left: 12, color: "rgba(255,255,255,0.5)", fontSize: 11 }}>● PŘIPRAVENO</span>
+        {recording ? (
+          <video ref={liveRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <div style={{ color: "rgba(255,255,255,0.4)", textAlign: "center" }}>
+            <IcVideo />
+            <div style={{ marginTop: 12, fontSize: 13 }}>Nahrát z webkamery / vybrat soubor</div>
+          </div>
+        )}
+        <span className="arca-mono" style={{ position: "absolute", top: 12, left: 12, color: "rgba(255,255,255,0.5)", fontSize: 11 }}>
+          {recording ? "● NAHRÁVÁM" : "● PŘIPRAVENO"}
+        </span>
       </div>
-      <div style={{ padding: 14, display: "flex", gap: 10, justifyContent: "center" }}>
-        <button type="button" className="arca-btn arca-btn--clay">● Nahrát</button>
-        <button type="button" className="arca-btn arca-btn--outline">Vybrat soubor</button>
+      <div style={{ padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button type="button" onClick={recording ? stop : start} className="arca-btn arca-btn--clay">
+            {recording ? <>■ Zastavit</> : <>● Nahrát</>}
+          </button>
+          <button type="button" onClick={() => fileRef.current?.click()} className="arca-btn arca-btn--outline" disabled={recording}>
+            Vybrat soubor
+          </button>
+          <input ref={fileRef} type="file" accept="video/*" style={{ display: "none" }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
+        </div>
+        {error && <p style={{ fontSize: 12, color: "var(--danger-deep, #B8452F)", margin: 0 }}>{error}</p>}
       </div>
     </div>
   );
 }
 
-// ── Photo picker placeholder ──────────────────────────────────────────────────
+// ── Photo picker — real multi-file picker with thumbnails ──────────────────────
 
-function PhotoPicker() {
-  const colors = ["#E8D4C0","#D7DCCB","#D5DEE7","#EFE9DD","#F4E8DC","#E5EAD8","#DBE4ED"];
-  const colorsB = ["#D4B89A","#B8C2A3","#B0BFD0","#D9D1BD","#E8D4C0","#A8B58C","#9AB0C5"];
+function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: File[]) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [urls, setUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    const next = photos.map((f) => URL.createObjectURL(f));
+    setUrls(next);
+    return () => { next.forEach((u) => URL.revokeObjectURL(u)); };
+  }, [photos]);
+
+  function addFiles(files: FileList) {
+    const images = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (images.length) onChange([...photos, ...images]);
+  }
+  function removeAt(i: number) {
+    onChange(photos.filter((_, idx) => idx !== i));
+  }
+
   return (
     <div className="arca-card" style={{ padding: 22 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-        {colors.map((c, i) => (
-          <div key={i} style={{ aspectRatio: "1", borderRadius: 10, background: `linear-gradient(${135 + i * 20}deg, ${c}, ${colorsB[i]})` }} />
+        {photos.map((f, i) => (
+          <div key={i} style={{ position: "relative", aspectRatio: "1" }}>
+            <img src={urls[i]} alt={f.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 10, display: "block" }} />
+            <button
+              type="button"
+              onClick={() => removeAt(i)}
+              title="Odebrat"
+              style={{
+                position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%",
+                background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", cursor: "pointer",
+                display: "grid", placeItems: "center",
+              }}
+            >
+              <IcX />
+            </button>
+          </div>
         ))}
-        <button type="button" style={{ aspectRatio: "1", borderRadius: 10, border: "1.5px dashed var(--hairline-2)", background: "transparent", color: "var(--muted)", display: "grid", placeItems: "center", cursor: "pointer" }}>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          style={{ aspectRatio: "1", borderRadius: 10, border: "1.5px dashed var(--hairline-2)", background: "transparent", color: "var(--muted)", display: "grid", placeItems: "center", cursor: "pointer" }}
+        >
           + přidat
         </button>
+        <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }}
+          onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
       </div>
       <hr className="arca-divider" />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span className="arca-sub" style={{ fontSize: 12 }}>0 fotek</span>
-        <button type="button" className="arca-btn sm arca-btn--ghost">Přidat popisek</button>
-      </div>
+      <span className="arca-sub" style={{ fontSize: 12 }}>
+        {photos.length} {photos.length === 1 ? "fotka" : photos.length < 5 ? "fotky" : "fotek"}
+      </span>
     </div>
   );
 }
@@ -231,6 +435,10 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
   const [showPreview, setShowPreview] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const richEditorRef = useRef<ArcaRichEditorHandle>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   // Sync date from URL param — handles App Router component reuse across navigations
   useEffect(() => {
@@ -262,6 +470,42 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
     setNewPeople(prev => prev.filter((_, idx) => idx !== i));
   }
 
+  async function uploadMedia(packId: string) {
+    if (!audioBlob && !videoBlob && photos.length === 0) return;
+    setUploadingMedia(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Přihlášení vypršelo — média se nenahrála."); return; }
+
+      const uploadOne = async (blob: Blob, name: string, contentType: "AUDIO" | "VIDEO" | "FILE") => {
+        const path = `${user.id}/compose/${packId}/${name}`;
+        const { error } = await supabase.storage
+          .from("arca-media")
+          .upload(path, blob, { contentType: blob.type || undefined, upsert: false });
+        if (error) { toast.error(`Nahrání se nepodařilo: ${error.message}`); return; }
+        const res = await addMediaContent(packId, path, contentType);
+        if ("error" in res) toast.error(res.error);
+      };
+
+      if (audioBlob) {
+        const ext = audioBlob.type.includes("mp4") ? "m4a" : audioBlob.type.includes("ogg") ? "ogg" : "webm";
+        await uploadOne(audioBlob, `voice-${Date.now()}.${ext}`, "AUDIO");
+      }
+      if (videoBlob) {
+        const ext = videoBlob.type.includes("mp4") ? "mp4" : "webm";
+        await uploadOne(videoBlob, `video-${Date.now()}.${ext}`, "VIDEO");
+      }
+      for (let i = 0; i < photos.length; i++) {
+        const f = photos[i];
+        const safeName = f.name.toLowerCase().replace(/[^a-z0-9.\-_]/g, "_") || `photo-${i}.jpg`;
+        await uploadOne(f, `photo-${Date.now()}-${i}-${safeName}`, "FILE");
+      }
+    } finally {
+      setUploadingMedia(false);
+    }
+  }
+
   function handleSave(isDraft: boolean) {
     const title = `${displayName} — ${kind === "text" ? "Text" : kind === "voice" ? "Hlas" : kind === "video" ? "Video" : "Fotky"}`;
     const formData = new FormData();
@@ -285,6 +529,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
         setSaveError(result.error);
         return;
       }
+      await uploadMedia(result.packId);
       router.push("/dashboard/vault");
     });
   }
@@ -466,9 +711,9 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
                   onThemeChange={(bg, text) => { setBgColor(bg); setTxtColor(text); }}
                 />
               )}
-              {kind === "voice" && <VoiceRecorder />}
-              {kind === "video" && <VideoRecorder />}
-              {kind === "photo" && <PhotoPicker />}
+              {kind === "voice" && <VoiceRecorder blob={audioBlob} onChange={setAudioBlob} />}
+              {kind === "video" && <VideoRecorder blob={videoBlob} onChange={setVideoBlob} />}
+              {kind === "photo" && <PhotoPicker photos={photos} onChange={setPhotos} />}
             </div>
 
             {/* Step 04 — trigger */}
@@ -561,7 +806,13 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
                   />
                 ) : (
                   <p className="arca-sub" style={{ fontSize: 13, margin: 0, fontStyle: "italic" }}>
-                    {kind === "voice" ? "Hlasová nahrávka" : kind === "video" ? "Video zpráva" : kind === "photo" ? "Fotoalbum" : "Začni psát…"}
+                    {kind === "voice"
+                      ? (audioBlob ? "Hlasová nahrávka připravena k odeslání" : "Zatím žádná nahrávka")
+                      : kind === "video"
+                      ? (videoBlob ? "Video připraveno k odeslání" : "Zatím žádné video")
+                      : kind === "photo"
+                      ? (photos.length > 0 ? `${photos.length} ${photos.length === 1 ? "fotka" : photos.length < 5 ? "fotky" : "fotek"} připraveno` : "Zatím žádné fotky")
+                      : "Začni psát…"}
                   </p>
                 )}
               </div>
@@ -586,17 +837,17 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
 
                 <button
                   type="button"
-                  disabled={isPending || (selectedIds.size === 0 && newPeople.length === 0)}
+                  disabled={isPending || uploadingMedia || (selectedIds.size === 0 && newPeople.length === 0)}
                   onClick={() => handleSave(false)}
                   className="arca-btn arca-btn--primary lg"
                   style={{ width: "100%", justifyContent: "center" }}
                 >
-                  {isPending ? "Ukládám…" : "Zapečetit a uložit"}
-                  {!isPending && <IcArrow />}
+                  {uploadingMedia ? "Nahrávám média…" : isPending ? "Ukládám…" : "Zapečetit a uložit"}
+                  {!isPending && !uploadingMedia && <IcArrow />}
                 </button>
                 <button
                   type="button"
-                  disabled={isPending}
+                  disabled={isPending || uploadingMedia}
                   onClick={() => handleSave(true)}
                   className="arca-btn arca-btn--ghost"
                   style={{ width: "100%", justifyContent: "center", marginTop: 6 }}
