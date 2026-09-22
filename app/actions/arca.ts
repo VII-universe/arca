@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { randomBytes } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import { PackType, ContentType, TriggerType } from "@/lib/prisma/generated";
+import { PackType, ContentType, TriggerType, MessageMode } from "@/lib/prisma/generated";
 
 // ─── createPack ────────────────────────────────────────────────────────────────
 export async function createPack(
@@ -53,7 +53,14 @@ export async function createPackFull(
   const rawType       = (formData.get("type") as string) || "EMOTIONAL";
   const title         = (formData.get("title") as string)?.trim();
   const text          = (formData.get("text") as string)?.trim();
-  const trigger       = (formData.get("trigger") as string) || "date";
+  let trigger         = (formData.get("trigger") as string) || "date";
+  const rawMode       = (formData.get("messageMode") as string) || "LEGACY";
+  const messageMode: MessageMode = rawMode === "SELF" ? MessageMode.SELF : MessageMode.LEGACY;
+  // SELF packs never involve Guardians — force the only trigger this mode's
+  // UI actually offers, regardless of what the client sent. Defense in
+  // depth: the "Kdy se otevře" step for SELF only renders the "date" card,
+  // but a request could still be crafted by hand.
+  if (messageMode === MessageMode.SELF) trigger = "date";
   const backgroundColor = (formData.get("backgroundColor") as string) || null;
   const textColor       = (formData.get("textColor") as string) || null;
   const dateVal       = (formData.get("date") as string) || "";
@@ -89,6 +96,7 @@ export async function createPackFull(
     data: {
       title,
       type: rawType as PackType,
+      messageMode,
       livingLinkHash: randomBytes(32).toString("hex"),
       ownerId: user.id,
       status: triggerType ? "ACTIVE" : "DRAFT",

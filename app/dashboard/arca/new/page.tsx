@@ -63,6 +63,7 @@ export default async function NewArcaPage({
       recipients={recipients}
       contactGroups={contactGroups}
       isPro={hasProAccess(resolvedUser)}
+      currentUser={{ name: resolvedUser.name, email: resolvedUser.email }}
       prefilledRecipientId={prefilledRecipientId}
       prefilledOccasion={prefilledOccasion as "birthday" | "anniversary" | undefined}
       prefilledDate={prefilledDate}
