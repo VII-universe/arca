@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createGroup, deleteGroup, updateGroup, assignPersonGroup } from "@/app/actions/groups";
-import { VibeBackground } from "@/components/VibeBackground";
+import { useVibe } from "@/contexts/vibe-context";
 import { createContact } from "@/app/actions/contacts";
 import { Avatar } from "@/components/arca/Avatar";
 
@@ -877,10 +877,23 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
   const [groups, setGroups] = useState<VaultGroup[]>(initialGroups);
   const [activeGroup, setActiveGroup] = useState<string | null>(initialGroupId ?? null);
   const [showCreate, setShowCreate] = useState(false);
+  const { setGroupImageOverride } = useVibe();
 
   const filtered = activeGroup === null
     ? people
     : people.filter(p => p.groupId === activeGroup);
+
+  // Swap the one global VibeBackground's image for the active group's own
+  // photo instead of mounting a second full-viewport background layer here
+  // — two independent `position:fixed` backgrounds (each with its own dark
+  // scrim) stacking on top of each other was producing the cut/clipped
+  // look reported on this page. Clear the override on unmount so leaving
+  // Schránka restores the user's own global vibe.
+  useEffect(() => {
+    const activeUrl = activeGroup ? groups.find(g => g.id === activeGroup)?.vibeImageUrl ?? null : null;
+    setGroupImageOverride(activeUrl);
+    return () => setGroupImageOverride(null);
+  }, [activeGroup, groups, setGroupImageOverride]);
 
   const handleGroupAssign = useCallback((personId: string, groupId: string | null) => {
     const g = groupId ? groups.find(x => x.id === groupId) ?? null : null;
@@ -890,10 +903,6 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
 
   return (
     <div data-arca-theme="">
-
-
-      {/* Vibe pro skupinu */}
-      <VibeBackground groupVibeUrl={activeGroup ? groups.find(g => g.id === activeGroup)?.vibeImageUrl : null} />
 
       {/* Filter bar */}
       <FilterBar
