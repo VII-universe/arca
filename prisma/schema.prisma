@@ -27,6 +27,11 @@ enum PackType {
   PRACTICAL  // password vault / practical documents
 }
 
+enum MessageMode {
+  SELF    // "Sobě do budoucna" — date/age-only delivery, no Guardians involved
+  LEGACY  // existing "odkaz po nedostupnosti" flow — Guardians, inactivity/manual triggers
+}
+
 enum PackStatus {
   DRAFT
   ACTIVE
@@ -153,6 +158,11 @@ model MessagePack {
   title  String
   type   PackType
   status PackStatus @default(DRAFT)
+
+  // "Sobě do budoucna" vs. the existing "odkaz po nedostupnosti" flow.
+  // Defaults to LEGACY so every pre-existing pack is classified correctly
+  // without a manual backfill — see prisma/migrations/*_add_message_mode.
+  messageMode MessageMode @default(LEGACY)
 
   // Pro features
   isEncrypted      Boolean @default(false)
