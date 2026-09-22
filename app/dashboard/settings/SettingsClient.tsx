@@ -378,7 +378,7 @@ export default function SettingsClient({ user }: Props) {
                     }}
                   >
                     <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 4 }}>{label}</div>
-                    <div style={{ fontSize: 11.5, color: switchType === val ? "rgba(255,255,255,0.55)" : "var(--muted)" }}>{sub}</div>
+                    <div style={{ fontSize: 11.5, color: switchType === val ? "color-mix(in srgb, var(--bg) 55%, transparent)" : "var(--muted)" }}>{sub}</div>
                   </button>
                 ))}
               </div>

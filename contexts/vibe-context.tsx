@@ -34,6 +34,12 @@ interface VibeContextValue {
   setVibe: (v: Vibe) => void;
   customImageUrl: string;
   setCustomImageUrl: (url: string) => void;
+  // Page-scoped override (e.g. a Schránka group's own photo) — not
+  // persisted, just lets the one global VibeBackground swap its image
+  // for as long as a page needs it, instead of that page mounting a
+  // second competing full-viewport background layer of its own.
+  groupImageOverride: string | null;
+  setGroupImageOverride: (url: string | null) => void;
 }
 
 const VibeContext = createContext<VibeContextValue>({
@@ -43,12 +49,15 @@ const VibeContext = createContext<VibeContextValue>({
   setVibe: () => {},
   customImageUrl: "",
   setCustomImageUrl: () => {},
+  groupImageOverride: null,
+  setGroupImageOverride: () => {},
 });
 
 export function VibeProvider({ children }: { children: ReactNode }) {
   const [glassOpacity, setGlassOpacityState] = useState(0.08);
   const [vibe, setVibeState] = useState<Vibe>("nebula");
   const [customImageUrl, setCustomImageUrlState] = useState("");
+  const [groupImageOverride, setGroupImageOverride] = useState<string | null>(null);
 
   useEffect(() => {
     const storedOpacity = localStorage.getItem("arca-glass-opacity");
@@ -85,7 +94,7 @@ export function VibeProvider({ children }: { children: ReactNode }) {
   }, [glassOpacity]);
 
   return (
-    <VibeContext.Provider value={{ glassOpacity, setGlassOpacity, vibe, setVibe, customImageUrl, setCustomImageUrl }}>
+    <VibeContext.Provider value={{ glassOpacity, setGlassOpacity, vibe, setVibe, customImageUrl, setCustomImageUrl, groupImageOverride, setGroupImageOverride }}>
       {children}
     </VibeContext.Provider>
   );

@@ -79,6 +79,35 @@ export async function updateSwitch(data: {
 
 // ─── requestPasswordReset ─────────────────────────────────────────────────────
 
+
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export async function uploadGlobalVibe(
+  formData: FormData
+): Promise<{ ok: true; vibeImageUrl: string } | { error: string }> {
+  const user = await requireUser();
+
+  const file = formData.get("file") as File | null;
+  if (!file) return { error: "Soubor chybí." };
+  if (!file.type.startsWith("image/")) return { error: "Musí být obrázek." };
+  if (file.size > 10 * 1024 * 1024) return { error: "Maximální velikost je 10 MB." };
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const ts = Date.now();
+  const path = `${user.id}/global-vibe-${ts}.${ext}`;
+  const bytes = await file.arrayBuffer();
+
+  const { error: uploadErr } = await supabaseAdmin.storage
+    .from("vibe-backgrounds")
+    .upload(path, bytes, { contentType: file.type, upsert: true });
+
+  if (uploadErr) return { error: `Nahrání selhalo: ${uploadErr.message}` };
+
+  const { data: publicData } = supabaseAdmin.storage.from("vibe-backgrounds").getPublicUrl(path);
+
+  return { ok: true, vibeImageUrl: publicData?.publicUrl ?? "" };
+}
+
 export async function requestPasswordReset(): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

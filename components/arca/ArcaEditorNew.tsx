@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { upsertContent, updatePackTitle } from "@/app/actions/arca";
-import ArcaRichEditor from "./ArcaRichEditor";
+import ArcaRichEditor, { type ArcaRichEditorHandle } from "./ArcaRichEditor";
 import { upsertTrigger, activatePack, cancelDelivery, addRecipient, removeRecipient } from "@/app/actions/delivery";
 import AppearanceButton from "@/components/layout/AppearanceButton";
 
@@ -75,7 +75,7 @@ function TriggerCard({ active, onClick, Ic: Icon, title, sub }: { active: boolea
     }}>
       <span style={{ color: "var(--accent)" }}><Icon /></span>
       <div style={{ fontWeight: 550, fontSize: 13 }}>{title}</div>
-      <div style={{ fontSize: 12, color: active ? "rgba(255,255,255,0.6)" : "var(--muted)", marginTop: -2 }}>{sub}</div>
+      <div style={{ fontSize: 12, color: active ? "color-mix(in srgb, var(--bg) 60%, transparent)" : "var(--muted)", marginTop: -2 }}>{sub}</div>
     </button>
   );
 }
@@ -127,6 +127,7 @@ export default function ArcaEditorNew({
 
   // Text content + theme
   const [text, setText] = useState(initialContent);
+  const richEditorRef = useRef<ArcaRichEditorHandle>(null);
   const [bgColor,   setBgColor]   = useState<string | null>(initialBackgroundColor);
   const [txtColor,  setTxtColor]  = useState<string | null>(initialTextColor);
 
@@ -389,7 +390,7 @@ export default function ArcaEditorNew({
                           return (
                             <button key={c.id} type="button" onClick={() => handleToggleContact(c)} disabled={recipientPending}
                               style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px 6px 6px", borderRadius: "var(--r-pill)", border: `1.5px solid ${added ? "var(--ink)" : "var(--hairline)"}`, background: added ? "var(--ink)" : "var(--surface)", color: added ? "var(--bg)" : "var(--ink)", fontSize: 12.5, fontWeight: 500, cursor: "pointer", transition: "all .15s", fontFamily: "var(--f-sans)" }}>
-                              <span className={`arca-avatar sm ${toneFor(c.name)}`} style={{ background: added ? "rgba(255,255,255,0.15)" : undefined }}>{initials(c.name)}</span>
+                              <span className={`arca-avatar sm ${toneFor(c.name)}`} style={{ background: added ? "color-mix(in srgb, var(--bg) 15%, transparent)" : undefined }}>{initials(c.name)}</span>
                               {c.name.split(" ")[0]}
                               {added && <IcCheck />}
                             </button>
@@ -439,11 +440,13 @@ export default function ArcaEditorNew({
             <div>
               <Step n="03" label="Obsah" />
               <ArcaRichEditor
+                ref={richEditorRef}
                 content={text}
                 onChange={setText}
                 placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
                 packId={packId}
                 minHeight={280}
+                recipientName={displayName}
                 backgroundColor={bgColor}
                 textColor={txtColor}
                 onThemeChange={(bg, text) => { setBgColor(bg); setTxtColor(text); }}
@@ -522,7 +525,15 @@ export default function ArcaEditorNew({
                   {recipients.length === 0 && <span className="arca-sub" style={{ fontSize: 12 }}>Žádný příjemce</span>}
                 </div>
                 {text ? (
-                  <div dangerouslySetInnerHTML={{ __html: text }} style={{ fontFamily: "var(--f-serif)", fontSize: 14, lineHeight: 1.55, color: "var(--ink-2)", maxHeight: 140, overflow: "hidden" }} />
+                  <div
+                    dangerouslySetInnerHTML={{ __html: text }}
+                    style={{
+                      fontFamily: "var(--f-serif)", fontSize: 14, lineHeight: 1.55,
+                      maxHeight: 140, overflow: "hidden",
+                      color: txtColor ?? "var(--ink-2)",
+                      ...(bgColor ? { background: bgColor, borderRadius: 10, padding: "14px 16px", margin: "-2px -2px 0" } : {}),
+                    }}
+                  />
                 ) : (
                   <p style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", fontSize: 14, color: "var(--muted-2)", margin: 0 }}>Začni psát…</p>
                 )}
@@ -572,6 +583,21 @@ export default function ArcaEditorNew({
                 </Link>
               </div>
             </div>
+
+            {kind === "text" && (
+              <button
+                type="button"
+                onClick={() => richEditorRef.current?.openAiAssist()}
+                className="arca-ai-cta"
+              >
+                <span className="arca-ai-cta__icon"><IcSparkle /></span>
+                <span className="arca-ai-cta__body">
+                  <span className="arca-ai-cta__title">Nevíš, jak začít?</span>
+                  <span className="arca-ai-cta__sub">Popiš pár myšlenek a AI z nich napíše návrh dopisu.</span>
+                </span>
+                <span className="arca-ai-cta__arrow"><IcArrow /></span>
+              </button>
+            )}
 
             <p style={{ fontSize: 11.5, textAlign: "center", marginTop: 14, color: "var(--muted-2)" }}>
               <IcLock /> Šifrováno end-to-end.

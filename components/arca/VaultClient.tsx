@@ -4,7 +4,9 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createGroup, deleteGroup, updateGroup, assignPersonGroup } from "@/app/actions/groups";
+import { useVibe } from "@/contexts/vibe-context";
 import { createContact } from "@/app/actions/contacts";
+import { Avatar } from "@/components/arca/Avatar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -13,6 +15,7 @@ export interface VaultGroup {
   name: string;
   color: string;
   emoji: string | null;
+  vibeImageUrl?: string | null;
 }
 
 export interface VaultPerson {
@@ -22,6 +25,7 @@ export interface VaultPerson {
   packs: { id: string; type: string; status: string; executeAtDate: Date | null }[];
   groupId: string | null;
   group: VaultGroup | null;
+  avatarSignedUrl?: string | null;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -407,12 +411,12 @@ function GroupEditModal({
                   onClick={() => toggleMember(p.id)}
                   style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: "var(--r-md)", border: `1.5px solid ${isMember ? "var(--ink)" : "var(--hairline)"}`, background: isMember ? "var(--ink)" : "var(--surface)", color: isMember ? "var(--bg)" : "var(--ink)", cursor: "pointer", transition: "all .15s", textAlign: "left", fontFamily: "var(--f-sans)" }}
                 >
-                  <span className={`arca-avatar sm ${toneFor(p.name)}`} style={{ background: isMember ? "rgba(255,255,255,0.15)" : undefined, flexShrink: 0 }}>{initials(p.name)}</span>
+                  <span className={`arca-avatar sm ${toneFor(p.name)}`} style={{ background: isMember ? "color-mix(in srgb, var(--bg) 15%, transparent)" : undefined, flexShrink: 0 }}>{initials(p.name)}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 550, fontSize: 13.5 }}>{p.name}</div>
                     {p.email && <div style={{ fontSize: 12, opacity: .65 }}>{p.email}</div>}
                   </div>
-                  <div style={{ width: 20, height: 20, borderRadius: "50%", border: `1.5px solid ${isMember ? "rgba(255,255,255,0.4)" : "var(--hairline-2)"}`, display: "grid", placeItems: "center", flexShrink: 0, background: isMember ? "rgba(255,255,255,0.15)" : "transparent" }}>
+                  <div style={{ width: 20, height: 20, borderRadius: "50%", border: `1.5px solid ${isMember ? "color-mix(in srgb, var(--bg) 40%, transparent)" : "var(--hairline-2)"}`, display: "grid", placeItems: "center", flexShrink: 0, background: isMember ? "color-mix(in srgb, var(--bg) 15%, transparent)" : "transparent" }}>
                     {isMember && <IcCheck />}
                   </div>
                 </button>
@@ -793,7 +797,13 @@ function PersonCard({
           className="arca-recip"
           style={{ color: "var(--ink)", alignItems: "flex-start", paddingTop: 16, paddingBottom: 16, gap: 14 }}
         >
-          <span className={`arca-avatar lg ${tone}`} style={{ flexShrink: 0, marginTop: 2 }}>{init}</span>
+          <Avatar
+            src={person.avatarSignedUrl}
+            initials={init}
+            tone={tone}
+            size="lg"
+            style={{ flexShrink: 0, marginTop: 2 }}
+          />
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 550, fontSize: 14.5 }}>{person.name}</div>
@@ -867,10 +877,23 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
   const [groups, setGroups] = useState<VaultGroup[]>(initialGroups);
   const [activeGroup, setActiveGroup] = useState<string | null>(initialGroupId ?? null);
   const [showCreate, setShowCreate] = useState(false);
+  const { setGroupImageOverride } = useVibe();
 
   const filtered = activeGroup === null
     ? people
     : people.filter(p => p.groupId === activeGroup);
+
+  // Swap the one global VibeBackground's image for the active group's own
+  // photo instead of mounting a second full-viewport background layer here
+  // — two independent `position:fixed` backgrounds (each with its own dark
+  // scrim) stacking on top of each other was producing the cut/clipped
+  // look reported on this page. Clear the override on unmount so leaving
+  // Schránka restores the user's own global vibe.
+  useEffect(() => {
+    const activeUrl = activeGroup ? groups.find(g => g.id === activeGroup)?.vibeImageUrl ?? null : null;
+    setGroupImageOverride(activeUrl);
+    return () => setGroupImageOverride(null);
+  }, [activeGroup, groups, setGroupImageOverride]);
 
   const handleGroupAssign = useCallback((personId: string, groupId: string | null) => {
     const g = groupId ? groups.find(x => x.id === groupId) ?? null : null;
