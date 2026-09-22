@@ -32,12 +32,15 @@ const IcBack     = () => <Ic><path d="M15 6l-6 6 6 6"/></Ic>;
 const IcPlus     = () => <Ic><path d="M12 5v14M5 12h14"/></Ic>;
 const IcX        = () => <Ic size={12}><path d="M18 6L6 18M6 6l12 12"/></Ic>;
 const IcCheck    = () => <Ic size={12}><path d="M5 12l4 4 10-10"/></Ic>;
+const IcHourglass= () => <Ic><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></Ic>;
+const IcShield   = () => <Ic><path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3Z"/><path d="M9 12l2 2 4-4"/></Ic>;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Kind = "text" | "voice" | "video" | "photo";
 type Trigger = "date" | "event" | "sealed";
 type PackType = "EMOTIONAL" | "PRACTICAL";
+type MessageMode = "SELF" | "LEGACY";
 
 interface Recipient { id: string; name: string; email: string | null; groupId?: string | null; avatarUrl?: string | null; }
 interface ContactGroup { id: string; name: string; color: string; emoji: string | null; }
@@ -46,10 +49,28 @@ interface Props {
   recipients: Recipient[];
   contactGroups: ContactGroup[];
   isPro: boolean;
+  currentUser: { name: string; email: string };
   prefilledRecipientId?: string;
   prefilledOccasion?: "birthday" | "anniversary";
   prefilledDate?: string;
 }
+
+const MODES: { id: MessageMode; title: string; desc: string; Ic: React.ComponentType; pills: string[] }[] = [
+  {
+    id: "SELF",
+    title: "Sobě do budoucna",
+    desc: "Napiš něco, co si jednou přečteš ty nebo někdo blízký — otevře se přesně v den, který zvolíš. Bez čekání na cokoliv jiného.",
+    Ic: IcHourglass,
+    pills: ["datum", "bez strážců"],
+  },
+  {
+    id: "LEGACY",
+    title: "Odkaz pro blízké",
+    desc: "Zpráva, kterou tví blízcí dostanou, až tu nebudeš moct být — ověřeno Tichými strážci, ne jen časem.",
+    Ic: IcShield,
+    pills: ["Tichý strážce"],
+  },
+];
 
 const KINDS: { id: Kind; label: string; sub: string; Ic: React.ComponentType }[] = [
   { id: "text",  label: "Text",  sub: "Dopis, vzpomínka, věta.", Ic: IcText },
@@ -471,6 +492,75 @@ function TriggerCard({ active, onClick, Ic: IconComp, title, sub }: {
   );
 }
 
+// ── Mode select — the very first screen, before any other step ────────────────
+
+function ModeSelect({ onChoose, onBack }: { onChoose: (m: MessageMode) => void; onBack: () => void }) {
+  return (
+    <div data-arca-theme="" style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
+      <div className="arca-topbar">
+        <div className="arca-topbar__crumbs">
+          <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <IcChevron />
+            <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 13, fontFamily: "var(--f-sans)" }}>
+              Dashboard
+            </button>
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <IcChevron />
+            <span className="here">Nová zpráva</span>
+          </span>
+        </div>
+      </div>
+
+      <div className="arca-inner" style={{ maxWidth: 760 }}>
+        <div style={{ marginBottom: 32 }}>
+          <div className="arca-kicker">Nová zpráva</div>
+          <h1 className="arca-h1" style={{ marginTop: 8 }}>Co dnes <em>vytvoříš?</em></h1>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onChoose(m.id)}
+              className="arca-card"
+              style={{
+                textAlign: "left", padding: "30px 26px", cursor: "pointer",
+                display: "flex", flexDirection: "column", border: "1.5px solid var(--hairline)",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "color-mix(in srgb, var(--accent) 55%, var(--hairline))"; (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--hairline)"; (e.currentTarget as HTMLElement).style.transform = ""; }}
+            >
+              <span style={{
+                width: 46, height: 46, borderRadius: 13, marginBottom: 18,
+                display: "grid", placeItems: "center",
+                background: m.id === "SELF" ? "var(--accent-tint)" : "var(--sky-soft)",
+                color: m.id === "SELF" ? "var(--accent-deep)" : "var(--sky)",
+              }}>
+                <m.Ic />
+              </span>
+              <h3 style={{ fontFamily: "var(--f-serif)", fontSize: 22, fontWeight: 400, margin: "0 0 10px" }}>{m.title}</h3>
+              <p className="arca-sub" style={{ fontSize: 13.5, lineHeight: 1.6, margin: "0 0 18px" }}>{m.desc}</p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: "auto" }}>
+                {m.pills.map((pill) => (
+                  <span key={pill} className="arca-mono" style={{
+                    fontSize: 10.5, padding: "4px 10px", borderRadius: "var(--r-pill)",
+                    border: "1px solid var(--hairline-2)", color: "var(--muted)", background: "var(--surface)",
+                  }}>
+                    {pill}
+                  </span>
+                ))}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Compose Wizard ───────────────────────────────────────────────────────
 
 const OCCASION_TRIGGER_MAP: Record<string, Trigger> = {
@@ -478,9 +568,10 @@ const OCCASION_TRIGGER_MAP: Record<string, Trigger> = {
   anniversary: "date",
 };
 
-export default function ComposeWizard({ recipients, contactGroups, isPro, prefilledRecipientId, prefilledOccasion, prefilledDate }: Props) {
+export default function ComposeWizard({ recipients, contactGroups, isPro, currentUser, prefilledRecipientId, prefilledOccasion, prefilledDate }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [messageMode, setMessageMode] = useState<MessageMode | null>(null);
 
   // Multi-recipient selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
@@ -586,6 +677,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
     formData.set("time", timeVal);
     formData.set("text", text);
     formData.set("draft", isDraft ? "1" : "0");
+    formData.set("messageMode", messageMode ?? "LEGACY");
     if (bgColor)  formData.set("backgroundColor", bgColor);
     if (txtColor) formData.set("textColor", txtColor);
 
@@ -605,6 +697,24 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
   const tone = previewRecipient ? toneFor(previewRecipient.name) : "clay";
   const init = previewRecipient ? initials(previewRecipient.name) : "?";
 
+  const meAlreadyAdded = newPeople.some(p => p.email === currentUser.email)
+    || selectedRecipients.some(r => r.email === currentUser.email);
+  function addMyself() {
+    if (meAlreadyAdded) return;
+    setNewPeople(prev => [...prev, { name: currentUser.name, email: currentUser.email }]);
+  }
+
+  // Gate the whole wizard behind a mode choice — every step after this reads
+  // `messageMode`, so nothing below should render until it's set.
+  if (!messageMode) {
+    return (
+      <ModeSelect
+        onBack={() => router.back()}
+        onChoose={(m) => { setMessageMode(m); setTrigger("date"); }}
+      />
+    );
+  }
+
   return (
     <div data-arca-theme="" style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
       {/* Topbar */}
@@ -619,7 +729,13 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <IcChevron />
-            <span className="here">Nová zpráva</span>
+            <button onClick={() => setMessageMode(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 13, fontFamily: "var(--f-sans)" }}>
+              Nová zpráva
+            </button>
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <IcChevron />
+            <span className="here">{messageMode === "SELF" ? "Sobě do budoucna" : "Odkaz pro blízké"}</span>
           </span>
         </div>
         <div className="arca-grow" />
@@ -632,8 +748,12 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
 
       <div className="arca-inner">
         <div style={{ marginBottom: 24 }}>
-          <div className="arca-kicker">Nová zpráva</div>
-          <h1 className="arca-h1" style={{ marginTop: 8 }}>Něco, co jednou <em>najdou.</em></h1>
+          <div className="arca-kicker">{messageMode === "SELF" ? "Sobě do budoucna" : "Odkaz pro blízké"}</div>
+          <h1 className="arca-h1" style={{ marginTop: 8 }}>
+            {messageMode === "SELF"
+              ? <>Co bys chtěl, aby sis jednou <em>přečetl?</em></>
+              : <>Něco, co jednou <em>najdou.</em></>}
+          </h1>
         </div>
 
         <div className="arca-compose-split" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 28 }}>
@@ -643,6 +763,18 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
             {/* Step 01 — recipient */}
             <div>
               <Step n="01" label="Pro koho" />
+
+              {messageMode === "SELF" && (
+                <button
+                  type="button"
+                  onClick={addMyself}
+                  disabled={meAlreadyAdded}
+                  className="arca-btn sm arca-btn--outline"
+                  style={{ marginBottom: 12, opacity: meAlreadyAdded ? 0.5 : 1 }}
+                >
+                  {meAlreadyAdded ? <><IcCheck /> Ty sama jsi v seznamu</> : <><IcPlus /> Přidat sebe jako příjemce</>}
+                </button>
+              )}
 
               {/* Selected chips */}
               {allSelected.length > 0 && (
@@ -786,10 +918,19 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, prefil
             {/* Step 04 — trigger */}
             <div>
               <Step n="04" label="Kdy se otevře" />
-              <div className="arca-trigger-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              {/* "Sobě do budoucna" only ever offers a fixed date — no Guardian-
+                  verified triggers exist in this mode, so those cards are left
+                  out entirely rather than shown disabled/struck-through. A
+                  single relevant option should read as clean and deliberate,
+                  not like a trimmed-down version of the other flow. */}
+              <div className="arca-trigger-grid" style={{ display: "grid", gridTemplateColumns: messageMode === "SELF" ? "minmax(0, 260px)" : "repeat(3, 1fr)", gap: 10 }}>
                 <TriggerCard active={trigger === "date"}   onClick={() => setTrigger("date")}   Ic={IcCalPlus} title="V daný den"    sub="Konkrétní datum a čas." />
-                <TriggerCard active={trigger === "event"}  onClick={() => setTrigger("event")}  Ic={IcHeart}   title="Při události" sub="Když nadejde okamžik." />
-                <TriggerCard active={trigger === "sealed"} onClick={() => setTrigger("sealed")} Ic={IcLock}    title="Zapečetit"   sub="Doručit, až tu nebudu." />
+                {messageMode === "LEGACY" && (
+                  <>
+                    <TriggerCard active={trigger === "event"}  onClick={() => setTrigger("event")}  Ic={IcHeart}   title="Při události" sub="Když nadejde okamžik." />
+                    <TriggerCard active={trigger === "sealed"} onClick={() => setTrigger("sealed")} Ic={IcLock}    title="Zapečetit"   sub="Doručit, až tu nebudu." />
+                  </>
+                )}
               </div>
 
               {trigger === "date" && (
