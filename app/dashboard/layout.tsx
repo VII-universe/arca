@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { resolveUser } from "@/lib/auth/user";
+import { getSignedAvatarUrl } from "@/app/actions/recipients";
 import DashboardShell from "@/components/layout/DashboardShell";
 
 const TONES = ["clay", "sage", "sky", "ink", "clay", "sage", "sky"];
@@ -23,7 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let user: Awaited<ReturnType<typeof resolveUser>> | null = null;
   let packCount = 0;
   let guardianCount = 0;
-  let recentRecipients: { id: string; name: string; initials: string; tone: string; messageCount: number }[] = [];
+  let recentRecipients: { id: string; name: string; initials: string; tone: string; messageCount: number; avatarSignedUrl: string | null }[] = [];
   let contactGroups: { id: string; name: string; color: string; emoji: string | null }[] = [];
 
   try {
@@ -48,22 +49,27 @@ export default async function DashboardLayout({ children }: { children: React.Re
       where: { messagePack: { ownerId: authUser.id } },
       orderBy: { createdAt: "asc" },
       take: 30,
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, avatarUrl: true },
     });
     const seen = new Set<string>();
+    const picked: typeof rawRecipients = [];
     for (const r of rawRecipients) {
-      if (recentRecipients.length >= 5) break;
+      if (picked.length >= 5) break;
       const key = r.email ?? r.name;
       if (seen.has(key)) continue;
       seen.add(key);
-      recentRecipients.push({
+      picked.push(r);
+    }
+    recentRecipients = await Promise.all(
+      picked.map(async (r) => ({
         id: r.id,
         name: r.name,
         initials: initials(r.name),
         tone: toneFor(r.name),
         messageCount: 0,
-      });
-    }
+        avatarSignedUrl: r.avatarUrl ? await getSignedAvatarUrl(r.avatarUrl) : null,
+      }))
+    );
   } catch (err) {
     console.error("[dashboard/layout] recipients error:", err);
   }

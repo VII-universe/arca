@@ -182,11 +182,11 @@ export default async function GuardiansPage() {
               <h3 style={{ fontFamily: "var(--f-serif)", fontSize: 22, margin: 0, fontWeight: 400 }}>
                 Můžeš si oddechnout. <em style={{ color: "var(--accent)" }}>Máme to.</em>
               </h3>
-              <p style={{ margin: "6px 0 0", color: "rgba(255,255,255,0.65)", fontSize: 13 }}>
+              <p style={{ margin: "6px 0 0", color: "color-mix(in srgb, var(--bg) 65%, transparent)", fontSize: 13 }}>
                 Tvoje zprávy jsou šifrované a doručí se přesně tehdy, kdy jsi to chtěl. Ani dříve, ani později.
               </p>
             </div>
-            <Link href="/dashboard/billing" className="arca-btn" style={{ background: "rgba(255,255,255,0.08)", color: "var(--bg)", borderColor: "rgba(255,255,255,0.12)" }}>
+            <Link href="/dashboard/billing" className="arca-btn" style={{ background: "color-mix(in srgb, var(--bg) 8%, transparent)", color: "var(--bg)", borderColor: "color-mix(in srgb, var(--bg) 12%, transparent)" }}>
               Prozkoumat plán
             </Link>
           </div>

@@ -8,15 +8,17 @@ import { useVibe, GRADIENTS, PHOTOS } from "@/contexts/vibe-context";
 // any element WITHOUT a background will naturally show the fixed layer below.
 
 export function VibeBackground() {
-  const { vibe, customImageUrl } = useVibe();
+  const { vibe, customImageUrl, groupImageOverride } = useVibe();
 
-  const isPhoto = vibe in PHOTOS || (vibe === "custom" && !!customImageUrl);
+  const activeImageUrl = groupImageOverride || customImageUrl;
+
+  const isPhoto = vibe in PHOTOS || (vibe === "custom" && !!activeImageUrl) || !!groupImageOverride;
   const isGradient = vibe in GRADIENTS;
 
   // Build inline style for the background div
   const bgStyle: React.CSSProperties = {};
-  if (vibe === "custom" && customImageUrl) {
-    bgStyle.backgroundImage = `url(${customImageUrl})`;
+  if (groupImageOverride || (vibe === "custom" && activeImageUrl)) {
+    bgStyle.backgroundImage = `url(${activeImageUrl})`;
     bgStyle.backgroundSize = "cover";
     bgStyle.backgroundPosition = "center";
     bgStyle.backgroundRepeat = "no-repeat";

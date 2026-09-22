@@ -2,7 +2,19 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { getSignedAvatarUrl } from "@/app/actions/recipients";
+import { Avatar } from "@/components/arca/Avatar";
 export const metadata = { title: "Přehled — ARCA" };
+
+function initialsFor(name: string): string {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+}
+const TONES = ["clay", "sage", "sky", "ink"];
+function toneFor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return TONES[Math.abs(h) % TONES.length];
+}
 
 // ── Reminder helpers ──────────────────────────────────────────────────────────
 function daysUntilNextOccurrence(date: Date): number {
@@ -69,7 +81,7 @@ export default async function DashboardPage() {
       select: {
         id: true, title: true, type: true, status: true,
         updatedAt: true, createdAt: true,
-        recipients: { select: { id: true, name: true, email: true }, take: 3 },
+        recipients: { select: { id: true, name: true, email: true, avatarUrl: true }, take: 3 },
         triggerCondition: { select: { type: true, executeAtDate: true, inactivityDaysLimit: true, triggeredAt: true, gracePeriodDays: true } },
       },
     }),
@@ -104,6 +116,33 @@ export default async function DashboardPage() {
 
   // Recent
   const recent = packs.slice(0, 4);
+
+  // People strip — every unique recipient across all packs, most messages first
+  type PersonSummary = { id: string; name: string; avatarUrl: string | null; packCount: number };
+  const peopleMap = new Map<string, PersonSummary>();
+  for (const p of packs) {
+    for (const r of p.recipients) {
+      const key = r.email ?? r.name;
+      const existing = peopleMap.get(key);
+      if (existing) existing.packCount += 1;
+      else peopleMap.set(key, { id: r.id, name: r.name, avatarUrl: r.avatarUrl, packCount: 1 });
+    }
+  }
+  const people = [...peopleMap.values()].sort((a, b) => b.packCount - a.packCount);
+
+  // Signed avatar URLs — primary recipient of each recent/upcoming pack, plus everyone in the people strip
+  const avatarPaths = new Set<string>();
+  for (const p of [...recent, ...upcoming]) {
+    const path = p.recipients[0]?.avatarUrl;
+    if (path) avatarPaths.add(path);
+  }
+  for (const person of people) {
+    if (person.avatarUrl) avatarPaths.add(person.avatarUrl);
+  }
+  const avatarEntries = await Promise.all(
+    [...avatarPaths].map(async (path) => [path, await getSignedAvatarUrl(path)] as const)
+  );
+  const avatarUrlByPath = new Map(avatarEntries);
 
   // Smart reminders — dedupe by email/name, then build reminder items
   type ReminderItem = { recipientId: string; name: string; relationship: string | null; label: string; days: number; occasion: "birthday" | "anniversary"; urgent: boolean };
@@ -282,6 +321,53 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {/* ── People strip — horizontally swipeable, esp. on mobile ── */}
+        {people.length > 0 && (
+          <div style={{ marginBottom: 36 }}>
+            <h3 className="arca-h3" style={{ marginBottom: 12 }}>Podle koho</h3>
+            <div
+              className="arca-side__scroll"
+              style={{
+                display: "flex", gap: 18, overflowX: "auto",
+                scrollSnapType: "x proximity",
+                // Avatars scale up ~6% on hover; without this, the first/last
+                // item has nowhere to grow into within the scroll container's
+                // own clipping box and gets its edge cut off. The negative
+                // margin cancels the padding out visually so the row still
+                // lines up with the heading above it.
+                padding: "8px 8px 10px",
+                margin: "-8px -8px 0",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              {people.map((person) => (
+                <Link
+                  key={person.id}
+                  href={`/dashboard/vault/${person.id}`}
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+                    textDecoration: "none", flexShrink: 0, width: 88,
+                    scrollSnapAlign: "start",
+                  }}
+                >
+                  <Avatar
+                    src={person.avatarUrl ? avatarUrlByPath.get(person.avatarUrl) : null}
+                    initials={initialsFor(person.name)}
+                    tone={toneFor(person.name)}
+                    size="xl"
+                  />
+                  <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 88 }}>
+                    {person.name.split(" ")[0]}
+                  </span>
+                  <span className="arca-mono" style={{ fontSize: 10, color: "var(--muted)" }}>
+                    {person.packCount} {person.packCount === 1 ? "zpráva" : person.packCount < 5 ? "zprávy" : "zpráv"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Stats row ───────────────────────────────────────────── */}
         <div className="arca-stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 36 }}>
           <StatCard label="Ve schránce" value={packs.length} hint={`pro ${totalRecipients} ${totalRecipients === 1 ? "člověka" : "lidí"}`} />
@@ -312,7 +398,8 @@ export default async function DashboardPage() {
                   const d = pack.triggerCondition!.executeAtDate!;
                   const dayLabel = d.toLocaleDateString("cs-CZ", { weekday: "short" });
                   const dateLabel = d.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" });
-                  const recipientName = pack.recipients[0]?.name ?? "—";
+                  const recipient = pack.recipients[0];
+                  const recipientName = recipient?.name ?? "—";
                   return (
                     <Link key={pack.id} href={`/dashboard/arca/${pack.id}/edit`} style={{ textDecoration: "none" }}>
                       <div className="arca-card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer" }}>
@@ -320,6 +407,14 @@ export default async function DashboardPage() {
                           <div className="arca-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{dayLabel}</div>
                           <div style={{ fontFamily: "var(--f-serif)", fontSize: 20, lineHeight: 1.1 }}>{dateLabel}</div>
                         </div>
+                        {recipient && (
+                          <Avatar
+                            src={recipient.avatarUrl ? avatarUrlByPath.get(recipient.avatarUrl) : null}
+                            initials={initialsFor(recipient.name)}
+                            tone={toneFor(recipient.name)}
+                            size="lg"
+                          />
+                        )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 550, fontSize: 14 }}>{pack.title}</div>
                           <div className="arca-sub" style={{ fontSize: 12.5 }}>pro {recipientName}</div>
@@ -377,13 +472,13 @@ export default async function DashboardPage() {
             <div className="arca-card flat" style={{ background: "var(--ink)", color: "var(--bg)", border: "none" }}>
               <div style={{ padding: "20px 22px" }}>
                 <div className="arca-row arca-between" style={{ marginBottom: 10 }}>
-                  <span className="arca-kicker" style={{ color: "rgba(255,255,255,0.5)" }}>Týdenní rituál</span>
+                  <span className="arca-kicker" style={{ color: "color-mix(in srgb, var(--bg) 55%, transparent)" }}>Týdenní rituál</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>
                 </div>
                 <p style={{ fontFamily: "var(--f-serif)", fontSize: 22, lineHeight: 1.2, margin: "0 0 18px" }}>
                   Co bys chtěl, aby si dnes <em style={{ color: "var(--accent)" }}>někdo</em> pamatoval?
                 </p>
-                <Link href="/dashboard/arca/new" className="arca-btn" style={{ background: "rgba(255,255,255,0.08)", color: "var(--bg)", borderColor: "rgba(255,255,255,0.12)" }}>
+                <Link href="/dashboard/arca/new" className="arca-btn" style={{ background: "color-mix(in srgb, var(--bg) 8%, transparent)", color: "var(--bg)", borderColor: "color-mix(in srgb, var(--bg) 12%, transparent)" }}>
                   Tříminutové psaní
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </Link>
@@ -403,14 +498,25 @@ export default async function DashboardPage() {
               </Link>
             </div>
             <div className="arca-card">
-              {recent.map((pack, i) => (
+              {recent.map((pack, i) => {
+                const recipient = pack.recipients[0];
+                return (
                 <div key={pack.id}>
                   {i > 0 && <hr style={{ height: 1, background: "var(--hairline)", border: 0, margin: 0 }} />}
                   <Link href={`/dashboard/arca/${pack.id}/edit`} style={{ textDecoration: "none" }}>
                     <div style={{ padding: "14px 22px", display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 9, background: "var(--bg-tint)", display: "grid", placeItems: "center", color: "var(--ink-2)", fontSize: 16 }}>
-                        {kindIcon(pack.type)}
-                      </div>
+                      {recipient ? (
+                        <Avatar
+                          src={recipient.avatarUrl ? avatarUrlByPath.get(recipient.avatarUrl) : null}
+                          initials={initialsFor(recipient.name)}
+                          tone={toneFor(recipient.name)}
+                          size="lg"
+                        />
+                      ) : (
+                        <div style={{ width: 56, height: 56, borderRadius: 14, background: "var(--bg-tint)", display: "grid", placeItems: "center", color: "var(--ink-2)", fontSize: 22, flexShrink: 0 }}>
+                          {kindIcon(pack.type)}
+                        </div>
+                      )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 500, fontSize: 14 }}>{pack.title}</div>
                         <div className="arca-sub" style={{ fontSize: 12 }}>
@@ -424,7 +530,8 @@ export default async function DashboardPage() {
                     </div>
                   </Link>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

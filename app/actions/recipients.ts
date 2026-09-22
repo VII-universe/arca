@@ -90,6 +90,29 @@ export async function uploadRecipientAvatar(
   return { ok: true, avatarUrl: path };
 }
 
+
+export async function uploadRecipientCover(
+  recipientId: string,
+  formData: FormData
+): Promise<{ ok: true; coverUrl: string } | { error: string }> {
+  const user = await requireUser();
+  if (!user) return { error: "Unauthorized" };
+  const file = formData.get("file") as File | null;
+  if (!file) return { error: "Soubor chybí." };
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${user.id}/${recipientId}/cover.${ext}`;
+  const bytes = await file.arrayBuffer();
+  await supabaseAdmin.storage.from("recipient-avatars").upload(path, bytes, { contentType: file.type, upsert: true });
+  await prisma.recipient.update({ where: { id: recipientId }, data: { coverUrl: path } });
+  revalidatePath(`/dashboard/vault/${recipientId}`);
+  return { ok: true, coverUrl: path };
+}
+
+export async function getSignedCoverUrl(path: string): Promise<string | null> {
+  const { data } = await supabaseAdmin.storage.from("recipient-avatars").createSignedUrl(path, 3600);
+  return data?.signedUrl ?? null;
+}
+
 // ─── addMemory ────────────────────────────────────────────────────────────────
 
 export async function addMemory(

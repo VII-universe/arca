@@ -54,7 +54,7 @@ export default async function BlueprintPage() {
               {items.length} {items.length === 1 ? "položka" : items.length < 5 ? "položky" : "položek"}
             </span>
             {items.filter(i => i.isCritical).length > 0 && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: "#D35400", background: "rgba(211,84,0,.10)", padding: "3px 10px", borderRadius: 20 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: "var(--danger-deep)", background: "var(--danger-tint)", padding: "3px 10px", borderRadius: 20 }}>
                 <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
                 {items.filter(i => i.isCritical).length} urgentní
               </span>
@@ -75,7 +75,7 @@ export default async function BlueprintPage() {
               <div style={{ fontFamily: "var(--f-serif)", fontSize: 18, fontWeight: 400 }}>
                 Informace vidíš jen ty. <em style={{ color: "var(--accent)" }}>Vždy.</em>
               </div>
-              <p style={{ margin: "4px 0 0", color: "rgba(255,255,255,.6)", fontSize: 12.5 }}>
+              <p style={{ margin: "4px 0 0", color: "color-mix(in srgb, var(--bg) 65%, transparent)", fontSize: 12.5 }}>
                 Strážci ani příjemci nemají k manuálu přístup. Data jsou součástí tvého uzamčeného profilu.
               </p>
             </div>

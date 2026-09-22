@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { resolveUser, hasProAccess, FREE_LIMITS } from "@/lib/auth/user";
+import { getSignedAvatarUrl } from "@/app/actions/recipients";
 import ComposeWizard from "./ComposeWizard";
 
 export const metadata = { title: "Nová zpráva — ARCA" };
@@ -27,7 +28,7 @@ export default async function NewArcaPage({
   const [allRecipients, contactGroups] = await Promise.all([
     prisma.recipient.findMany({
       where: { messagePack: { ownerId: authUser.id } },
-      select: { id: true, name: true, email: true, groupId: true },
+      select: { id: true, name: true, email: true, groupId: true, avatarUrl: true },
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
@@ -40,11 +41,22 @@ export default async function NewArcaPage({
 
   // Deduplicate by email/name
   const seen = new Set<string>();
-  const recipients: { id: string; name: string; email: string | null; groupId: string | null }[] = [];
+  const dedupedRecipients: typeof allRecipients = [];
   for (const r of allRecipients) {
     const key = r.email ?? r.name;
-    if (!seen.has(key)) { seen.add(key); recipients.push(r); }
+    if (!seen.has(key)) { seen.add(key); dedupedRecipients.push(r); }
   }
+
+  const avatarPaths = new Set(dedupedRecipients.map((r) => r.avatarUrl).filter((p): p is string => !!p));
+  const avatarEntries = await Promise.all(
+    [...avatarPaths].map(async (path) => [path, await getSignedAvatarUrl(path)] as const)
+  );
+  const avatarUrlByPath = new Map(avatarEntries);
+
+  const recipients = dedupedRecipients.map((r) => ({
+    id: r.id, name: r.name, email: r.email, groupId: r.groupId,
+    avatarUrl: r.avatarUrl ? avatarUrlByPath.get(r.avatarUrl) ?? null : null,
+  }));
 
   return (
     <ComposeWizard

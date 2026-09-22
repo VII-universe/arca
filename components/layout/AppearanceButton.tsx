@@ -1,9 +1,28 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useTransition } from "react";
+import { createPortal } from "react-dom";
+import { useVibe, GRADIENTS, PHOTOS, type Vibe } from "@/contexts/vibe-context";
+import { uploadGlobalVibe } from "@/app/actions/settings";
 
 type Theme = "light" | "dark" | "auto";
-type Accent = "clay" | "sage" | "dusk" | "sea" | "ink";
+type Accent = "clay" | "sage" | "dusk" | "sea" | "ink" | "custom";
+
+const DEFAULT_CUSTOM = "#B6754A";
+
+const SCENES: { id: Vibe; label: string }[] = [
+  { id: "nebula", label: "Výchozí" },
+  { id: "midnight", label: "Půlnoc" },
+  { id: "sunset", label: "Soumrak" },
+  { id: "ocean", label: "Oceán" },
+  { id: "forest", label: "Les" },
+  { id: "stars", label: "Hvězdy" },
+];
+function scenePreview(id: Vibe): React.CSSProperties {
+  if (GRADIENTS[id]) return { backgroundImage: GRADIENTS[id] };
+  if (PHOTOS[id]) return { backgroundImage: `url(${PHOTOS[id]})`, backgroundSize: "cover", backgroundPosition: "center" };
+  return { background: "radial-gradient(circle,#3f3f46 1px,transparent 1px) 0 0/10px 10px,#0a0510" };
+}
 
 const ACCENTS: { id: Accent; label: string; swatch: string }[] = [
   { id: "clay", label: "Terakota",  swatch: "#B6754A" },
@@ -49,17 +68,44 @@ function applyAccent(accent: Accent) {
   localStorage.setItem("arca.accent", accent);
 }
 
+function applyCustomAccent(hex: string) {
+  document.documentElement.style.setProperty("--accent-custom", hex);
+  document.documentElement.setAttribute("data-accent", "custom");
+  localStorage.setItem("arca.accent", "custom");
+  localStorage.setItem("arca.accentCustom", hex);
+}
+
+function applyGlow(on: boolean) {
+  if (on) document.documentElement.removeAttribute("data-arca-glow");
+  else document.documentElement.setAttribute("data-arca-glow", "off");
+  localStorage.setItem("arca.glow", on ? "on" : "off");
+}
+
 export default function AppearanceButton() {
   const [theme, setTheme]     = useState<Theme>("light");
   const [accent, setAccent]   = useState<Accent>("clay");
+  const [customColor, setCustomColor] = useState(DEFAULT_CUSTOM);
+  const [glowOn, setGlowOn]   = useState(true);
   const [open, setOpen]       = useState(false);
   const [panelPos, setPanelPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef   = useRef<HTMLDivElement>(null);
+  const customColorRef = useRef<HTMLInputElement>(null);
+  const { vibe, setVibe, customImageUrl, setCustomImageUrl } = useVibe();
+  const [uploading, startUpload] = useTransition();
+  const bgFileRef = useRef<HTMLInputElement>(null);
+  const bgUrlRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTheme((localStorage.getItem("arca.theme") as Theme | null) ?? "light");
-    setAccent((localStorage.getItem("arca.accent") as Accent | null) ?? "clay");
+    const savedAccent = (localStorage.getItem("arca.accent") as Accent | null) ?? "clay";
+    setAccent(savedAccent);
+    const savedCustom = localStorage.getItem("arca.accentCustom") ?? DEFAULT_CUSTOM;
+    setCustomColor(savedCustom);
+    if (savedAccent === "custom") {
+      document.documentElement.style.setProperty("--accent-custom", savedCustom);
+    }
+    setGlowOn((localStorage.getItem("arca.glow") ?? "on") !== "off");
   }, []);
 
   // Close only when clicking outside BOTH the trigger and the panel
@@ -101,6 +147,29 @@ export default function AppearanceButton() {
 
   function handleTheme(t: Theme) { setTheme(t); applyTheme(t); }
   function handleAccent(a: Accent) { setAccent(a); applyAccent(a); }
+  function handleGlow(on: boolean) { setGlowOn(on); applyGlow(on); }
+  function handleCustomColor(hex: string) {
+    setCustomColor(hex);
+    setAccent("custom");
+    applyCustomAccent(hex);
+  }
+
+  function handleBgFile(file: File) {
+    startUpload(async () => {
+      const fd = new FormData();
+      fd.set("file", file);
+      const res = await uploadGlobalVibe(fd);
+      if ("ok" in res) {
+        setCustomImageUrl(res.vibeImageUrl);
+        if (bgUrlRef.current) bgUrlRef.current.value = res.vibeImageUrl;
+      }
+    });
+  }
+  function handleBgUrlCommit() {
+    const val = bgUrlRef.current?.value.trim() ?? "";
+    setCustomImageUrl(val);
+    if (!val) setVibe("nebula");
+  }
 
   return (
     <>
@@ -116,18 +185,25 @@ export default function AppearanceButton() {
         <span style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--accent)", boxShadow: "inset 0 0 0 2px var(--surface-2)", flexShrink: 0, marginLeft: "auto" }} />
       </button>
 
-      {open && (
+      {open && createPortal(
         <>
-          {/* Panel — fixed, above trigger, never clipped */}
+          {/* Panel — fixed, above trigger. Portaled to <body> because the
+              hover-expanding sidebar has `transform` on itself (for the
+              slide animation), which makes it the containing block for
+              any position:fixed descendant — trapping this panel inside
+              the sidebar's own overflow:hidden and clipping it. */}
           <div
             ref={panelRef}
             className="arca-card elev"
+            data-arca-theme=""
             style={{
               position: "fixed",
               left: panelPos.left,
               top: panelPos.top,
               transform: "translateY(-100%)",
               width: 300,
+              maxHeight: "calc(100vh - 32px)",
+              overflowY: "auto",
               zIndex: 1000,
               padding: 18,
               fontSize: 13,
@@ -187,6 +263,111 @@ export default function AppearanceButton() {
                   {accent === a.id && <span style={{ color: "var(--accent-deep)" }}><CheckIc /></span>}
                 </button>
               ))}
+
+              {/* Custom accent — pick any color, not just the 5 presets */}
+              <button
+                type="button"
+                onClick={() => customColorRef.current?.click()}
+                style={{
+                  width: "100%", padding: "8px 10px", borderRadius: 10,
+                  display: "flex", alignItems: "center", gap: 12,
+                  background: accent === "custom" ? "var(--accent-tint)" : "transparent",
+                  border: `1px solid ${accent === "custom" ? "var(--accent-soft)" : "transparent"}`,
+                  cursor: "pointer", fontFamily: "var(--f-sans)",
+                }}
+              >
+                <span style={{
+                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                  background: accent === "custom"
+                    ? customColor
+                    : "conic-gradient(from 0deg, #B6754A, #7C8A6B, #4F8B95, #9B6A8B, #B6754A)",
+                  boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.1)",
+                }} />
+                <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500, color: accent === "custom" ? "var(--accent-deep)" : "var(--ink)" }}>
+                  Vlastní barva
+                </span>
+                {accent === "custom" && <span style={{ color: "var(--accent-deep)" }}><CheckIc /></span>}
+                <input
+                  ref={customColorRef}
+                  type="color"
+                  value={customColor}
+                  onChange={(e) => handleCustomColor(e.target.value)}
+                  style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+              </button>
+            </div>
+
+            {/* Podsvícení (glow) */}
+            <hr className="arca-divider" />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <span className="arca-kicker">Podsvícení</span>
+              <button
+                type="button"
+                onClick={() => handleGlow(!glowOn)}
+                className={`arca-switch${glowOn ? " on" : ""}`}
+                aria-pressed={glowOn}
+                title={glowOn ? "Vypnout podsvícení karet" : "Zapnout podsvícení karet"}
+              />
+            </div>
+            <p className="arca-sub" style={{ fontSize: 11.5, margin: "0 0 4px" }}>
+              Jemná záře kolem karet v barvě akcentu.
+            </p>
+
+            {/* Vlastní pozadí */}
+            <hr className="arca-divider" />
+            <div className="arca-kicker" style={{ marginBottom: 10 }}>Pozadí</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
+              {SCENES.map((s) => {
+                const active = vibe === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setVibe(s.id)}
+                    title={s.label}
+                    style={{
+                      ...scenePreview(s.id),
+                      aspectRatio: "4/3", borderRadius: 8, cursor: "pointer",
+                      border: `2px solid ${active ? "var(--accent)" : "transparent"}`,
+                      position: "relative", overflow: "hidden",
+                    }}
+                  >
+                    <span style={{ position: "absolute", inset: "auto 0 0 0", fontSize: 8.5, color: "#fff", background: "rgba(0,0,0,0.45)", padding: "1px 0", textAlign: "center" }}>
+                      {s.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                ref={bgUrlRef}
+                type="url"
+                defaultValue={customImageUrl}
+                placeholder="URL vlastního obrázku…"
+                onBlur={handleBgUrlCommit}
+                onKeyDown={(e) => e.key === "Enter" && handleBgUrlCommit()}
+                className="arca-input"
+                style={{ padding: "7px 10px", fontSize: 11.5 }}
+              />
+              <button
+                type="button"
+                className="arca-btn sm arca-btn--outline icon-btn"
+                disabled={uploading}
+                onClick={() => bgFileRef.current?.click()}
+                title="Nahrát vlastní obrázek"
+              >
+                {uploading ? "…" : <SparkIc />}
+              </button>
+              <input
+                ref={bgFileRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleBgFile(f); e.target.value = ""; }}
+              />
             </div>
 
             <hr className="arca-divider" />
@@ -197,7 +378,8 @@ export default function AppearanceButton() {
               </span>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </>
   );

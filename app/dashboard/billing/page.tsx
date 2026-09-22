@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { resolveUser, hasProAccess } from "@/lib/auth/user";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import BillingCheckoutButtons from "@/components/billing/BillingCheckoutButtons";
 import { cn } from "@/lib/utils";
 
@@ -74,7 +73,6 @@ export default async function BillingPage({
             <ArrowLeft className="size-4" />
             Dashboard
           </Link>
-          <ThemeSwitcher />
         </div>
       </header>
 

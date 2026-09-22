@@ -25,7 +25,12 @@
   --glass-saturation: 180%;
 
   --glass-shadow-inset: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
-  --glass-shadow-glow: 0 8px 32px 0 rgba(255, 0, 255, 0.15);
+  /* "Neon" card glow — follows the active accent so it isn't stuck on
+     magenta regardless of theme; --arca-glow-opacity is what the
+     on/off toggle in Appearance actually flips (see [data-arca-glow]
+     below), so both this and the ambient layer respond to one knob. */
+  --arca-glow-opacity: 0.22;
+  --glass-shadow-glow: 0 8px 32px 0 color-mix(in srgb, var(--accent) calc(var(--arca-glow-opacity) * 100%), transparent);
 
   /* shadow (adapted for dark glass) */
   --sh-1: 0 4px 12px rgba(0,0,0,0.2);
@@ -38,6 +43,9 @@
   --orb-turquoise: #00ced1;
   --orb-orange: #ff8c00;
   --orb-blue: #1e90ff;
+
+  --gradient-primary: linear-gradient(135deg, var(--orb-magenta), var(--orb-pink));
+  --gradient-secondary: linear-gradient(135deg, var(--orb-turquoise), var(--orb-blue));
 
   --f-sans: var(--font-inter), system-ui, sans-serif;
   --f-serif: var(--font-instrument-serif), var(--font-playfair), Georgia, serif;
@@ -173,6 +181,13 @@
   --sage-soft: #D7DCCB;
   --sky:       #6F8AA8;
   --sky-soft:  #D5DEE7;
+  /* "Urgent/critical" tone — a muted brick red that sits inside the
+     app's earthy palette, not the raw construction-orange (#D35400)
+     that used to be hardcoded at every call site. */
+  --danger:      #B8452F;
+  --danger-soft: #E6C4B6;
+  --danger-tint: #F3E1D8;
+  --danger-deep: #8A2E1C;
   /* richer layered shadows */
   --sh-1: 0 1px 2px rgba(26,24,20,.06), 0 0 0 1px rgba(26,24,20,.04);
   --sh-2: 0 4px 16px -4px rgba(26,24,20,.14), 0 1px 4px rgba(26,24,20,.06), 0 0 0 1px rgba(26,24,20,.04);
@@ -185,6 +200,14 @@
   /* glass */
   --glass-bg:     color-mix(in srgb, var(--surface) 78%, transparent);
   --glass-border: color-mix(in srgb, var(--hairline) 70%, transparent);
+  /* Primary buttons/headings/CTA badges all key off these two — they
+     used to be hardcoded to the orb magenta/pink regardless of the
+     chosen accent, which is why "primary" UI stayed pink no matter
+     what Appearance → Akcent was set to. Tie them to the live accent
+     (including its custom-picked value) so switching accent actually
+     recolors everything that reads as "primary". */
+  --gradient-primary:   linear-gradient(135deg, var(--accent), var(--accent-deep));
+  --gradient-secondary: linear-gradient(135deg, var(--sage), var(--sky));
 }
 
 /* ── Accent palettes ─────────────────────────────────────────────── */
@@ -196,6 +219,21 @@ html[data-accent="sage"]  { --accent:#7C8A6B; --accent-soft:#D7DCCB; --accent-ti
 html[data-accent="dusk"]  { --accent:#9B6A8B; --accent-soft:#E2D0DD; --accent-tint:#EDE0E8; --accent-deep:#6B4561; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
 html[data-accent="sea"]   { --accent:#4F8B95; --accent-soft:#C8DDE0; --accent-tint:#DEEAEC; --accent-deep:#2F5E66; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
 html[data-accent="ink"]   { --accent:#4A4540; --accent-soft:#D6D1C8; --accent-tint:#E8E3D9; --accent-deep:#2A2520; --clay:var(--accent); --clay-soft:var(--accent-soft); --clay-tint:var(--accent-tint); }
+
+/* ── Custom accent (picked via a native color input in Appearance) ──
+   --accent-custom is a raw hex set inline on <html> by JS; everything
+   else derives from it with color-mix against the *local* --surface/
+   --ink already in scope at each [data-arca-theme] subtree, so one
+   picked color produces correct light AND dark variants automatically
+   — no separate JS-computed dark palette needed, unlike the 5 presets
+   above which hardcode both. */
+html[data-accent="custom"] { --accent: var(--accent-custom, #B6754A); --clay: var(--accent); }
+html[data-accent="custom"] [data-arca-theme] {
+  --accent-soft: color-mix(in srgb, var(--accent-custom, #B6754A) 38%, var(--surface));
+  --accent-tint: color-mix(in srgb, var(--accent-custom, #B6754A) 16%, var(--surface));
+  --accent-deep: color-mix(in srgb, var(--accent-custom, #B6754A) 62%, var(--ink));
+  --clay-soft: var(--accent-soft); --clay-tint: var(--accent-tint);
+}
 
 /* ── Dark mode ───────────────────────────────────────────────────── */
 html[data-arca-dark="true"] [data-arca-theme],
@@ -210,6 +248,10 @@ html[data-arca-dark="true"][data-arca-theme] {
   --sh-3: 0 28px 70px -20px rgba(0,0,0,.75), 0 8px 24px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.05);
   --glass-bg:     color-mix(in srgb, var(--surface) 72%, transparent);
   --glass-border: color-mix(in srgb, rgba(255,240,210,.12) 100%, transparent);
+  --danger:      #E0805F;
+  --danger-soft: #5C2A18;
+  --danger-tint: #3A1A10;
+  --danger-deep: #F0A080;
 }
 html[data-arca-dark="true"], html[data-arca-dark="true"][data-accent="clay"] {
   --accent:#D08848; --accent-soft:#5A3318; --accent-tint:#321C0A; --accent-deep:#F0A86A;
@@ -219,6 +261,13 @@ html[data-arca-dark="true"][data-accent="sage"]  { --accent:#9AAF80; --accent-so
 html[data-arca-dark="true"][data-accent="dusk"]  { --accent:#B880A0; --accent-soft:#4A2C44; --accent-tint:#2A1828; --accent-deep:#D8A8C0; }
 html[data-arca-dark="true"][data-accent="sea"]   { --accent:#70AABC; --accent-soft:#224855; --accent-tint:#142C35; --accent-deep:#98CDD8; }
 html[data-arca-dark="true"][data-accent="ink"]   { --accent:#B0A898; --accent-soft:#38322A; --accent-tint:#22201A; --accent-deep:#D8CFC0; }
+/* The bare html[data-arca-dark="true"] rule above (shared with the clay
+   dark fallback) would otherwise stomp --accent back to clay's dark
+   value here too, since it has no [data-accent="custom"] condition —
+   restore the picked color. --accent-soft/tint/deep don't need this:
+   they're already derived generically further up via color-mix against
+   --surface/--ink, which are already dark-mode-correct at this point. */
+html[data-arca-dark="true"][data-accent="custom"] { --accent: var(--accent-custom, #B6754A); --clay: var(--accent); }
 
 html[data-arca-dark="true"] body { background: #100D0A; }
 
@@ -226,10 +275,20 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 .arca-app, .arca-app * { box-sizing: border-box; }
 .arca-app {
   display: grid;
-  grid-template-columns: 264px 1fr;
+  /* Sidebar is a hover-expanding overlay rail (see .arca-side below) —
+     reserve just a thin trigger strip in the grid; the full sidebar
+     floats on top of the main content when expanded, it doesn't push it. */
+  grid-template-columns: 16px 1fr;
   height: 100vh;
   width: 100%;
-  background: var(--bg);
+  /* Translucent (not opaque) so the global VibeBackground layer — custom
+     photo/gradient, picked in Appearance → Pozadí — actually shows
+     through instead of being fully hidden behind a solid fill. Matches
+     the sidebar/topbar's own --glass-bg ratio so it reads as one
+     consistent glass surface rather than two different levels of see-
+     through, and stays subtle enough that text on plain (non-card)
+     areas — page titles, intro copy — is still comfortably readable. */
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
   font-family: var(--f-sans);
   color: var(--ink) !important;
   font-size: 14px;
@@ -244,13 +303,20 @@ html[data-arca-dark="true"] body { background: #100D0A; }
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  opacity: calc(var(--arca-glow-opacity, 0.22) / 0.22);
+  transition: opacity .25s ease;
   background:
     radial-gradient(ellipse 55% 45% at 15% 10%,  color-mix(in srgb, var(--accent) 7%, transparent),  transparent),
     radial-gradient(ellipse 50% 55% at 88% 85%,  color-mix(in srgb, var(--sage)   5%, transparent),  transparent),
     radial-gradient(ellipse 40% 40% at 60% 30%,  color-mix(in srgb, var(--sky)    4%, transparent),  transparent);
 }
 
-/* ── Glass Sidebar ───────────────────────────────────────────────── */
+/* ── "Podsvícení" (glow) toggle — set on <html> by AppearanceButton ── */
+html[data-arca-glow="off"] {
+  --arca-glow-opacity: 0;
+}
+
+/* ── Glass Sidebar — hover-expanding overlay rail ──────────────────── */
 .arca-side {
   background: var(--glass-bg);
   backdrop-filter: blur(32px) saturate(180%);
@@ -259,11 +325,31 @@ html[data-arca-dark="true"] body { background: #100D0A; }
   display: flex; flex-direction: column;
   padding: 20px 16px;
   overflow: hidden;
-  position: relative;
-  z-index: 1;
+  /* Sits in the grid's first (16px) track at rest, then floats over the
+     main content on hover instead of pushing it — width/position stay
+     fixed, only the transform slides it off/on screen. */
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 264px;
+  height: 100vh;
+  transform: translateX(calc(-100% + 16px));
+  transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s ease;
+  z-index: 50;
   /* inner right-edge highlight */
   box-shadow: inset -1px 0 0 rgba(255,255,255,.06);
 }
+.arca-side:hover,
+.arca-side:focus-within {
+  transform: translateX(0);
+  box-shadow: var(--sh-3), inset -1px 0 0 rgba(255,255,255,.06);
+}
+/* Scrollable nav/recipients list — keep scroll, hide the visible scrollbar track */
+.arca-side__scroll {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* old Edge */
+}
+.arca-side__scroll::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
 .arca-brand {
   display: flex; align-items: center; gap: 10px;
   padding: 4px 8px 20px;
@@ -349,6 +435,10 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 
 /* ── Main area ───────────────────────────────────────────────────── */
 .arca-main {
+  /* .arca-side is now position:fixed (hover-expanding rail) and no longer
+     participates in grid layout, so auto-placement alone can no longer be
+     trusted to put this in the second (1fr) track — pin it explicitly. */
+  grid-column: 2;
   overflow-y: auto;
   position: relative;
   background: transparent;
@@ -388,7 +478,7 @@ html[data-arca-dark="true"] body { background: #100D0A; }
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
   box-shadow: var(--glass-shadow-glow), var(--glass-shadow-inset);
-  color: white;
+  color: var(--ink);
   transition: box-shadow .25s cubic-bezier(.22,1,.36,1), transform .22s cubic-bezier(.22,1,.36,1), border-color .2s;
 }
 .arca-card.elev {
@@ -414,13 +504,13 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 .arca-btn:active { transform: translateY(0); }
 .arca-btn--primary {
   background: var(--gradient-primary);
-  color: var(--bg);
-  box-shadow: 0 4px 15px rgba(255, 0, 255, 0.3);
+  color: var(--on-accent);
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 30%, transparent);
   border: none;
 }
 .arca-btn--primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 0, 255, 0.5);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 .arca-btn--clay {
@@ -513,19 +603,27 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 
 /* ── Avatars ─────────────────────────────────────────────────────── */
 .arca-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
+  /* Sized up across the board — photos read as thumbnails, not favicons,
+     the way a modern app shows them. */
+  width: 40px; height: 40px; border-radius: 50%;
+  /* Tailwind's preflight resets <img> to max-width:100% — when a photo
+     avatar sits inside a narrower flex/text column (e.g. the "Podle
+     koho" strip, whose card is narrower than the xl avatar), that caps
+     the rendered width below the fixed height above, squashing the
+     circle into an oval. Photos always ignore their container's width. */
+  max-width: none; max-height: none;
   background: var(--gradient-primary);
   border: 2px solid rgba(255,255,255,0.3);
   color: var(--on-accent); display: grid; place-items: center;
-  font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  font-size: 13px; font-weight: 600; letter-spacing: .02em;
   flex-shrink: 0;
   box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 28%, transparent);
   transition: box-shadow .2s ease, transform .2s ease;
 }
 .arca-avatar:hover { box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 40%, transparent); transform: scale(1.06); }
-.arca-avatar.sm  { width: 24px; height: 24px; font-size: 10px; }
-.arca-avatar.lg  { width: 44px; height: 44px; font-size: 14px; }
-.arca-avatar.xl  { width: 72px; height: 72px; font-size: 22px; font-family: var(--f-serif); font-weight: 400; }
+.arca-avatar.sm  { width: 30px; height: 30px; font-size: 11.5px; }
+.arca-avatar.lg  { width: 56px; height: 56px; font-size: 17px; }
+.arca-avatar.xl  { width: 88px; height: 88px; font-size: 26px; font-family: var(--f-serif); font-weight: 400; }
 .arca-avatar.clay { background: var(--gradient-primary); }
 .arca-avatar.sage { background: var(--gradient-secondary); }
 .arca-avatar.sky  { background: linear-gradient(135deg, var(--orb-blue), var(--orb-pink)); }
@@ -625,8 +723,47 @@ html[data-arca-dark="true"] body { background: #100D0A; }
 }
 .arca-compose-tile.active .arca-sub { color: var(--muted); }
 
+/* ── AI-assist entry point (compose sidebar, under the preview) ────
+   Was a cramped pill wedged into the rich-text toolbar, where it got
+   its own right edge clipped by the editor card's overflow:hidden on
+   any toolbar row narrower than its content. Moved to its own
+   full-width call-to-action below the delivery preview instead, with
+   room to actually explain what it does. */
+.arca-ai-cta {
+  width: 100%; margin-top: 16px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; border-radius: var(--r-lg);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--glass-border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--glass-bg)), var(--glass-bg));
+  backdrop-filter: blur(12px);
+  cursor: pointer; text-align: left; font-family: var(--f-sans);
+  transition: all .22s cubic-bezier(.22,1,.36,1);
+}
+.arca-ai-cta:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--sh-2), 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.arca-ai-cta__icon {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 11px;
+  display: grid; place-items: center;
+  background: var(--gradient-primary); color: var(--on-accent);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.arca-ai-cta__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.arca-ai-cta__title { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.arca-ai-cta__sub { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.arca-ai-cta__arrow {
+  flex-shrink: 0; color: var(--accent);
+  display: grid; place-items: center;
+  transition: transform .22s cubic-bezier(.22,1,.36,1);
+}
+.arca-ai-cta:hover .arca-ai-cta__arrow { transform: translateX(3px); }
+
 /* ── Animations ──────────────────────────────────────────────────── */
 @keyframes arca-fadeUp  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@keyframes arca-aiModalIn { from { opacity:0; transform:scale(.96) translateY(6px); } to { opacity:1; transform:none; } }
 @keyframes arca-pageIn  { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 @keyframes arca-spin    { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes arca-pulse   {

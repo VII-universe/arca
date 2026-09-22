@@ -17,6 +17,10 @@ export default function LoginPage() {
       }}
     >
       {/* ── Left — brand panel ─────────────────────────────────────── */}
+      {/* Backdrop here is the always-dark VibeBackground showing through
+          (background: transparent), independent of the user's light/dark
+          preference — pin --ink/--muted/--accent to the dark-mode values
+          so text stays legible against it regardless of that preference. */}
       <div style={{
         display: "flex",
         flexDirection: "column",
@@ -26,6 +30,11 @@ export default function LoginPage() {
         borderRight: "1px solid var(--glass-border)",
         position: "relative",
         overflow: "hidden",
+        ["--ink" as string]: "#F0EAE0",
+        ["--ink-2" as string]: "#CCB89E",
+        ["--muted" as string]: "#8A7D6E",
+        ["--muted-2" as string]: "#5A5044",
+        ["--accent" as string]: "#D08848",
       }}>
         {/* Decorative arc waves */}
         <svg
@@ -54,7 +63,7 @@ export default function LoginPage() {
               boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
             }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M5 19c0-8 3.5-14 7-14s7 6 7 14" stroke="rgba(255,255,255,0.5)" strokeWidth="1.8" strokeLinecap="round"/>
+                <path d="M5 19c0-8 3.5-14 7-14s7 6 7 14" stroke="color-mix(in srgb, var(--bg) 50%, transparent)" strokeWidth="1.8" strokeLinecap="round"/>
                 <circle cx="12" cy="20" r="1.8" fill="var(--accent)"/>
               </svg>
             </div>

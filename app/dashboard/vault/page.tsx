@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import VaultClient from "@/components/arca/VaultClient";
 import type { VaultPerson, VaultGroup } from "@/components/arca/VaultClient";
+import { getSignedAvatarUrl } from "@/app/actions/recipients";
 
 export const metadata = { title: "Schránka — ARCA" };
 
@@ -47,7 +48,7 @@ export default async function VaultPage({
     prisma.recipient.findMany({
       where: { messagePack: { ownerId: authUser.id } },
       select: {
-        id: true, name: true, email: true, phone: true,
+        id: true, name: true, email: true, phone: true, avatarUrl: true,
         groupId: true,
         group: { select: { id: true, name: true, color: true, emoji: true } },
         messagePack: {
@@ -62,9 +63,16 @@ export default async function VaultPage({
     prisma.contactGroup.findMany({
       where: { userId: authUser.id },
       orderBy: { createdAt: "asc" },
-      select: { id: true, name: true, color: true, emoji: true },
+      select: { id: true, name: true, color: true, emoji: true, vibeImageUrl: true },
     }),
   ]);
+
+  // Batch-resolve signed avatar URLs for every unique storage path up front
+  const avatarPaths = [...new Set(allRecipients.map(r => r.avatarUrl).filter((p): p is string => !!p))];
+  const avatarEntries = await Promise.all(
+    avatarPaths.map(async (path) => [path, await getSignedAvatarUrl(path)] as const)
+  );
+  const avatarUrlByPath = new Map(avatarEntries);
 
   // Deduplicate recipients → persons
   const personMap = new Map<string, VaultPerson>();
@@ -78,6 +86,7 @@ export default async function VaultPage({
         packs: [],
         groupId: r.groupId,
         group: r.group,
+        avatarSignedUrl: r.avatarUrl ? avatarUrlByPath.get(r.avatarUrl) : null,
       });
     }
     const person = personMap.get(key)!;
@@ -113,7 +122,7 @@ export default async function VaultPage({
 
         <VaultClient
           initialPeople={people}
-          initialGroups={groups as VaultGroup[]}
+          initialGroups={groups as any}
           initialGroupId={initialGroupId}
         />
 
