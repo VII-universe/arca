@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { getSignedAvatarUrl } from "@/app/actions/recipients";
 import { Avatar } from "@/components/arca/Avatar";
+import ModeFilterSection from "@/components/dashboard/ModeFilterSection";
 export const metadata = { title: "Přehled — ARCA" };
 
 function initialsFor(name: string): string {
@@ -49,16 +50,6 @@ function Topbar({ crumbs }: { crumbs: string[] }) {
   );
 }
 
-function StatCard({ label, value, hint, tone }: { label: string; value: number | string; hint: string; tone?: "clay" | "sage" | "sky" }) {
-  const color = tone === "clay" ? "var(--accent)" : tone === "sage" ? "var(--sage)" : tone === "sky" ? "var(--sky)" : "var(--ink)";
-  return (
-    <div className="arca-card" style={{ padding: "20px 22px", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center", textAlign: "center" }}>
-      <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>{label}</span>
-      <span style={{ fontFamily: "var(--f-serif)", fontSize: 42, lineHeight: 1, fontWeight: 400, color }}>{value}</span>
-      <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--f-mono)" }}>{hint}</span>
-    </div>
-  );
-}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -79,7 +70,7 @@ export default async function DashboardPage() {
       orderBy: { updatedAt: "desc" },
       take: 20,
       select: {
-        id: true, title: true, type: true, status: true,
+        id: true, title: true, type: true, status: true, messageMode: true,
         updatedAt: true, createdAt: true,
         recipients: { select: { id: true, name: true, email: true, avatarUrl: true }, take: 3 },
         triggerCondition: { select: { type: true, executeAtDate: true, inactivityDaysLimit: true, triggeredAt: true, gracePeriodDays: true } },
@@ -103,19 +94,9 @@ export default async function DashboardPage() {
   const isPro = isAdminEmail || dbUser?.isPremium === true || dbUser?.role === "ADMIN";
 
   const activePacks = packs.filter((p) => p.status === "ACTIVE").length;
-  const deliveredPacks = packs.filter((p) => p.status === "DELIVERED" || p.status === "TRIGGERED").length;
   const totalRecipients = new Set(packs.flatMap((p) => p.recipients.map((r) => r.email ?? r.name))).size;
 
   const gracePacks = packs.filter((p) => p.status === "GRACE_PERIOD" || p.status === "PENDING_GUARDIAN_APPROVAL");
-
-  // Upcoming — packs with specific date trigger
-  const upcoming = packs
-    .filter((p) => p.triggerCondition?.type === "SPECIFIC_DATE" && p.triggerCondition.executeAtDate)
-    .sort((a, b) => (a.triggerCondition!.executeAtDate!.getTime()) - (b.triggerCondition!.executeAtDate!.getTime()))
-    .slice(0, 4);
-
-  // Recent
-  const recent = packs.slice(0, 4);
 
   // People strip — every unique recipient across all packs, most messages first
   type PersonSummary = { id: string; name: string; avatarUrl: string | null; packCount: number };
@@ -130,9 +111,11 @@ export default async function DashboardPage() {
   }
   const people = [...peopleMap.values()].sort((a, b) => b.packCount - a.packCount);
 
-  // Signed avatar URLs — primary recipient of each recent/upcoming pack, plus everyone in the people strip
+  // Signed avatar URLs — primary recipient of every fetched pack (the client-
+  // side mode filter can surface any of them, not just the top 4), plus
+  // everyone in the people strip.
   const avatarPaths = new Set<string>();
-  for (const p of [...recent, ...upcoming]) {
+  for (const p of packs) {
     const path = p.recipients[0]?.avatarUrl;
     if (path) avatarPaths.add(path);
   }
@@ -143,6 +126,8 @@ export default async function DashboardPage() {
     [...avatarPaths].map(async (path) => [path, await getSignedAvatarUrl(path)] as const)
   );
   const avatarUrlByPath = new Map(avatarEntries);
+  // Plain object — Client Components can't receive a Map as a prop.
+  const avatarUrlByPathObj = Object.fromEntries(avatarUrlByPath);
 
   // Smart reminders — dedupe by email/name, then build reminder items
   type ReminderItem = { recipientId: string; name: string; relationship: string | null; label: string; days: number; occasion: "birthday" | "anniversary"; urgent: boolean };
@@ -183,11 +168,6 @@ export default async function DashboardPage() {
 
   const lastActive = dbUser?.lastActiveAt ?? new Date();
   const daysSinceActive = Math.floor((now.getTime() - lastActive.getTime()) / 86_400_000);
-
-  const kindIcon = (type: "EMOTIONAL" | "PRACTICAL") =>
-    type === "EMOTIONAL" ? "✦" : "⬡";
-  const kindColor = (type: "EMOTIONAL" | "PRACTICAL") =>
-    type === "EMOTIONAL" ? "var(--accent)" : "var(--sky)";
 
   return (
     <>
@@ -368,173 +348,24 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* ── Stats row ───────────────────────────────────────────── */}
-        <div className="arca-stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 36 }}>
-          <StatCard label="Ve schránce" value={packs.length} hint={`pro ${totalRecipients} ${totalRecipients === 1 ? "člověka" : "lidí"}`} />
-          <StatCard label="Aktivní" value={activePacks} hint="připraveny k doručení" tone="clay" />
-          <StatCard label="Doručené" value={deliveredPacks} hint="úspěšně doručeno" tone="sage" />
-          <StatCard label="Strážci" value={guardians.length} hint={guardians.length > 0 ? "aktivní ochrana" : "žádní zatím"} tone="sky" />
-        </div>
-
-        {/* ── Two columns ─────────────────────────────────────────── */}
-        <div className="arca-dashboard-2col" style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 22 }}>
-          {/* Upcoming */}
-          <div>
-            <div className="arca-row arca-between" style={{ marginBottom: 14 }}>
-              <h3 className="arca-h3">Nejbližší okamžiky</h3>
-              <Link href="/dashboard/calendar" className="arca-btn sm arca-btn--ghost">
-                Otevřít kalendář
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M9 6l6 6-6 6"/></svg>
-              </Link>
-            </div>
-
-            {upcoming.length === 0 ? (
-              <div className="arca-card" style={{ padding: "28px 24px", textAlign: "center" }}>
-                <p className="arca-sub" style={{ fontSize: 13 }}>Žádné naplánované zprávy. <Link href="/dashboard/arca/new" style={{ color: "var(--accent)" }}>Vytvoř první →</Link></p>
-              </div>
-            ) : (
-              <div className="arca-stack-3">
-                {upcoming.map((pack) => {
-                  const d = pack.triggerCondition!.executeAtDate!;
-                  const dayLabel = d.toLocaleDateString("cs-CZ", { weekday: "short" });
-                  const dateLabel = d.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" });
-                  const recipient = pack.recipients[0];
-                  const recipientName = recipient?.name ?? "—";
-                  return (
-                    <Link key={pack.id} href={`/dashboard/arca/${pack.id}/edit`} style={{ textDecoration: "none" }}>
-                      <div className="arca-card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer" }}>
-                        <div style={{ width: 54, textAlign: "center", borderRight: "1px solid var(--hairline)", paddingRight: 16 }}>
-                          <div className="arca-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{dayLabel}</div>
-                          <div style={{ fontFamily: "var(--f-serif)", fontSize: 20, lineHeight: 1.1 }}>{dateLabel}</div>
-                        </div>
-                        {recipient && (
-                          <Avatar
-                            src={recipient.avatarUrl ? avatarUrlByPath.get(recipient.avatarUrl) : null}
-                            initials={initialsFor(recipient.name)}
-                            tone={toneFor(recipient.name)}
-                            size="lg"
-                          />
-                        )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 550, fontSize: 14 }}>{pack.title}</div>
-                          <div className="arca-sub" style={{ fontSize: 12.5 }}>pro {recipientName}</div>
-                        </div>
-                        <span style={{ color: kindColor(pack.type), fontSize: 16 }}>{kindIcon(pack.type)}</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{ color: "var(--muted)" }}><path d="M9 6l6 6-6 6"/></svg>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Right column */}
-          <div className="arca-stack-4">
-            {/* Tichý strážce */}
-            <div className="arca-card">
-              <div style={{ padding: "20px 22px" }}>
-                <div className="arca-row arca-between" style={{ marginBottom: 12 }}>
-                  <h3 className="arca-h3">Tichý strážce</h3>
-                  <span className="arca-chip sage"><span className="dot" /> Aktivní</span>
-                </div>
-                <p className="arca-sub" style={{ fontSize: 12.5, marginBottom: 14 }}>
-                  ARCA bdí jemně na pozadí. Pokud se po dlouhou dobu neozveš, zeptá se tvých strážců, než cokoli odešle.
-                </p>
-                <div className="arca-row arca-between" style={{ marginBottom: 8 }}>
-                  <span className="arca-mono" style={{ color: "var(--muted)" }}>Naposledy zde</span>
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>
-                    {daysSinceActive === 0 ? "právě teď" : `před ${daysSinceActive} ${daysSinceActive === 1 ? "dnem" : "dny"}`}
-                  </span>
-                </div>
-                <div className="arca-row arca-between">
-                  <span className="arca-mono" style={{ color: "var(--muted)" }}>Strážci</span>
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>{guardians.length} aktivních</span>
-                </div>
-                <hr className="arca-divider" />
-                <div className="arca-row" style={{ gap: 8 }}>
-                  {guardians.slice(0, 3).map((g) => (
-                    <span key={g.id} className="arca-avatar sm sage" title={g.name}>
-                      {g.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-                    </span>
-                  ))}
-                  {guardians.length === 0 && (
-                    <span className="arca-sub" style={{ fontSize: 12 }}>Žádní strážci</span>
-                  )}
-                  <Link href="/dashboard/guardians" className="arca-btn sm arca-btn--ghost" style={{ marginLeft: "auto" }}>
-                    Spravovat
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Weekly ritual */}
-            <div className="arca-card flat" style={{ background: "var(--ink)", color: "var(--bg)", border: "none" }}>
-              <div style={{ padding: "20px 22px" }}>
-                <div className="arca-row arca-between" style={{ marginBottom: 10 }}>
-                  <span className="arca-kicker" style={{ color: "color-mix(in srgb, var(--bg) 55%, transparent)" }}>Týdenní rituál</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>
-                </div>
-                <p style={{ fontFamily: "var(--f-serif)", fontSize: 22, lineHeight: 1.2, margin: "0 0 18px" }}>
-                  Co bys chtěl, aby si dnes <em style={{ color: "var(--accent)" }}>někdo</em> pamatoval?
-                </p>
-                <Link href="/dashboard/arca/new" className="arca-btn" style={{ background: "color-mix(in srgb, var(--bg) 8%, transparent)", color: "var(--bg)", borderColor: "color-mix(in srgb, var(--bg) 12%, transparent)" }}>
-                  Tříminutové psaní
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Recent ──────────────────────────────────────────────── */}
-        {recent.length > 0 && (
-          <div style={{ marginTop: 44 }}>
-            <div className="arca-row arca-between" style={{ marginBottom: 14 }}>
-              <h3 className="arca-h3">Naposledy uložené</h3>
-              <Link href="/dashboard/vault" className="arca-btn sm arca-btn--ghost">
-                Vše ve schránce
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M9 6l6 6-6 6"/></svg>
-              </Link>
-            </div>
-            <div className="arca-card">
-              {recent.map((pack, i) => {
-                const recipient = pack.recipients[0];
-                return (
-                <div key={pack.id}>
-                  {i > 0 && <hr style={{ height: 1, background: "var(--hairline)", border: 0, margin: 0 }} />}
-                  <Link href={`/dashboard/arca/${pack.id}/edit`} style={{ textDecoration: "none" }}>
-                    <div style={{ padding: "14px 22px", display: "flex", alignItems: "center", gap: 14 }}>
-                      {recipient ? (
-                        <Avatar
-                          src={recipient.avatarUrl ? avatarUrlByPath.get(recipient.avatarUrl) : null}
-                          initials={initialsFor(recipient.name)}
-                          tone={toneFor(recipient.name)}
-                          size="lg"
-                        />
-                      ) : (
-                        <div style={{ width: 56, height: 56, borderRadius: 14, background: "var(--bg-tint)", display: "grid", placeItems: "center", color: "var(--ink-2)", fontSize: 22, flexShrink: 0 }}>
-                          {kindIcon(pack.type)}
-                        </div>
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 500, fontSize: 14 }}>{pack.title}</div>
-                        <div className="arca-sub" style={{ fontSize: 12 }}>
-                          {pack.recipients.map((r) => r.name).join(", ") || "bez příjemce"} · {pack.updatedAt.toLocaleDateString("cs-CZ")}
-                        </div>
-                      </div>
-                      <span className={`arca-chip ${pack.type === "EMOTIONAL" ? "clay" : "sky"}`}>
-                        {pack.type === "EMOTIONAL" ? "Emocionální" : "Praktická"}
-                      </span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{ color: "var(--muted)" }}><path d="M9 6l6 6-6 6"/></svg>
-                    </div>
-                  </Link>
-                </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {/* ── Stats, upcoming, recent — filterable by SELF/LEGACY ──── */}
+        <ModeFilterSection
+          packs={packs.map((p) => ({
+            id: p.id,
+            title: p.title,
+            type: p.type,
+            status: p.status,
+            messageMode: p.messageMode,
+            updatedAt: p.updatedAt.toISOString(),
+            recipients: p.recipients,
+            triggerCondition: p.triggerCondition
+              ? { type: p.triggerCondition.type, executeAtDate: p.triggerCondition.executeAtDate?.toISOString() ?? null }
+              : null,
+          }))}
+          guardians={guardians}
+          avatarUrlByPath={avatarUrlByPathObj}
+          daysSinceActive={daysSinceActive}
+        />
 
         {/* ── Pro upsell (free users) ─────────────────────────────── */}
         {!isPro && (
