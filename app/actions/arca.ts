@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
@@ -208,6 +209,17 @@ export async function createPackFull(
       },
     });
   }
+
+  // Every other mutating action in this file/app revalidates the pages that
+  // list its data (see e.g. app/actions/recipients.ts, groups.ts). This one
+  // creates a brand new pack + recipients + trigger but redirects the client
+  // via router.push() right after — without an explicit revalidation, Schránka
+  // (which is keyed off Recipient rows, unlike the Dashboard's direct
+  // MessagePack query) can serve an already-cached render that predates this
+  // pack, making a just-created SELF message appear to "not be there".
+  revalidatePath("/dashboard/vault");
+  revalidatePath("/dashboard");
+  if (firstRecipientId) revalidatePath(`/dashboard/vault/${firstRecipientId}`);
 
   return { ok: true, packId: pack.id };
 }

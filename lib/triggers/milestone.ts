@@ -19,3 +19,19 @@ export function computeRelativeOffsetDate(anchor: Date, years: number, months: n
 export function isFutureDate(date: Date): boolean {
   return date.getTime() > Date.now();
 }
+
+/** Whole years elapsed since birthday, as of now. */
+export function currentAgeYears(birthday: Date): number {
+  const now = new Date();
+  let age = now.getFullYear() - birthday.getFullYear();
+  const hasHadBirthdayThisYear =
+    now.getMonth() > birthday.getMonth() ||
+    (now.getMonth() === birthday.getMonth() && now.getDate() >= birthday.getDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
+
+/** Smallest target age whose milestone date is guaranteed to land in the future. */
+export function nextValidTargetAge(birthday: Date): number {
+  return Math.max(currentAgeYears(birthday) + 1, 1);
+}
