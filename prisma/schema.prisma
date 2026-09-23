@@ -60,6 +60,17 @@ enum TriggerType {
   MANUAL_EMERGENCY   // an Executor initiates delivery manually
 }
 
+// How a SPECIFIC_DATE trigger's executeAtDate was derived. Doesn't change
+// cron behavior at all (it only ever reads executeAtDate) — this is purely
+// so the app can recompute or re-display the date later. LEGACY packs
+// always use EXACT_DATE (or don't apply — INACTIVITY/MANUAL_EMERGENCY have
+// no executeAtDate at all).
+enum TriggerBasis {
+  EXACT_DATE       // executeAtDate entered directly
+  AGE_MILESTONE    // derived from a recipient's birthday + targetAge; recomputed if that birthday changes
+  RELATIVE_OFFSET  // derived from the pack's createdAt + a fixed offset; never recomputed
+}
+
 enum TriggerStatus {
   PENDING
   IN_GRACE_PERIOD
@@ -317,6 +328,10 @@ model Recipient {
 
   memories Memory[]
 
+  // Inverse side of TriggerCondition.ageBasisRecipient — every AGE_MILESTONE
+  // trigger (in any pack) anchored to this recipient's birthday.
+  ageMilestoneTriggers TriggerCondition[]
+
   @@index([messagePackId])
   @@index([groupId])
 }
@@ -366,6 +381,22 @@ model TriggerCondition {
   // Set when the trigger first fires (marks the start of the grace period).
   triggeredAt DateTime?
 
+  // How executeAtDate was derived — only meaningful when type=SPECIFIC_DATE.
+  // See the TriggerBasis enum doc comment.
+  basis TriggerBasis @default(EXACT_DATE)
+
+  // AGE_MILESTONE only: which recipient's birthday drives the date, and the
+  // target age. onDelete: SetNull — losing the source recipient shouldn't
+  // retroactively invalidate an already-computed executeAtDate.
+  ageBasisRecipient   Recipient? @relation(fields: [ageBasisRecipientId], references: [id], onDelete: SetNull)
+  ageBasisRecipientId String?
+  targetAge           Int?
+
+  // RELATIVE_OFFSET only: kept for display/edit. The offset is anchored to
+  // the pack's createdAt and is never recomputed once set.
+  relativeYears  Int?
+  relativeMonths Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -379,6 +410,8 @@ model TriggerCondition {
   @@index([status, executeAtDate])
   // Separate index for inactivity cron (joins User table, no date column filter)
   @@index([status])
+  // Recompute lookup when a recipient's birthday changes
+  @@index([ageBasisRecipientId])
 }
 
 // ---------------------------------------------------------------------------
