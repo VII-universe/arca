@@ -197,9 +197,21 @@ model MessagePack {
   // Nullable until the user configures a delivery trigger
   triggerCondition TriggerCondition?
 
+  // Fáze 2: "Odpověz svému minulému já" / roční rituál — obojí je ve
+  // skutečnosti jen řetězec zpráv. Odpověď je normální MessagePack, který
+  // odkazuje zpět na zprávu, na kterou reaguje. onDelete: SetNull — smazání
+  // původní zprávy nezboří ani nezablokuje smazání odpovědi, jen přetrhne
+  // odkaz zpět (stejný vzor jako TriggerCondition.ageBasisRecipient z Fáze 1).
+  replyToMessage   MessagePack?  @relation("MessageReplyChain", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replyToMessageId String?
+
+  // Inverzní strana — všechny zprávy, které odpovídají na tuhle.
+  replies MessagePack[] @relation("MessageReplyChain")
+
   @@index([ownerId])
   @@index([categoryId])
   @@index([status]) // background jobs filter by status (e.g. find all GRACE_PERIOD packs)
+  @@index([replyToMessageId])
 }
 
 // ---------------------------------------------------------------------------

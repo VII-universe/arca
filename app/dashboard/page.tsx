@@ -61,7 +61,7 @@ export default async function DashboardPage() {
   const email = authUser.email ?? "";
   const isAdminEmail = ADMIN_EMAILS.has(email.toLowerCase());
 
-  const [dbUser, packs, guardians, allRecipients] = await Promise.all([
+  const [dbUser, packs, guardians, allRecipients, unansweredSelfPack] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
       select: { name: true, isPremium: true, role: true, lastActiveAt: true },
@@ -88,6 +88,25 @@ export default async function DashboardPage() {
         OR: [{ birthday: { not: null } }, { anniversary: { not: null } }],
       },
       select: { id: true, name: true, email: true, relationship: true, birthday: true, anniversary: true },
+    }),
+    // Fáze 2 — oldest delivered SELF message the owner hasn't replied to yet
+    // (dedicated query, not derived from the `packs` list above, since that
+    // one is capped at the 20 most recently updated — a reply-less delivery
+    // could easily be older than that).
+    prisma.messagePack.findFirst({
+      where: {
+        ownerId: authUser.id,
+        messageMode: "SELF",
+        status: "TRIGGERED",
+        recipients: { some: { email } },
+        replies: { none: {} },
+      },
+      orderBy: { createdAt: "asc" },
+      // triggerCondition.triggeredAt is unreliable on this account (see
+      // AUDIT.md — some already-TRIGGERED packs never got it set), so the
+      // scheduled executeAtDate is the more trustworthy "delivered around"
+      // date to show here.
+      select: { id: true, title: true, triggerCondition: { select: { executeAtDate: true } } },
     }),
   ]);
 
@@ -404,6 +423,11 @@ export default async function DashboardPage() {
           guardians={guardians}
           avatarUrlByPath={avatarUrlByPathObj}
           daysSinceActive={daysSinceActive}
+          unansweredSelfPack={unansweredSelfPack ? {
+            id: unansweredSelfPack.id,
+            title: unansweredSelfPack.title,
+            deliveredAt: unansweredSelfPack.triggerCondition?.executeAtDate?.toISOString() ?? null,
+          } : null}
         />
 
         {/* ── Pro upsell (free users) ─────────────────────────────── */}

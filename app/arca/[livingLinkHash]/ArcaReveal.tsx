@@ -17,13 +17,26 @@ export interface RevealChapter {
   daysRemaining?: number;
 }
 
+export interface ThreadLink {
+  id: string;
+  title: string;
+  createdAt: Date;
+  livingLinkHash: string;
+}
+
 interface Props {
+  packId: string;
   ownerName: string;
   packType: "EMOTIONAL" | "PRACTICAL";
   isSelf: boolean;
   createdAt: Date;
   contents: RevealContent[];
   chapters?: RevealChapter[];
+  // Fáze 2 — reply thread. threadPrev is the message this one replies to
+  // (if any); threadNext are messages that reply to this one (usually 0 or 1,
+  // but not capped — see the hard-cap-on-walk note in the schema proposal).
+  threadPrev?: ThreadLink | null;
+  threadNext?: ThreadLink[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -51,12 +64,15 @@ function formatDate(date: Date) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ArcaReveal({
+  packId,
   ownerName,
   packType,
   isSelf,
   createdAt,
   contents,
   chapters = [],
+  threadPrev = null,
+  threadNext = [],
 }: Props) {
   const textItem = contents.find((c) => c.type === "TEXT");
   const mediaItems = contents.filter(
@@ -172,6 +188,53 @@ export default function ArcaReveal({
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Reply thread — Fáze 2 ────────────────────────────────────── */}
+        {(threadPrev || threadNext.length > 0) && (
+          <div className="mt-16 border-t border-border/50 pt-8">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/40 mb-4">
+              Thread
+            </p>
+            <div className="space-y-2">
+              {threadPrev && (
+                <a
+                  href={`/arca/${threadPrev.livingLinkHash}`}
+                  className="flex items-center gap-3 text-sm text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                >
+                  <span aria-hidden>←</span>
+                  <span className="truncate">{threadPrev.title}</span>
+                  <span className="text-xs text-muted-foreground/40 shrink-0">{formatDate(threadPrev.createdAt)}</span>
+                </a>
+              )}
+              {threadNext.map((next) => (
+                <a
+                  key={next.id}
+                  href={`/arca/${next.livingLinkHash}`}
+                  className="flex items-center gap-3 text-sm text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                >
+                  <span aria-hidden>→</span>
+                  <span className="truncate">{next.title}</span>
+                  <span className="text-xs text-muted-foreground/40 shrink-0">{formatDate(next.createdAt)}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Reply CTA — SELF messages only ──────────────────────────── */}
+        {isSelf && (
+          <div className="mt-16 border-t border-border/50 pt-10 flex flex-col items-center gap-3">
+            <a
+              href={`/dashboard/arca/new?replyTo=${packId}`}
+              className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium text-white bg-gradient-to-br from-rose-500 to-rose-700 hover:opacity-90 transition-opacity"
+            >
+              Napsat odpověď
+            </a>
+            <p className="text-xs text-muted-foreground/50 text-center max-w-xs">
+              Odpověz sám sobě — appka založí novou zprávu, propojenou s touhle.
+            </p>
           </div>
         )}
 

@@ -30,6 +30,8 @@ interface Props {
   guardians: Guardian[];
   avatarUrlByPath: Record<string, string | null>;
   daysSinceActive: number;
+  // Fáze 2 — oldest delivered SELF message still waiting for a reply, if any.
+  unansweredSelfPack: { id: string; title: string; deliveredAt: string | null } | null;
 }
 
 function initialsFor(name: string): string {
@@ -57,7 +59,7 @@ function StatCard({ label, value, hint, tone }: { label: string; value: number |
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, daysSinceActive }: Props) {
+export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, daysSinceActive, unansweredSelfPack }: Props) {
   const [filter, setFilter] = useState<Filter>("ALL");
 
   const selfCount = packs.filter((p) => p.messageMode === "SELF").length;
@@ -241,20 +243,44 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
             </div>
           )}
 
-          {/* Weekly ritual — mode-agnostic, always shown */}
+          {/* Weekly ritual — mode-agnostic, always shown. Fáze 2: reuses this
+              same card for "napsat odpověď" when there's a delivered SELF
+              message still waiting for one, instead of a new component. */}
           <div className="arca-card flat" style={{ background: "var(--ink)", color: "var(--bg)", border: "none" }}>
             <div style={{ padding: "20px 22px" }}>
               <div className="arca-row arca-between" style={{ marginBottom: 10 }}>
                 <span className="arca-kicker" style={{ color: "color-mix(in srgb, var(--bg) 55%, transparent)" }}>Týdenní rituál</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.6}>
+                  {unansweredSelfPack
+                    ? <path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v1"/>
+                    : <path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/>}
+                </svg>
               </div>
-              <p style={{ fontFamily: "var(--f-serif)", fontSize: 22, lineHeight: 1.2, margin: "0 0 18px" }}>
-                Co bys chtěl, aby si dnes <em style={{ color: "var(--accent)" }}>někdo</em> pamatoval?
-              </p>
-              <Link href="/dashboard/arca/new" className="arca-btn" style={{ background: "color-mix(in srgb, var(--bg) 8%, transparent)", color: "var(--bg)", borderColor: "color-mix(in srgb, var(--bg) 12%, transparent)" }}>
-                Tříminutové psaní
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              </Link>
+              {unansweredSelfPack ? (
+                <>
+                  <p style={{ fontFamily: "var(--f-serif)", fontSize: 22, lineHeight: 1.25, margin: "0 0 18px" }}>
+                    Tvoje minulé já ti něco <em style={{ color: "var(--accent)" }}>napsalo.</em><br />Chceš mu odpovědět?
+                  </p>
+                  <Link href={`/dashboard/arca/new?replyTo=${unansweredSelfPack.id}`} className="arca-btn" style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-deep))", color: "#fff", border: "none" }}>
+                    Napsat odpověď
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                  </Link>
+                  <div style={{ fontSize: 11, color: "color-mix(in srgb, var(--bg) 45%, transparent)", marginTop: 12 }}>
+                    „{unansweredSelfPack.title}"
+                    {unansweredSelfPack.deliveredAt && ` · doručeno ${new Date(unansweredSelfPack.deliveredAt).toLocaleDateString("cs-CZ")}`}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontFamily: "var(--f-serif)", fontSize: 22, lineHeight: 1.2, margin: "0 0 18px" }}>
+                    Co bys chtěl, aby si dnes <em style={{ color: "var(--accent)" }}>někdo</em> pamatoval?
+                  </p>
+                  <Link href="/dashboard/arca/new" className="arca-btn" style={{ background: "color-mix(in srgb, var(--bg) 8%, transparent)", color: "var(--bg)", borderColor: "color-mix(in srgb, var(--bg) 12%, transparent)" }}>
+                    Tříminutové psaní
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

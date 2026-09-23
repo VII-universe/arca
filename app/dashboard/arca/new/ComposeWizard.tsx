@@ -63,6 +63,13 @@ interface Props {
   prefilledRecipientId?: string;
   prefilledOccasion?: "birthday" | "anniversary";
   prefilledDate?: string;
+  // Fáze 2 — "Napsat odpověď" on a delivered SELF message. When set, the
+  // wizard skips ModeSelect straight into SELF, defaults the trigger to
+  // "relative" (1 year), and pre-fills the original message's recipient
+  // (still editable — same pattern as prefilledRecipientId, just sourced
+  // from the message being replied to instead of a reminder link).
+  replyToMessageId?: string;
+  replyRecipient?: { id: string; name: string; email: string | null } | null;
 }
 
 const MODES: { id: MessageMode; title: string; desc: string; Ic: React.ComponentType; pills: string[] }[] = [
@@ -578,21 +585,38 @@ const OCCASION_TRIGGER_MAP: Record<string, Trigger> = {
   anniversary: "date",
 };
 
-export default function ComposeWizard({ recipients, contactGroups, isPro, currentUser, prefilledRecipientId, prefilledOccasion, prefilledDate }: Props) {
+export default function ComposeWizard({ recipients, contactGroups, isPro, currentUser, prefilledRecipientId, prefilledOccasion, prefilledDate, replyToMessageId, replyRecipient }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [messageMode, setMessageMode] = useState<MessageMode | null>(null);
+  // A reply only ever happens in SELF mode — skip ModeSelect entirely rather
+  // than making the user pick a mode they were never going to choose.
+  const [messageMode, setMessageMode] = useState<MessageMode | null>(replyToMessageId ? "SELF" : null);
+
+  // replyRecipient mirrors the original message's recipient — pre-select it
+  // if it's still one of the user's existing recipients, otherwise carry it
+  // over as a new person (deferred-commit, same as any other newPeople entry).
+  const replyRecipientIsExisting = !!replyRecipient && recipients.some(r => r.id === replyRecipient.id);
 
   // Multi-recipient selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    prefilledRecipientId ? new Set([prefilledRecipientId]) : new Set()
+    prefilledRecipientId ? new Set([prefilledRecipientId])
+      : replyRecipientIsExisting ? new Set([replyRecipient!.id])
+      : new Set()
   );
-  const [newPeople, setNewPeople] = useState<NewPerson[]>([]);
+  const [newPeople, setNewPeople] = useState<NewPerson[]>(() => {
+    if (replyRecipient && !replyRecipientIsExisting) return [{ name: replyRecipient.name, email: replyRecipient.email ?? "" }];
+    // No recipient found on the original message (shouldn't normally happen,
+    // since Fáze 1.5 already guards against a recipient-less SELF pack) —
+    // fall back to the same "myself" default a fresh SELF mode choice gets.
+    if (replyToMessageId && !replyRecipient) return [{ name: currentUser.name, email: currentUser.email }];
+    return [];
+  });
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [kind, setKind] = useState<Kind>("text");
   const [trigger, setTrigger] = useState<Trigger>(
-    prefilledOccasion ? (OCCASION_TRIGGER_MAP[prefilledOccasion] ?? "date") : "date"
+    replyToMessageId ? "relative"
+      : prefilledOccasion ? (OCCASION_TRIGGER_MAP[prefilledOccasion] ?? "date") : "date"
   );
   const [packType, setPackType] = useState<PackType>("EMOTIONAL");
   const [text, setText] = useState("");
@@ -752,6 +776,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
     formData.set("text", text);
     formData.set("draft", isDraft ? "1" : "0");
     formData.set("messageMode", messageMode ?? "LEGACY");
+    if (replyToMessageId) formData.set("replyToMessageId", replyToMessageId);
     if (bgColor)  formData.set("backgroundColor", bgColor);
     if (txtColor) formData.set("textColor", txtColor);
     if (trigger === "age") {
