@@ -228,12 +228,18 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
               <h3 className="arca-h3" style={{ marginBottom: 14 }}>Zprávy pro {recipient.name.split(" ")[0]}</h3>
               <RecipientTimeline
                 recipientFirstName={recipient.name.split(" ")[0]}
+                // "Otevřít" only makes sense when this recipient card IS the
+                // logged-in user — i.e. it's their own copy of the letter,
+                // not just someone they're composing to.
+                canOpen={!!recipient.email && recipient.email === authUser.email}
+                appUrl={APP_URL}
                 packs={packs.map(pack => ({
                   id: pack.id,
                   title: pack.title,
                   type: pack.type,
                   status: pack.status,
                   createdAt: pack.createdAt,
+                  livingLinkHash: pack.livingLinkHash,
                   triggerLabel: triggerLabel(pack),
                   kind: dominantKind(pack.contents),
                   contents: pack.contents,

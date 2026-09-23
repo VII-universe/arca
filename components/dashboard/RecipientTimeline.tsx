@@ -9,6 +9,7 @@ type Filter = "all" | ContentKind;
 interface ContentRow { id: string; type: string; textBody: string | null; s3FileKey: string | null; signedUrl?: string | null; }
 interface Pack {
   id: string; title: string; type: string; status: string; createdAt: Date;
+  livingLinkHash: string;
   triggerLabel: string;
   kind: ContentKind;
   contents: ContentRow[];
@@ -48,7 +49,7 @@ function KindIc({ kind }: { kind: ContentKind }) {
 
 const KIND_LABEL: Record<ContentKind, string> = { text: "Text", video: "Video", voice: "Hlas", photo: "Foto" };
 
-export default function RecipientTimeline({ packs, recipientFirstName }: { packs: Pack[]; recipientFirstName: string }) {
+export default function RecipientTimeline({ packs, recipientFirstName, canOpen, appUrl }: { packs: Pack[]; recipientFirstName: string; canOpen: boolean; appUrl: string }) {
   const [filter, setFilter] = useState<Filter>("all");
 
   const visible = filter === "all" ? packs : packs.filter(p => p.kind === filter);
@@ -104,6 +105,12 @@ export default function RecipientTimeline({ packs, recipientFirstName }: { packs
                       <span className={`arca-chip ${st.chip}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 }}>
                         <StatusIc />{st.label}
                       </span>
+                      {canOpen && (pack.status === "TRIGGERED" || pack.status === "DELIVERED") && (
+                        <a href={`${appUrl}/arca/${pack.livingLinkHash}`} target="_blank" rel="noopener noreferrer"
+                          className="arca-btn sm arca-btn--outline">
+                          Otevřít
+                        </a>
+                      )}
                       <Link href={`/dashboard/arca/${pack.id}/edit`} className="arca-btn icon-btn arca-btn--ghost">
                         <IcChev />
                       </Link>

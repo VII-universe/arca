@@ -22,7 +22,7 @@ export interface VaultPerson {
   id: string;
   name: string;
   email: string | null;
-  packs: { id: string; type: string; status: string; executeAtDate: Date | null }[];
+  packs: { id: string; type: string; status: string; executeAtDate: Date | null; livingLinkHash: string }[];
   groupId: string | null;
   group: VaultGroup | null;
   avatarSignedUrl?: string | null;
@@ -656,7 +656,10 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
         id: res.id,
         name: res.name,
         email: res.email,
-        packs: [{ id: res.packId, type: "EMOTIONAL", status: "DRAFT", executeAtDate: null }],
+        // livingLinkHash is never read for a DRAFT pack (the "Otevřít" link
+        // only ever shows for TRIGGERED/DELIVERED) — createContact doesn't
+        // return it, so this is just a type-satisfying placeholder.
+        packs: [{ id: res.packId, type: "EMOTIONAL", status: "DRAFT", executeAtDate: null, livingLinkHash: "" }],
         groupId: null,
         group: null,
       });
@@ -774,11 +777,13 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
 // ── PersonCard ────────────────────────────────────────────────────────────────
 
 function PersonCard({
-  person, groups, onGroupAssign,
+  person, groups, onGroupAssign, myEmail, appUrl,
 }: {
   person: VaultPerson;
   groups: VaultGroup[];
   onGroupAssign: (personId: string, groupId: string | null) => void;
+  myEmail: string | null;
+  appUrl: string;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const tone = toneFor(person.name);
@@ -789,6 +794,13 @@ function PersonCard({
     .sort((a, b) => a.executeAtDate!.getTime() - b.executeAtDate!.getTime())[0]?.executeAtDate;
   const group = person.group;
   const c = group ? colorFor(group.color) : null;
+
+  // "Otevřít" only makes sense when this card IS the logged-in user — their
+  // own copy of a letter, not just someone they're writing to.
+  const isMe = !!myEmail && person.email === myEmail;
+  const deliveredPack = isMe
+    ? person.packs.find(p => p.status === "TRIGGERED" || p.status === "DELIVERED")
+    : undefined;
 
   return (
     <div style={{ position: "relative" }}>
@@ -814,6 +826,22 @@ function PersonCard({
             <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
               <span className="arca-tag">{person.packs.length} {pluralPack(person.packs.length)}</span>
               {activePacks > 0 && <span className="arca-tag clay">{activePacks} aktivní</span>}
+              {deliveredPack && (
+                // A plain <button>, not a nested <a> — this card is already
+                // wrapped in a <Link>, and an anchor-in-anchor is invalid
+                // HTML (matches the existing group-chip button below).
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.preventDefault(); e.stopPropagation();
+                    window.open(`${appUrl}/arca/${deliveredPack.livingLinkHash}`, "_blank", "noopener,noreferrer");
+                  }}
+                  className="arca-tag sage"
+                  style={{ border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "var(--f-sans)" }}
+                >
+                  Doručeno · Otevřít
+                </button>
+              )}
 
               {/* Group chip — click to change */}
               <button
@@ -870,9 +898,11 @@ interface Props {
   initialPeople: VaultPerson[];
   initialGroups: VaultGroup[];
   initialGroupId?: string | null;
+  myEmail: string | null;
+  appUrl: string;
 }
 
-export default function VaultClient({ initialPeople, initialGroups, initialGroupId }: Props) {
+export default function VaultClient({ initialPeople, initialGroups, initialGroupId, myEmail, appUrl }: Props) {
   const [people, setPeople] = useState<VaultPerson[]>(initialPeople);
   const [groups, setGroups] = useState<VaultGroup[]>(initialGroups);
   const [activeGroup, setActiveGroup] = useState<string | null>(initialGroupId ?? null);
@@ -958,6 +988,8 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
               person={p}
               groups={groups}
               onGroupAssign={handleGroupAssign}
+              myEmail={myEmail}
+              appUrl={appUrl}
             />
           ))}
 

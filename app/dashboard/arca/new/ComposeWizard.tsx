@@ -791,7 +791,16 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
     return (
       <ModeSelect
         onBack={() => router.back()}
-        onChoose={(m) => { setMessageMode(m); setTrigger("date"); }}
+        onChoose={(m) => {
+          setMessageMode(m);
+          setTrigger("date");
+          // SELF messages default to "myself" as the recipient — the owner
+          // shouldn't have to remember to click "Přidat sebe jako příjemce"
+          // for the common case (a letter to their own future self) to
+          // actually reach them. Still just a default: the chip has its own
+          // "x" to remove, and the "Pro koho" step is unrestricted either way.
+          if (m === "SELF") addMyself();
+        }}
       />
     );
   }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma/client";
 import VaultClient from "@/components/arca/VaultClient";
 import type { VaultPerson, VaultGroup } from "@/components/arca/VaultClient";
 import { getSignedAvatarUrl } from "@/app/actions/recipients";
+import { APP_URL } from "@/lib/resend";
 
 export const metadata = { title: "Schránka — ARCA" };
 
@@ -53,7 +54,7 @@ export default async function VaultPage({
         group: { select: { id: true, name: true, color: true, emoji: true } },
         messagePack: {
           select: {
-            id: true, type: true, status: true,
+            id: true, type: true, status: true, livingLinkHash: true,
             triggerCondition: { select: { executeAtDate: true } },
           },
         },
@@ -96,6 +97,7 @@ export default async function VaultPage({
         type: r.messagePack.type,
         status: r.messagePack.status,
         executeAtDate: r.messagePack.triggerCondition?.executeAtDate ?? null,
+        livingLinkHash: r.messagePack.livingLinkHash,
       });
     }
   }
@@ -124,6 +126,8 @@ export default async function VaultPage({
           initialPeople={people}
           initialGroups={groups as any}
           initialGroupId={initialGroupId}
+          myEmail={authUser.email ?? null}
+          appUrl={APP_URL}
         />
 
         {/* Tip */}
