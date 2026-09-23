@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { prisma } from "@/lib/prisma/client";
+import { TriggerBasis, TriggerStatus } from "@/lib/prisma/generated";
+import { computeAgeMilestoneDate, isFutureDate } from "@/lib/triggers/milestone";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -21,7 +23,7 @@ export async function updateRecipientProfile(
     anniversary?: string | null;  // ISO date string or null
     notes?: string | null;
   }
-): Promise<{ ok: true } | { error: string }> {
+): Promise<{ ok: true; staleMilestones: number } | { error: string }> {
   const user = await requireUser();
   if (!user) return { error: "Unauthorized" };
 
@@ -31,19 +33,48 @@ export async function updateRecipientProfile(
   });
   if (!recipient) return { error: "Příjemce nenalezen." };
 
+  const newBirthday = data.birthday ? new Date(data.birthday) : null;
+
   await prisma.recipient.update({
     where: { id: recipientId },
     data: {
       relationship: data.relationship ?? null,
-      birthday: data.birthday ? new Date(data.birthday) : null,
+      birthday: newBirthday,
       anniversary: data.anniversary ? new Date(data.anniversary) : null,
       notes: data.notes ?? null,
     },
   });
 
+  // Recompute any AGE_MILESTONE triggers anchored to this recipient's
+  // birthday. Approved rule: if the recomputed date is still in the future,
+  // silently update it; if it would land in the past, leave the existing
+  // executeAtDate untouched and let the caller surface a warning instead —
+  // there's no "stale" flag to set, since staleness is always derived at
+  // read time by comparing stored vs. freshly recomputed dates.
+  let staleMilestones = 0;
+  if (newBirthday) {
+    const affected = await prisma.triggerCondition.findMany({
+      where: {
+        ageBasisRecipientId: recipientId,
+        basis: TriggerBasis.AGE_MILESTONE,
+        status: TriggerStatus.PENDING,
+        targetAge: { not: null },
+      },
+      select: { id: true, targetAge: true },
+    });
+    for (const t of affected) {
+      const recomputed = computeAgeMilestoneDate(newBirthday, t.targetAge!);
+      if (isFutureDate(recomputed)) {
+        await prisma.triggerCondition.update({ where: { id: t.id }, data: { executeAtDate: recomputed } });
+      } else {
+        staleMilestones++;
+      }
+    }
+  }
+
   revalidatePath(`/dashboard/vault/${recipientId}`);
   revalidatePath("/dashboard");
-  return { ok: true };
+  return { ok: true, staleMilestones };
 }
 
 // ─── uploadRecipientAvatar ────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { createPackFull, addMediaContent } from "@/app/actions/arca";
 import { createClient } from "@/lib/supabase/client";
 import ArcaRichEditor, { type ArcaRichEditorHandle } from "@/components/arca/ArcaRichEditor";
 import { Avatar } from "@/components/arca/Avatar";
+import { computeAgeMilestoneDate, computeRelativeOffsetDate, isFutureDate } from "@/lib/triggers/milestone";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -38,12 +39,21 @@ const IcShield   = () => <Ic><path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Kind = "text" | "voice" | "video" | "photo";
-type Trigger = "date" | "event" | "sealed";
+type Trigger = "date" | "event" | "sealed" | "age" | "relative";
 type PackType = "EMOTIONAL" | "PRACTICAL";
 type MessageMode = "SELF" | "LEGACY";
 
-interface Recipient { id: string; name: string; email: string | null; groupId?: string | null; avatarUrl?: string | null; }
+interface Recipient { id: string; name: string; email: string | null; groupId?: string | null; avatarUrl?: string | null; birthday?: string | null; }
 interface ContactGroup { id: string; name: string; color: string; emoji: string | null; }
+interface NewPerson { name: string; email: string; birthday?: string }
+
+function parseISODate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function formatCzDate(d: Date): string {
+  return d.toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" });
+}
 
 interface Props {
   recipients: Recipient[];
@@ -577,7 +587,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     prefilledRecipientId ? new Set([prefilledRecipientId]) : new Set()
   );
-  const [newPeople, setNewPeople] = useState<{ name: string; email: string }[]>([]);
+  const [newPeople, setNewPeople] = useState<NewPerson[]>([]);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [kind, setKind] = useState<Kind>("text");
@@ -590,6 +600,12 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
   const [txtColor, setTxtColor] = useState<string | null>(null);
   const [dateVal, setDateVal] = useState(prefilledDate ?? "");
   const [timeVal, setTimeVal] = useState("08:00");
+  // Age-milestone / relative-offset triggers (Fáze 1)
+  const [targetAge, setTargetAge] = useState(18);
+  const [relativeYears, setRelativeYears] = useState(1);
+  const [relativeMonths, setRelativeMonths] = useState(0);
+  const [birthdayDraft, setBirthdayDraft] = useState("");
+  const [recipientBirthdayOverrides, setRecipientBirthdayOverrides] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const richEditorRef = useRef<ArcaRichEditorHandle>(null);
@@ -606,6 +622,31 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
   const selectedRecipients = recipients.filter(r => selectedIds.has(r.id));
   const allSelected = [...selectedRecipients, ...newPeople];
   const displayName = allSelected[0]?.name ?? "příjemce";
+
+  // The implicit target for an age-milestone trigger is always the first
+  // selected recipient (matches the read-only "Komu bude" display) — there's
+  // no picker, since SELF messages are addressed to one primary recipient.
+  const primaryTarget = allSelected[0];
+  const primaryIsExisting = selectedRecipients.length > 0 && primaryTarget === selectedRecipients[0];
+  let primaryBirthdayIso: string | null = null;
+  if (primaryIsExisting) {
+    const primaryRecipient = primaryTarget as Recipient;
+    primaryBirthdayIso = recipientBirthdayOverrides[primaryRecipient.id] ?? primaryRecipient.birthday ?? null;
+  } else if (primaryTarget) {
+    primaryBirthdayIso = (primaryTarget as NewPerson).birthday ?? null;
+  }
+
+  function commitBirthdayDraft() {
+    if (!birthdayDraft || !primaryTarget) return;
+    if (primaryIsExisting) {
+      setRecipientBirthdayOverrides(prev => ({ ...prev, [(primaryTarget as Recipient).id]: birthdayDraft }));
+    } else {
+      setNewPeople(prev => prev.map((p, i) => i === 0 ? { ...p, birthday: birthdayDraft } : p));
+    }
+  }
+
+  const ageComputedDate = primaryBirthdayIso ? computeAgeMilestoneDate(parseISODate(primaryBirthdayIso), targetAge) : null;
+  const relativeComputedDate = computeRelativeOffsetDate(new Date(), relativeYears, relativeMonths);
 
   function toggleId(id: string) {
     setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -665,6 +706,22 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
   }
 
   function handleSave(isDraft: boolean) {
+    setSaveError(null);
+
+    // Creation-time validation for milestone triggers — block save immediately
+    // rather than silently creating a trigger whose date is already past.
+    if (!isDraft && trigger === "age") {
+      if (!primaryBirthdayIso) { setSaveError("Nejdřív zadej datum narození příjemce."); return; }
+      if (!ageComputedDate || !isFutureDate(ageComputedDate)) {
+        setSaveError(`Tenhle věk už ${displayName} má za sebou — zadej vyšší cílový věk.`);
+        return;
+      }
+    }
+    if (!isDraft && trigger === "relative") {
+      if (relativeYears === 0 && relativeMonths === 0) { setSaveError("Zadej alespoň jeden měsíc do budoucna."); return; }
+      if (!isFutureDate(relativeComputedDate)) { setSaveError("Zadaná doba musí vést do budoucnosti."); return; }
+    }
+
     const title = `${displayName} — ${kind === "text" ? "Text" : kind === "voice" ? "Hlas" : kind === "video" ? "Video" : "Fotky"}`;
     const formData = new FormData();
     formData.set("type", packType);
@@ -680,8 +737,15 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
     formData.set("messageMode", messageMode ?? "LEGACY");
     if (bgColor)  formData.set("backgroundColor", bgColor);
     if (txtColor) formData.set("textColor", txtColor);
+    if (trigger === "age") {
+      formData.set("targetAge", String(targetAge));
+      if (primaryBirthdayIso) formData.set("primaryBirthday", primaryBirthdayIso);
+    }
+    if (trigger === "relative") {
+      formData.set("relativeYears", String(relativeYears));
+      formData.set("relativeMonths", String(relativeMonths));
+    }
 
-    setSaveError(null);
     startTransition(async () => {
       const result = await createPackFull(null, formData);
       if ("error" in result) {
@@ -923,8 +987,14 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                   out entirely rather than shown disabled/struck-through. A
                   single relevant option should read as clean and deliberate,
                   not like a trimmed-down version of the other flow. */}
-              <div className="arca-trigger-grid" style={{ display: "grid", gridTemplateColumns: messageMode === "SELF" ? "minmax(0, 260px)" : "repeat(3, 1fr)", gap: 10 }}>
+              <div className="arca-trigger-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
                 <TriggerCard active={trigger === "date"}   onClick={() => setTrigger("date")}   Ic={IcCalPlus} title="V daný den"    sub="Konkrétní datum a čas." />
+                {messageMode === "SELF" && (
+                  <>
+                    <TriggerCard active={trigger === "age"}      onClick={() => setTrigger("age")}      Ic={IcHeart}      title="Až mu/jí bude X let" sub="Podle narozenin příjemce." />
+                    <TriggerCard active={trigger === "relative"} onClick={() => setTrigger("relative")} Ic={IcHourglass}  title="Za X let / měsíců"   sub="Od dnešního dne." />
+                  </>
+                )}
                 {messageMode === "LEGACY" && (
                   <>
                     <TriggerCard active={trigger === "event"}  onClick={() => setTrigger("event")}  Ic={IcHeart}   title="Při události" sub="Když nadejde okamžik." />
@@ -979,6 +1049,91 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                   </p>
                 </div>
               )}
+
+              {trigger === "age" && (
+                <div className="arca-card" style={{ padding: 20, marginTop: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                    <div>
+                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Komu bude</label>
+                      {primaryTarget ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 10, border: "1px solid var(--hairline-2)", background: "var(--surface)", fontSize: 13.5 }}>
+                          <span className="arca-avatar sm" style={{ background: TONE_GRADS[toneFor(primaryTarget.name)], color: "#fff", fontSize: 9 }}>{initials(primaryTarget.name)}</span>
+                          {primaryTarget.name}
+                          {primaryBirthdayIso && <span style={{ color: "var(--muted)" }}>· nar. {formatCzDate(parseISODate(primaryBirthdayIso))}</span>}
+                        </div>
+                      ) : (
+                        <div className="arca-sub" style={{ fontSize: 12.5, padding: "9px 0" }}>Nejdřív vyber příjemce v kroku 01.</div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Věk</label>
+                      <input type="number" min={1} max={120} className="arca-input" value={targetAge}
+                        onChange={(e) => setTargetAge(Math.max(1, Math.min(120, Number(e.target.value) || 1)))} />
+                    </div>
+                  </div>
+
+                  {primaryTarget && !primaryBirthdayIso && (
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderRadius: "var(--r-lg)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft, var(--hairline-2))" }}>
+                      <span style={{ color: "var(--accent-deep)", marginTop: 2 }}>
+                        <Ic size={16}><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></Ic>
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-deep)", marginBottom: 3 }}>{primaryTarget.name} nemá vyplněné narozeniny</div>
+                        <div className="arca-sub" style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+                          Bez data narození appka neví, kdy mu/jí bude {targetAge} — doplň ho rovnou tady, není potřeba nikam odcházet.
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input type="date" className="arca-input" style={{ maxWidth: 170 }} value={birthdayDraft} onChange={(e) => setBirthdayDraft(e.target.value)} />
+                          <button type="button" className="arca-btn sm arca-btn--primary" disabled={!birthdayDraft} onClick={commitBirthdayDraft}>
+                            Uložit a spočítat
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {primaryBirthdayIso && ageComputedDate && (
+                    isFutureDate(ageComputedDate) ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, padding: "12px 16px", borderRadius: "var(--r-lg)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft, var(--hairline-2))", fontSize: 13, color: "var(--accent-deep)" }}>
+                        <IcCheck />
+                        Otevře se <b>{formatCzDate(ageComputedDate)}</b> — v den, kdy bude {displayName} {targetAge} let.
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 12.5, color: "var(--danger-deep, #B8452F)", marginTop: 14, marginBottom: 0 }}>
+                        Tenhle věk už {displayName} má za sebou ({formatCzDate(ageComputedDate)}) — zadej vyšší cílový věk.
+                      </p>
+                    )
+                  )}
+                </div>
+              )}
+
+              {trigger === "relative" && (
+                <div className="arca-card" style={{ padding: 20, marginTop: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Roky</label>
+                      <input type="number" min={0} max={99} className="arca-input" value={relativeYears}
+                        onChange={(e) => setRelativeYears(Math.max(0, Math.min(99, Number(e.target.value) || 0)))} />
+                    </div>
+                    <div>
+                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Měsíce</label>
+                      <input type="number" min={0} max={11} className="arca-input" value={relativeMonths}
+                        onChange={(e) => setRelativeMonths(Math.max(0, Math.min(11, Number(e.target.value) || 0)))} />
+                    </div>
+                  </div>
+
+                  {relativeYears === 0 && relativeMonths === 0 ? (
+                    <p style={{ fontSize: 12.5, color: "var(--danger-deep, #B8452F)", marginTop: 14, marginBottom: 0 }}>
+                      Zadej alespoň jeden měsíc do budoucna.
+                    </p>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, padding: "12px 16px", borderRadius: "var(--r-lg)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft, var(--hairline-2))", fontSize: 13, color: "var(--accent-deep)" }}>
+                      <IcCheck />
+                      Otevře se <b>{formatCzDate(relativeComputedDate)}</b>.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -997,7 +1152,13 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                     <div style={{ fontWeight: 550, fontSize: 13.5 }}>Pro {displayName}</div>
                     <div className="arca-sub" style={{ fontSize: 11.5 }}>
                       {trigger === "date" && dateVal
-                        ? new Date(dateVal).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" })
+                        ? formatCzDate(new Date(dateVal))
+                        : trigger === "age" && primaryBirthdayIso && ageComputedDate
+                        ? `${formatCzDate(ageComputedDate)} (${targetAge} let)`
+                        : trigger === "age"
+                        ? "Doplň datum narození"
+                        : trigger === "relative"
+                        ? formatCzDate(relativeComputedDate)
                         : trigger === "sealed" ? "Až přijde čas" : "Při události"}
                     </div>
                   </div>
@@ -1029,7 +1190,9 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                 {[
                   ["Forma", kind === "text" ? "Text" : kind === "voice" ? "Hlas" : kind === "video" ? "Video" : "Fotky"],
                   ["Typ", packType === "EMOTIONAL" ? "Emocionální" : "Praktická"],
-                  ["Spouštěč", trigger === "date" ? "Konkrétní datum" : trigger === "event" ? "Při události" : "Zapečetěno"],
+                  ["Spouštěč", trigger === "date" ? "Konkrétní datum" : trigger === "age" ? "Věkový milník" : trigger === "relative" ? "Relativní doba" : trigger === "event" ? "Při události" : "Zapečetěno"],
+                  ...(trigger === "age" ? [["Vypočtené datum", primaryBirthdayIso && ageComputedDate ? formatCzDate(ageComputedDate) : "—"]] : []),
+                  ...(trigger === "relative" ? [["Vypočtené datum", formatCzDate(relativeComputedDate)]] : []),
                 ].map(([label, value]) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                     <span style={{ fontSize: 12, color: "var(--muted)" }}>{label}</span>

@@ -88,7 +88,15 @@ function ProfileEditSheet({
         toast.error(res.error);
         return;
       }
-      toast.success("Profil uložen.");
+      if (res.staleMilestones > 0) {
+        toast.warning(
+          res.staleMilestones === 1
+            ? "Profil uložen — jedna zpráva s věkovým milníkem teď míří do minulosti. Uprav ji v Přehledu."
+            : `Profil uložen — ${res.staleMilestones} zprávy s věkovým milníkem teď míří do minulosti. Uprav je v Přehledu.`
+        );
+      } else {
+        toast.success("Profil uložen.");
+      }
       onSaved({
         relationship: effectiveRel || null,
         birthday: birthday ? new Date(birthday) : null,

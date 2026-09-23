@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { randomBytes } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import { PackType, ContentType, TriggerType, MessageMode } from "@/lib/prisma/generated";
+import { PackType, ContentType, TriggerType, MessageMode, TriggerBasis } from "@/lib/prisma/generated";
+import { computeAgeMilestoneDate, computeRelativeOffsetDate, isFutureDate } from "@/lib/triggers/milestone";
+
+function parseISODate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
 
 // ─── createPack ────────────────────────────────────────────────────────────────
 export async function createPack(
@@ -56,16 +62,22 @@ export async function createPackFull(
   let trigger         = (formData.get("trigger") as string) || "date";
   const rawMode       = (formData.get("messageMode") as string) || "LEGACY";
   const messageMode: MessageMode = rawMode === "SELF" ? MessageMode.SELF : MessageMode.LEGACY;
-  // SELF packs never involve Guardians — force the only trigger this mode's
-  // UI actually offers, regardless of what the client sent. Defense in
-  // depth: the "Kdy se otevře" step for SELF only renders the "date" card,
-  // but a request could still be crafted by hand.
-  if (messageMode === MessageMode.SELF) trigger = "date";
+  // SELF packs never involve Guardians — force one of the triggers this
+  // mode's UI actually offers, regardless of what the client sent. Defense
+  // in depth: the "Kdy se otevře" step for SELF only renders "date"/"age"/
+  // "relative", but a request could still be crafted by hand.
+  if (messageMode === MessageMode.SELF && !["date", "age", "relative"].includes(trigger)) trigger = "date";
   const backgroundColor = (formData.get("backgroundColor") as string) || null;
   const textColor       = (formData.get("textColor") as string) || null;
   const dateVal       = (formData.get("date") as string) || "";
   const timeVal       = (formData.get("time") as string) || "08:00";
   const isDraft       = formData.get("draft") === "1";
+
+  // Age-milestone / relative-offset triggers (Fáze 1)
+  const targetAgeVal      = formData.get("targetAge") ? Number(formData.get("targetAge")) : null;
+  const relativeYearsVal  = formData.get("relativeYears") ? Number(formData.get("relativeYears")) : 0;
+  const relativeMonthsVal = formData.get("relativeMonths") ? Number(formData.get("relativeMonths")) : 0;
+  const primaryBirthdayRaw = (formData.get("primaryBirthday") as string) || "";
 
   // Multi-recipient: existing IDs
   const existingIds   = formData.getAll("recipientId").map(v => String(v)).filter(Boolean);
@@ -79,7 +91,9 @@ export async function createPackFull(
     return { error: "Neplatný typ." };
   }
 
-  // Resolve trigger type
+  // Resolve trigger type. For "age"/"relative" the executeAtDate is derived
+  // server-side (never trusted from the client) — computed here, BEFORE any
+  // writes, so an invalid/past date can still be rejected cleanly.
   let triggerType: TriggerType | null = null;
   let executeAtDate: Date | null = null;
   if (!isDraft && trigger === "date" && dateVal) {
@@ -89,6 +103,25 @@ export async function createPackFull(
     executeAtDate = new Date(parts[0], parts[1] - 1, parts[2], timeParts[0] || 8, timeParts[1] || 0);
   } else if (!isDraft && trigger === "sealed") {
     triggerType = TriggerType.MANUAL_EMERGENCY;
+  } else if (!isDraft && trigger === "age") {
+    let primaryBirthday: Date | null = primaryBirthdayRaw ? parseISODate(primaryBirthdayRaw) : null;
+    if (!primaryBirthday && existingIds.length > 0) {
+      const firstExisting = await prisma.recipient.findFirst({
+        where: { id: existingIds[0], messagePack: { ownerId: user.id } },
+        select: { birthday: true },
+      });
+      if (firstExisting?.birthday) primaryBirthday = firstExisting.birthday;
+    }
+    if (!primaryBirthday) return { error: "Příjemce nemá vyplněné datum narození." };
+    if (targetAgeVal == null || targetAgeVal < 1 || targetAgeVal > 120) return { error: "Zadej platný věk." };
+    executeAtDate = computeAgeMilestoneDate(primaryBirthday, targetAgeVal);
+    if (!isFutureDate(executeAtDate)) return { error: "Zadaný věk už příjemce dosáhl — vyber vyšší věk." };
+    triggerType = TriggerType.SPECIFIC_DATE;
+  } else if (!isDraft && trigger === "relative") {
+    if (relativeYearsVal === 0 && relativeMonthsVal === 0) return { error: "Zadej alespoň jeden měsíc do budoucna." };
+    executeAtDate = computeRelativeOffsetDate(new Date(), relativeYearsVal, relativeMonthsVal);
+    if (!isFutureDate(executeAtDate)) return { error: "Zadaná doba musí vést do budoucnosti." };
+    triggerType = TriggerType.SPECIFIC_DATE;
   }
 
   // 1. Create the pack
@@ -118,28 +151,46 @@ export async function createPackFull(
 
   // 3. Link all recipients
   let firstRecipientId: string | null = null;
+  let recipientsCreated = 0;
+  // The primary target of an age-milestone trigger is always allSelected[0]
+  // on the client, which corresponds to the very first recipient created
+  // below — reuse that ordering instead of threading a separate id through.
+  const primaryBirthdayDate = primaryBirthdayRaw ? parseISODate(primaryBirthdayRaw) : null;
 
   // 3a. Existing contacts — look up original data, clone into this pack
   if (existingIds.length > 0) {
     const existing = await prisma.recipient.findMany({
       where: { id: { in: existingIds }, messagePack: { ownerId: user.id } },
-      select: { name: true, email: true, phone: true },
+      select: { id: true, name: true, email: true, phone: true, birthday: true },
     });
-    for (const r of existing) {
+    const byId = new Map(existing.map((r) => [r.id, r]));
+    for (const id of existingIds) {
+      const r = byId.get(id);
+      if (!r) continue;
+      const isPrimary = recipientsCreated === 0;
       const created = await prisma.recipient.create({
-        data: { messagePackId: pack.id, name: r.name, email: r.email, phone: r.phone },
+        data: {
+          messagePackId: pack.id, name: r.name, email: r.email, phone: r.phone,
+          birthday: (isPrimary && primaryBirthdayDate) ? primaryBirthdayDate : r.birthday,
+        },
       });
       if (!firstRecipientId) firstRecipientId = created.id;
+      recipientsCreated++;
     }
   }
 
   // 3b. Brand-new people
   for (const p of newPeople) {
     if (!p.name?.trim()) continue;
+    const isPrimary = recipientsCreated === 0;
     const created = await prisma.recipient.create({
-      data: { messagePackId: pack.id, name: p.name.trim(), email: p.email?.trim() || null },
+      data: {
+        messagePackId: pack.id, name: p.name.trim(), email: p.email?.trim() || null,
+        birthday: (isPrimary && primaryBirthdayDate) ? primaryBirthdayDate : null,
+      },
     });
     if (!firstRecipientId) firstRecipientId = created.id;
+    recipientsCreated++;
   }
 
   // 4. Save trigger
@@ -149,6 +200,11 @@ export async function createPackFull(
         messagePackId: pack.id,
         type: triggerType,
         ...(executeAtDate ? { executeAtDate } : {}),
+        basis: trigger === "age" ? TriggerBasis.AGE_MILESTONE
+          : trigger === "relative" ? TriggerBasis.RELATIVE_OFFSET
+          : TriggerBasis.EXACT_DATE,
+        ...(trigger === "age" ? { ageBasisRecipientId: firstRecipientId, targetAge: targetAgeVal } : {}),
+        ...(trigger === "relative" ? { relativeYears: relativeYearsVal, relativeMonths: relativeMonthsVal } : {}),
       },
     });
   }

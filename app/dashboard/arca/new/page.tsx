@@ -28,7 +28,7 @@ export default async function NewArcaPage({
   const [allRecipients, contactGroups] = await Promise.all([
     prisma.recipient.findMany({
       where: { messagePack: { ownerId: authUser.id } },
-      select: { id: true, name: true, email: true, groupId: true, avatarUrl: true },
+      select: { id: true, name: true, email: true, groupId: true, avatarUrl: true, birthday: true },
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
@@ -56,6 +56,7 @@ export default async function NewArcaPage({
   const recipients = dedupedRecipients.map((r) => ({
     id: r.id, name: r.name, email: r.email, groupId: r.groupId,
     avatarUrl: r.avatarUrl ? avatarUrlByPath.get(r.avatarUrl) ?? null : null,
+    birthday: r.birthday ? r.birthday.toISOString().slice(0, 10) : null,
   }));
 
   return (
