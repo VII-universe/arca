@@ -87,6 +87,19 @@ export async function createPackFull(
   let newPeople: { name: string; email?: string }[] = [];
   try { newPeople = JSON.parse(newPeopleRaw); } catch { /* ignore */ }
 
+  // Fáze 2 — "Napsat odpověď". Ownership-checked here (not just trusted from
+  // the client) the same way existingIds' recipients are checked in step 3a
+  // below — a reply can only point at one of the user's own packs.
+  const replyToMessageIdRaw = (formData.get("replyToMessageId") as string) || "";
+  let replyToMessageId: string | null = null;
+  if (replyToMessageIdRaw) {
+    const original = await prisma.messagePack.findFirst({
+      where: { id: replyToMessageIdRaw, ownerId: user.id },
+      select: { id: true },
+    });
+    replyToMessageId = original?.id ?? null;
+  }
+
   if (!title) return { error: "Zadej název zprávy." };
   if (!Object.values(PackType).includes(rawType as PackType)) {
     return { error: "Neplatný typ." };
@@ -156,6 +169,7 @@ export async function createPackFull(
       livingLinkHash: randomBytes(32).toString("hex"),
       ownerId: user.id,
       status: triggerType ? "ACTIVE" : "DRAFT",
+      replyToMessageId,
     },
   });
 

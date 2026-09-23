@@ -47,6 +47,10 @@ export default async function LivingLinkPage({
       messageMode: true,
       createdAt: true,
       owner: { select: { name: true } },
+      // Fáze 2 — reply thread: what this message replies to, and what
+      // replies to it.
+      replyToMessage: { select: { id: true, title: true, createdAt: true, livingLinkHash: true } },
+      replies: { select: { id: true, title: true, createdAt: true, livingLinkHash: true }, orderBy: { createdAt: "asc" } },
       recipients: {
         select: {
           id: true,
@@ -171,12 +175,15 @@ export default async function LivingLinkPage({
   return (
     <>
       <ArcaReveal
+        packId={pack.id}
         ownerName={pack.owner.name}
         packType={pack.type}
         isSelf={pack.messageMode === "SELF"}
         createdAt={pack.createdAt}
         contents={contents}
         chapters={chapters}
+        threadPrev={pack.replyToMessage}
+        threadNext={pack.replies}
       />
       <div className="mx-auto max-w-[680px] px-6 pb-20">
         <GriefJournal

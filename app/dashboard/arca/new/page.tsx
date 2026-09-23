@@ -10,7 +10,7 @@ export const metadata = { title: "Nová zpráva — ARCA" };
 export default async function NewArcaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ recipientId?: string; occasion?: string; date?: string }>;
+  searchParams: Promise<{ recipientId?: string; occasion?: string; date?: string; replyTo?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -22,7 +22,19 @@ export default async function NewArcaPage({
     if (packCount >= FREE_LIMITS.maxPacks) redirect("/dashboard/billing");
   }
 
-  const { recipientId: prefilledRecipientId, occasion: prefilledOccasion, date: prefilledDate } = await searchParams;
+  const { recipientId: prefilledRecipientId, occasion: prefilledOccasion, date: prefilledDate, replyTo: replyToMessageId } = await searchParams;
+
+  // Fáze 2 — "Napsat odpověď": pull the original message's first recipient
+  // to pre-fill the reply with (ownership-checked — only the owner's own
+  // packs are eligible, same as everywhere else recipients are read).
+  let replyRecipient: { id: string; name: string; email: string | null } | null = null;
+  if (replyToMessageId) {
+    const originalPack = await prisma.messagePack.findFirst({
+      where: { id: replyToMessageId, ownerId: authUser.id },
+      select: { recipients: { select: { id: true, name: true, email: true }, take: 1 } },
+    });
+    replyRecipient = originalPack?.recipients[0] ?? null;
+  }
 
   // Fetch existing recipients + groups for the selector
   const [allRecipients, contactGroups] = await Promise.all([
@@ -68,6 +80,8 @@ export default async function NewArcaPage({
       prefilledRecipientId={prefilledRecipientId}
       prefilledOccasion={prefilledOccasion as "birthday" | "anniversary" | undefined}
       prefilledDate={prefilledDate}
+      replyToMessageId={replyToMessageId}
+      replyRecipient={replyRecipient}
     />
   );
 }
