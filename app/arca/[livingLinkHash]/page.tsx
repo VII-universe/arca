@@ -8,11 +8,25 @@ import ChallengeGate from "./ChallengeGate";
 import ArcaReveal, { type RevealContent, type RevealChapter } from "./ArcaReveal";
 import GriefJournal from "./GriefJournal";
 
-export const metadata = {
-  title: "ARCA — A message awaits you",
-  description: "A secure, private message has been prepared for you.",
-  robots: "noindex, nofollow",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ livingLinkHash: string }>;
+}) {
+  const { livingLinkHash } = await params;
+  const pack = await prisma.messagePack.findUnique({
+    where: { livingLinkHash },
+    select: { messageMode: true },
+  });
+  const isSelf = pack?.messageMode === "SELF";
+  return {
+    title: isSelf ? "ARCA — A letter from yourself" : "ARCA — A message awaits you",
+    description: isSelf
+      ? "A letter you once wrote to your future self is ready to read."
+      : "A secure, private message has been prepared for you.",
+    robots: "noindex, nofollow",
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +44,7 @@ export default async function LivingLinkPage({
       title: true,
       type: true,
       status: true,
+      messageMode: true,
       createdAt: true,
       owner: { select: { name: true } },
       recipients: {
@@ -158,6 +173,7 @@ export default async function LivingLinkPage({
       <ArcaReveal
         ownerName={pack.owner.name}
         packType={pack.type}
+        isSelf={pack.messageMode === "SELF"}
         createdAt={pack.createdAt}
         contents={contents}
         chapters={chapters}

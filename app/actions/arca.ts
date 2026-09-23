@@ -125,6 +125,28 @@ export async function createPackFull(
     triggerType = TriggerType.SPECIFIC_DATE;
   }
 
+  // A pack whose trigger is actually armed (non-draft, triggerType resolved)
+  // but that would end up with zero recipients can never be opened by anyone
+  // — the cron will fire it into TRIGGERED and it'll just sit there forever.
+  // The client already disables "Zapečetit a uložit" without a recipient
+  // (mode-agnostic — see ComposeWizard's save button), but that's UI only;
+  // this is the server-side backstop for a hand-crafted request. A hard
+  // stop with a message, not a silent auto-fix — same lesson as the SELF
+  // trigger guard from Fáze 1.
+  //
+  // existingIds.length > 0 alone isn't enough — an id that doesn't actually
+  // belong to this user (forged, or from a deleted recipient) silently
+  // resolves to zero rows in step 3a below, which would slip past a plain
+  // length check. Verify with a real count instead.
+  const hasNewPerson = newPeople.some(p => p.name?.trim());
+  const validExistingCount = (!hasNewPerson && existingIds.length > 0)
+    ? await prisma.recipient.count({ where: { id: { in: existingIds }, messagePack: { ownerId: user.id } } })
+    : 0;
+  const hasAnyRecipient = hasNewPerson || validExistingCount > 0;
+  if (!isDraft && triggerType && !hasAnyRecipient) {
+    return { error: "Zpráva potřebuje alespoň jednoho příjemce, jinak by ji nikdo nikdy neotevřel." };
+  }
+
   // 1. Create the pack
   const pack = await prisma.messagePack.create({
     data: {

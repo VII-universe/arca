@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma/client";
 import { getSignedAvatarUrl } from "@/app/actions/recipients";
 import { Avatar } from "@/components/arca/Avatar";
 import ModeFilterSection from "@/components/dashboard/ModeFilterSection";
+import { APP_URL } from "@/lib/resend";
 export const metadata = { title: "Přehled — ARCA" };
 
 function initialsFor(name: string): string {
@@ -70,7 +71,7 @@ export default async function DashboardPage() {
       orderBy: { updatedAt: "desc" },
       take: 20,
       select: {
-        id: true, title: true, type: true, status: true, messageMode: true,
+        id: true, title: true, type: true, status: true, messageMode: true, livingLinkHash: true,
         updatedAt: true, createdAt: true,
         recipients: { select: { id: true, name: true, email: true, avatarUrl: true }, take: 3 },
         triggerCondition: { select: { type: true, executeAtDate: true, inactivityDaysLimit: true, triggeredAt: true, gracePeriodDays: true } },
@@ -97,6 +98,16 @@ export default async function DashboardPage() {
   const totalRecipients = new Set(packs.flatMap((p) => p.recipients.map((r) => r.email ?? r.name))).size;
 
   const gracePacks = packs.filter((p) => p.status === "GRACE_PERIOD" || p.status === "PENDING_GUARDIAN_APPROVAL");
+
+  // Packs that have actually fired AND where the logged-in user is themselves
+  // a recipient — i.e. there's something of theirs waiting to be opened.
+  // Mode-agnostic condition (a LEGACY pack can equally have the owner as
+  // their own recipient, e.g. a Guardian-confirmed delivery) — but the copy
+  // below still branches by messageMode so a LEGACY delivery in this state
+  // doesn't read as a cheerful "your letter is ready" moment.
+  const readyToOpenPacks = packs.filter(
+    (p) => p.status === "TRIGGERED" && p.recipients.some((r) => r.email === email)
+  );
 
   // People strip — every unique recipient across all packs, most messages first
   type PersonSummary = { id: string; name: string; avatarUrl: string | null; packCount: number };
@@ -173,6 +184,34 @@ export default async function DashboardPage() {
     <>
       <Topbar crumbs={["Přehled"]} />
       <div className="arca-inner arca-fade-in">
+
+        {/* ── Ready-to-open alert — split by mode so a LEGACY delivery      ──
+             (owner is their own recipient, e.g. Guardian-confirmed) never    ──
+             reads as the cheerful "your letter is ready" SELF framing.   ──── */}
+        {["SELF", "LEGACY"].map((mode) => {
+          const modePacks = readyToOpenPacks.filter((p) => p.messageMode === mode);
+          if (modePacks.length === 0) return null;
+          const single = modePacks.length === 1 ? modePacks[0] : null;
+          const href = single ? `${APP_URL}/arca/${single.livingLinkHash}` : "/dashboard/vault";
+          return (
+            <div key={mode} className="arca-card" style={{ background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", padding: "16px 22px", marginBottom: 28, display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ fontSize: 20 }}>{mode === "SELF" ? "✉️" : "◈"}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 550, fontSize: 14 }}>
+                  {mode === "SELF"
+                    ? (single ? `Tvůj dopis „${single.title}" je připraven k otevření` : `${modePacks.length} dopisy jsou připravené k otevření`)
+                    : (single ? "Jedna z tvých zpráv byla doručena" : `${modePacks.length} tvé zprávy byly doručeny`)}
+                </div>
+                <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 2 }}>
+                  {mode === "SELF" ? "Napsal(a) jsi ho sám(a) sobě — nastal čas si ho přečíst." : "Nastal čas doručení."}
+                </div>
+              </div>
+              <Link href={href} target={single ? "_blank" : undefined} rel={single ? "noopener noreferrer" : undefined} className="arca-btn arca-btn--clay sm">
+                {mode === "SELF" ? "Otevřít" : "Zobrazit"}
+              </Link>
+            </div>
+          );
+        })}
 
         {/* ── Grace period alert ─────────────────────────────────── */}
         {gracePacks.length > 0 && (

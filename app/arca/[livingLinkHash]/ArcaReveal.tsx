@@ -20,6 +20,7 @@ export interface RevealChapter {
 interface Props {
   ownerName: string;
   packType: "EMOTIONAL" | "PRACTICAL";
+  isSelf: boolean;
   createdAt: Date;
   contents: RevealContent[];
   chapters?: RevealChapter[];
@@ -52,6 +53,7 @@ function formatDate(date: Date) {
 export default function ArcaReveal({
   ownerName,
   packType,
+  isSelf,
   createdAt,
   contents,
   chapters = [],
@@ -75,7 +77,7 @@ export default function ArcaReveal({
           {packType === "EMOTIONAL" ? "✦" : "⬡"}
         </span>
         <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60">
-          ARCA — A personal message
+          {isSelf ? "ARCA — A letter to yourself" : "ARCA — A personal message"}
         </p>
       </header>
 
@@ -85,7 +87,7 @@ export default function ArcaReveal({
         {/* From + date */}
         <div className="mb-12 space-y-1">
           <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60">
-            From
+            {isSelf ? "A letter from your past self" : "From"}
           </p>
           <p className="text-lg font-light text-foreground">{ownerName}</p>
           <p className="text-xs text-muted-foreground/40 mt-1">
@@ -103,7 +105,7 @@ export default function ArcaReveal({
 
         {!textItem?.textBody && mediaItems.length === 0 && (
           <p className="text-muted-foreground italic text-sm font-serif">
-            This Arca contains no written message.
+            {isSelf ? "This letter doesn't contain any written words — just what's below." : "This Arca contains no written message."}
           </p>
         )}
 
