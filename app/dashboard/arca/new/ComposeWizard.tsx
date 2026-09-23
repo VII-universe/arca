@@ -7,7 +7,7 @@ import { createPackFull, addMediaContent } from "@/app/actions/arca";
 import { createClient } from "@/lib/supabase/client";
 import ArcaRichEditor, { type ArcaRichEditorHandle } from "@/components/arca/ArcaRichEditor";
 import { Avatar } from "@/components/arca/Avatar";
-import { computeAgeMilestoneDate, computeRelativeOffsetDate, isFutureDate } from "@/lib/triggers/milestone";
+import { computeAgeMilestoneDate, computeRelativeOffsetDate, isFutureDate, nextValidTargetAge } from "@/lib/triggers/milestone";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -647,6 +647,23 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
   const ageComputedDate = primaryBirthdayIso ? computeAgeMilestoneDate(parseISODate(primaryBirthdayIso), targetAge) : null;
   const relativeComputedDate = computeRelativeOffsetDate(new Date(), relativeYears, relativeMonths);
+
+  // The fixed default (18) is wrong for most real recipients — anyone already
+  // past it would hit "this age is already in the past" the instant they open
+  // the trigger, with no obvious reason why "Zapečetit a uložit" won't go
+  // through. Whenever a birthday becomes known (recipient selected, or just
+  // filled in inline) and the CURRENT targetAge would already be in the past
+  // for them, bump it forward to the next age that's actually reachable —
+  // but only as a one-time correction of the default, never overriding an
+  // age the user is actively (if deliberately invalidly) typing.
+  useEffect(() => {
+    if (trigger !== "age" || !primaryBirthdayIso) return;
+    const birthday = parseISODate(primaryBirthdayIso);
+    if (!isFutureDate(computeAgeMilestoneDate(birthday, targetAge))) {
+      setTargetAge(nextValidTargetAge(birthday));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trigger, primaryBirthdayIso]);
 
   function toggleId(id: string) {
     setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
