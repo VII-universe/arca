@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { signOut } from "@/app/actions/auth";
 import AppearanceButton from "./AppearanceButton";
 import { Avatar } from "@/components/arca/Avatar";
@@ -67,16 +68,17 @@ interface NavItem {
 export default function SidebarContent({
   user, packCount, guardianCount, recentRecipients, contactGroups, onClose,
 }: SidebarContentProps) {
+  const t = useTranslations("Nav");
   const pathname = usePathname();
 
   const navItems: NavItem[] = [
-    { href: "/dashboard",           label: "Přehled",    icon: <IcHome />,      exact: true },
-    { href: "/dashboard/vault",     label: "Schránka",   icon: <IcVault />,     count: packCount },
-    { href: "/dashboard/arca/new",  label: "Nová zpráva",icon: <IcCompose /> },
-    { href: "/dashboard/calendar",  label: "Kalendář",   icon: <IcCalendar /> },
-    { href: "/dashboard/guardians", label: "Strážci",    icon: <IcGuardians />, count: guardianCount },
-    { href: "/dashboard/blueprint", label: "Manuál k životu", icon: <IcBlueprint /> },
-    { href: "/dashboard/settings",  label: "Nastavení",       icon: <IcSettings /> },
+    { href: "/dashboard",           label: t("overview"),    icon: <IcHome />,      exact: true },
+    { href: "/dashboard/vault",     label: t("vault"),       icon: <IcVault />,     count: packCount },
+    { href: "/dashboard/arca/new",  label: t("newMessage"),  icon: <IcCompose /> },
+    { href: "/dashboard/calendar",  label: t("calendar"),    icon: <IcCalendar /> },
+    { href: "/dashboard/guardians", label: t("guardians"),   icon: <IcGuardians />, count: guardianCount },
+    { href: "/dashboard/blueprint", label: t("blueprint"),   icon: <IcBlueprint /> },
+    { href: "/dashboard/settings",  label: t("settings"),    icon: <IcSettings /> },
   ];
 
   function isActive(item: NavItem) {
@@ -100,7 +102,7 @@ export default function SidebarContent({
         </div>
         <div className="name">arc<em>a</em></div>
         {onClose && (
-          <button className="arca-side__close" onClick={onClose} aria-label="Zavřít menu">
+          <button className="arca-side__close" onClick={onClose} aria-label={t("closeMenu")}>
             <IcClose />
           </button>
         )}
@@ -110,7 +112,7 @@ export default function SidebarContent({
       <div className="arca-side__scroll" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
         <div className="arca-search">
           <IcSearch />
-          <input placeholder="Hledat ve schránce…" />
+          <input placeholder={t("searchPlaceholder")} />
           <span className="arca-mono" style={{ fontSize: 10, color: "var(--muted-2)" }}>⌘K</span>
         </div>
 
@@ -131,7 +133,7 @@ export default function SidebarContent({
         </div>
 
         {/* ── Recipients + groups */}
-        <div className="arca-nav-label">Příjemci</div>
+        <div className="arca-nav-label">{t("recipients")}</div>
         <div className="arca-nav-group" style={{ paddingTop: 0 }}>
           <Link
             href="/dashboard/vault"
@@ -144,7 +146,7 @@ export default function SidebarContent({
                 <circle cx="17" cy="8" r="2.5"/><path d="M15 14.5c2.7 0 6 1.4 6 4.5"/>
               </svg>
             </span>
-            <span>Všichni</span>
+            <span>{t("everyone")}</span>
             <span className="count">{recentRecipients.length}</span>
           </Link>
 
@@ -185,7 +187,7 @@ export default function SidebarContent({
 
           <Link href="/dashboard/vault" onClick={onClose} className="arca-nav-item" style={{ color: "var(--muted)" }}>
             <span className="ic"><IcPlus /></span>
-            <span>Přidat příjemce</span>
+            <span>{t("addRecipient")}</span>
           </Link>
         </div>
       </div>
@@ -195,10 +197,10 @@ export default function SidebarContent({
         <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none", padding: 14, borderRadius: 12, marginBottom: 14 }}>
           <div className="arca-row" style={{ gap: 8, marginBottom: 6 }}>
             <IcSparkle />
-            <span style={{ fontSize: 12, fontWeight: 550, whiteSpace: "nowrap", color: "var(--accent)" }}>Tichá inspirace</span>
+            <span style={{ fontSize: 12, fontWeight: 550, whiteSpace: "nowrap", color: "var(--accent)" }}>{t("quietInspirationLabel")}</span>
           </div>
           <p className="arca-sub" style={{ fontSize: 12, margin: 0, lineHeight: 1.4 }}>
-            {`„Vzpomeneš si na ten den, kdy jsme poprvé…"`} — začni odtud.
+            {t("quietInspirationQuote")}
           </p>
         </div>
 
@@ -213,11 +215,11 @@ export default function SidebarContent({
               {user.name}
             </span>
             <span style={{ fontSize: 11, color: "var(--muted)" }}>
-              {user.role === "ADMIN" ? "Admin · Plný přístup" : user.isPremium ? "ARCA Pro" : "Základní plán"}
+              {user.role === "ADMIN" ? t("adminRole") : user.isPremium ? t("proPlan") : t("freePlan")}
             </span>
           </div>
           <form action={signOut}>
-            <button type="submit" className="arca-btn arca-btn--ghost icon-btn" title="Odhlásit se">
+            <button type="submit" className="arca-btn arca-btn--ghost icon-btn" title={t("signOut")}>
               <IcLogout />
             </button>
           </form>

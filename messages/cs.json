@@ -6,6 +6,137 @@
       "en": "English"
     }
   },
+  "Nav": {
+    "overview": "Přehled",
+    "vault": "Schránka",
+    "newMessage": "Nová zpráva",
+    "calendar": "Kalendář",
+    "guardians": "Strážci",
+    "blueprint": "Manuál k životu",
+    "settings": "Nastavení",
+    "closeMenu": "Zavřít menu",
+    "searchPlaceholder": "Hledat ve schránce…",
+    "recipients": "Příjemci",
+    "everyone": "Všichni",
+    "addRecipient": "Přidat příjemce",
+    "quietInspirationLabel": "Tichá inspirace",
+    "quietInspirationQuote": "„Vzpomeneš si na ten den, kdy jsme poprvé…\" — začni odtud.",
+    "adminRole": "Admin · Plný přístup",
+    "proPlan": "ARCA Pro",
+    "freePlan": "Základní plán",
+    "signOut": "Odhlásit se",
+    "openNav": "Otevřít navigaci",
+    "mainNav": "Hlavní navigace"
+  },
+  "Dashboard": {
+    "topbar": {
+      "synced": "Vše synchronizováno"
+    },
+    "readyToOpen": {
+      "selfTitleSingle": "Tvůj dopis „{title}\" je připraven k otevření",
+      "selfTitleMultiple": "{count} dopisy jsou připravené k otevření",
+      "selfSubtitle": "Napsal(a) jsi ho sám(a) sobě — nastal čas si ho přečíst.",
+      "legacyTitleSingle": "Jedna z tvých zpráv byla doručena",
+      "legacyTitleMultiple": "{count} tvé zprávy byly doručeny",
+      "legacySubtitle": "Nastal čas doručení.",
+      "openBtn": "Otevřít",
+      "viewBtn": "Zobrazit"
+    },
+    "gracePeriod": {
+      "titleSingle": "Jedna Arca čekají na potvrzení strážci",
+      "titleMultiple": "{count} Arcy čekají na potvrzení strážci",
+      "subtitle": "Zkontroluj stav a případně zrušit doručení.",
+      "viewBtn": "Zobrazit"
+    },
+    "reminders": {
+      "birthday": "Narozeniny",
+      "anniversary": "Výročí",
+      "inDays": "za {days, plural, one {# den} few {# dny} other {# dní}}",
+      "writeMessageBtn": "Napsat zprávu"
+    },
+    "greeting": {
+      "fallbackName": "příteli",
+      "title": "Dobrý den, {name}. <em>Co dnes uložíš?</em>",
+      "packsCount": "{count, plural, one {# zprávu} few {# zprávy} other {# zpráv}}",
+      "peopleCount": "{count, plural, one {# člověka} other {# lidí}}",
+      "subtitlePrefix": "Tvoje schránka nese",
+      "subtitleFor": "pro",
+      "activeSuffix": "{count, plural, one {# je připravena} other {# jsou připraveny}} k doručení."
+    },
+    "hero": {
+      "badge": "Navrhujeme dnes",
+      "title": "Otevřít editor <em>a začít psát.</em>",
+      "subtitle": "I krátká věta zanechá stopu. Vrátíš se k ní, kdykoli budeš chtít.",
+      "openEditorBtn": "Otevřít editor",
+      "vaultBtn": "Schránka"
+    },
+    "peopleStrip": {
+      "label": "Podle koho",
+      "messageCount": "{count, plural, one {# zpráva} few {# zprávy} other {# zpráv}}"
+    },
+    "proUpsell": {
+      "title": "ARCA Pro — bez hranic",
+      "subtitle": "Neomezené zprávy, hlasové a video nahrávky, šifrování end-to-end a fyzické dopisy.",
+      "upgradeBtn": "Upgradovat →"
+    },
+    "filter": {
+      "all": "Vše",
+      "self": "Sobě",
+      "legacy": "Odkazy"
+    },
+    "stats": {
+      "inVault": "Ve schránce",
+      "inVaultHint": "pro {count, plural, one {# člověka} other {# lidí}}",
+      "active": "Aktivní",
+      "activeHint": "připraveny k doručení",
+      "delivered": "Doručené",
+      "deliveredHint": "úspěšně doručeno",
+      "drafts": "Návrhy",
+      "draftsHintSome": "čekají na dopsání",
+      "draftsHintNone": "žádné zatím",
+      "guardiansLabel": "Strážci",
+      "guardiansHintSome": "aktivní ochrana",
+      "guardiansHintNone": "žádní zatím"
+    },
+    "upcoming": {
+      "title": "Nejbližší okamžiky",
+      "openCalendarBtn": "Otevřít kalendář",
+      "empty": "Žádné naplánované zprávy.",
+      "createFirst": "Vytvoř první →",
+      "forRecipient": "pro {name}",
+      "hiddenSelf": "{count, plural, one {# odkaz pro blízké je skrytý} few {# odkazy pro blízké jsou skryté} other {# odkazů pro blízké je skrytých}}",
+      "hiddenLegacy": "{count, plural, one {# zpráva sobě do budoucna je skrytá} few {# zprávy sobě do budoucna jsou skryté} other {# zpráv sobě do budoucna je skrytých}}",
+      "switchToAll": "— přepni na „Vše\""
+    },
+    "guardianCard": {
+      "title": "Tichý strážce",
+      "activeBadge": "Aktivní",
+      "description": "ARCA bdí jemně na pozadí. Pokud se po dlouhou dobu neozveš, zeptá se tvých strážců, než cokoli odešle.",
+      "lastSeen": "Naposledy zde",
+      "justNow": "právě teď",
+      "daysAgo": "před {days, plural, one {# dnem} other {# dny}}",
+      "guardiansLabel": "Strážci",
+      "guardiansActiveCount": "{count} aktivních",
+      "noGuardians": "Žádní strážci",
+      "manageBtn": "Spravovat"
+    },
+    "ritual": {
+      "titleLabel": "Týdenní rituál",
+      "unansweredTitle": "Tvoje minulé já ti něco <em>napsalo.</em><br></br>Chceš mu odpovědět?",
+      "replyBtn": "Napsat odpověď",
+      "deliveredMeta": "„{title}\"",
+      "deliveredMetaWithDate": "„{title}\" · doručeno {date}",
+      "defaultTitle": "Co bys chtěl, aby si dnes <em>někdo</em> pamatoval?",
+      "writeBtn": "Tříminutové psaní"
+    },
+    "recent": {
+      "title": "Naposledy uložené",
+      "viewAllBtn": "Vše ve schránce",
+      "noRecipient": "bez příjemce",
+      "emotional": "Emocionální",
+      "practical": "Praktická"
+    }
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Tvůj odkaz, uchovaný pro budoucnost.",

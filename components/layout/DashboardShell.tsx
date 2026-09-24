@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Menu, Plus } from "lucide-react";
 import { Sheet } from "@/components/ui/sheet";
 import ArcaSidebar from "./ArcaSidebar";
@@ -33,20 +34,21 @@ const IcVault     = () => <Ic><path d="M4 7c0-1.1.9-2 2-2h12a2 2 0 0 1 2 2v10a2 
 const IcCalendar  = () => <Ic><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3.5v3M16 3.5v3"/></Ic>;
 const IcGuardians = () => <Ic><path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3Z"/><path d="M9 12l2 2 4-4"/></Ic>;
 
-const BOTTOM_NAV = [
-  { href: "/dashboard",           label: "Přehled",  Icon: IcHome,      exact: true  },
-  { href: "/dashboard/vault",     label: "Schránka", Icon: IcVault,     exact: false },
-  { href: "/dashboard/calendar",  label: "Kalendář", Icon: IcCalendar,  exact: false },
-  { href: "/dashboard/guardians", label: "Strážci",  Icon: IcGuardians, exact: false },
-];
-
 // ── DashboardShell ────────────────────────────────────────────────────────────
 
 export default function DashboardShell({
   user, packCount, guardianCount, recentRecipients, contactGroups, children,
 }: Props) {
+  const t = useTranslations("Nav");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
+
+  const BOTTOM_NAV = [
+    { href: "/dashboard",           label: t("overview"),  Icon: IcHome,      exact: true  },
+    { href: "/dashboard/vault",     label: t("vault"),     Icon: IcVault,     exact: false },
+    { href: "/dashboard/calendar",  label: t("calendar"),  Icon: IcCalendar,  exact: false },
+    { href: "/dashboard/guardians", label: t("guardians"), Icon: IcGuardians, exact: false },
+  ];
 
   // Close drawer on route change
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
@@ -75,7 +77,7 @@ export default function DashboardShell({
         <button
           className="arca-mobile-hamburger"
           onClick={() => setDrawerOpen(true)}
-          aria-label="Otevřít navigaci"
+          aria-label={t("openNav")}
         >
           <Menu size={20} strokeWidth={1.8} />
         </button>
@@ -86,7 +88,7 @@ export default function DashboardShell({
         </div>
 
         {/* Compose shortcut */}
-        <Link href="/dashboard/arca/new" className="arca-mobile-hamburger" aria-label="Nová zpráva">
+        <Link href="/dashboard/arca/new" className="arca-mobile-hamburger" aria-label={t("newMessage")}>
           <Plus size={20} strokeWidth={1.8} />
         </Link>
       </header>
@@ -126,7 +128,7 @@ export default function DashboardShell({
           MOBILE: bottom tab bar — iOS-native pattern.
           Fixed, blurred, above safe-area.
           ════════════════════════════════════════════════════════ */}
-      <nav className="arca-bottom-nav" aria-label="Hlavní navigace">
+      <nav className="arca-bottom-nav" aria-label={t("mainNav")}>
         {BOTTOM_NAV.slice(0, 2).map((item) => (
           <Link
             key={item.href}
@@ -139,7 +141,7 @@ export default function DashboardShell({
         ))}
 
         {/* FAB — center compose button */}
-        <Link href="/dashboard/arca/new" className="arca-bottom-nav__fab" aria-label="Nová zpráva">
+        <Link href="/dashboard/arca/new" className="arca-bottom-nav__fab" aria-label={t("newMessage")}>
           <Plus size={22} strokeWidth={1.8} color="currentColor" />
         </Link>
 

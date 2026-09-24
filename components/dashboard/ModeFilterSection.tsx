@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/arca/Avatar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -32,6 +33,7 @@ interface Props {
   daysSinceActive: number;
   // Fáze 2 — oldest delivered SELF message still waiting for a reply, if any.
   unansweredSelfPack: { id: string; title: string; deliveredAt: string | null } | null;
+  dateLocale: string;
 }
 
 function initialsFor(name: string): string {
@@ -59,7 +61,8 @@ function StatCard({ label, value, hint, tone }: { label: string; value: number |
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, daysSinceActive, unansweredSelfPack }: Props) {
+export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, daysSinceActive, unansweredSelfPack, dateLocale }: Props) {
+  const t = useTranslations("Dashboard");
   const [filter, setFilter] = useState<Filter>("ALL");
 
   const selfCount = packs.filter((p) => p.messageMode === "SELF").length;
@@ -113,21 +116,21 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
           display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 20,
           padding: 4, borderRadius: "var(--r-pill)", background: "var(--surface)", border: "1px solid var(--hairline)",
         }}>
-          <FilterTab id="ALL" label="Vše" count={packs.length} />
-          <FilterTab id="SELF" label="Sobě" count={selfCount} />
-          <FilterTab id="LEGACY" label="Odkazy" count={legacyCount} />
+          <FilterTab id="ALL" label={t("filter.all")} count={packs.length} />
+          <FilterTab id="SELF" label={t("filter.self")} count={selfCount} />
+          <FilterTab id="LEGACY" label={t("filter.legacy")} count={legacyCount} />
         </div>
       )}
 
       {/* ── Stats row ───────────────────────────────────────────── */}
       <div className="arca-stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 36 }}>
-        <StatCard label="Ve schránce" value={filtered.length} hint={`pro ${totalRecipients} ${totalRecipients === 1 ? "člověka" : "lidí"}`} />
-        <StatCard label="Aktivní" value={activeCount} hint="připraveny k doručení" tone="clay" />
-        <StatCard label="Doručené" value={deliveredCount} hint="úspěšně doručeno" tone="sage" />
+        <StatCard label={t("stats.inVault")} value={filtered.length} hint={t("stats.inVaultHint", { count: totalRecipients })} />
+        <StatCard label={t("stats.active")} value={activeCount} hint={t("stats.activeHint")} tone="clay" />
+        <StatCard label={t("stats.delivered")} value={deliveredCount} hint={t("stats.deliveredHint")} tone="sage" />
         {filter === "SELF" ? (
-          <StatCard label="Návrhy" value={draftCount} hint={draftCount > 0 ? "čekají na dopsání" : "žádné zatím"} tone="sky" />
+          <StatCard label={t("stats.drafts")} value={draftCount} hint={draftCount > 0 ? t("stats.draftsHintSome") : t("stats.draftsHintNone")} tone="sky" />
         ) : (
-          <StatCard label="Strážci" value={guardians.length} hint={guardians.length > 0 ? "aktivní ochrana" : "žádní zatím"} tone="sky" />
+          <StatCard label={t("stats.guardiansLabel")} value={guardians.length} hint={guardians.length > 0 ? t("stats.guardiansHintSome") : t("stats.guardiansHintNone")} tone="sky" />
         )}
       </div>
 
@@ -136,23 +139,23 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
         {/* Upcoming */}
         <div>
           <div className="arca-row arca-between" style={{ marginBottom: 14 }}>
-            <h3 className="arca-h3">Nejbližší okamžiky</h3>
+            <h3 className="arca-h3">{t("upcoming.title")}</h3>
             <Link href="/dashboard/calendar" className="arca-btn sm arca-btn--ghost">
-              Otevřít kalendář
+              {t("upcoming.openCalendarBtn")}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M9 6l6 6-6 6"/></svg>
             </Link>
           </div>
 
           {upcoming.length === 0 ? (
             <div className="arca-card" style={{ padding: "28px 24px", textAlign: "center" }}>
-              <p className="arca-sub" style={{ fontSize: 13 }}>Žádné naplánované zprávy. <Link href="/dashboard/arca/new" style={{ color: "var(--accent)" }}>Vytvoř první →</Link></p>
+              <p className="arca-sub" style={{ fontSize: 13 }}>{t("upcoming.empty")} <Link href="/dashboard/arca/new" style={{ color: "var(--accent)" }}>{t("upcoming.createFirst")}</Link></p>
             </div>
           ) : (
             <div className="arca-stack-3">
               {upcoming.map((pack) => {
                 const d = new Date(pack.triggerCondition!.executeAtDate!);
-                const dayLabel = d.toLocaleDateString("cs-CZ", { weekday: "short" });
-                const dateLabel = d.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" });
+                const dayLabel = d.toLocaleDateString(dateLocale, { weekday: "short" });
+                const dateLabel = d.toLocaleDateString(dateLocale, { day: "numeric", month: "numeric" });
                 const recipient = pack.recipients[0];
                 const recipientName = recipient?.name ?? "—";
                 return (
@@ -172,7 +175,7 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
                       )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 550, fontSize: 14 }}>{pack.title}</div>
-                        <div className="arca-sub" style={{ fontSize: 12.5 }}>pro {recipientName}</div>
+                        <div className="arca-sub" style={{ fontSize: 12.5 }}>{t("upcoming.forRecipient", { name: recipientName })}</div>
                       </div>
                       <span style={{ color: kindColor(pack.type), fontSize: 16 }}>{kindIcon(pack.type)}</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{ color: "var(--muted)" }}><path d="M9 6l6 6-6 6"/></svg>
@@ -193,11 +196,10 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
                 color: "var(--muted)", fontSize: 12.5, cursor: "pointer", fontFamily: "var(--f-sans)",
               }}
             >
-              {hiddenUpcomingCount}{" "}
               {filter === "SELF"
-                ? hiddenUpcomingCount === 1 ? "odkaz pro blízké je skrytý" : hiddenUpcomingCount < 5 ? "odkazy pro blízké jsou skryté" : "odkazů pro blízké je skrytých"
-                : hiddenUpcomingCount === 1 ? "zpráva sobě do budoucna je skrytá" : hiddenUpcomingCount < 5 ? "zprávy sobě do budoucna jsou skryté" : "zpráv sobě do budoucna je skrytých"}
-              {" "}— přepni na „Vše"
+                ? t("upcoming.hiddenSelf", { count: hiddenUpcomingCount })
+                : t("upcoming.hiddenLegacy", { count: hiddenUpcomingCount })}
+              {" "}{t("upcoming.switchToAll")}
             </button>
           )}
         </div>
@@ -209,21 +211,21 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
             <div className="arca-card">
               <div style={{ padding: "20px 22px" }}>
                 <div className="arca-row arca-between" style={{ marginBottom: 12 }}>
-                  <h3 className="arca-h3">Tichý strážce</h3>
-                  <span className="arca-chip sage"><span className="dot" /> Aktivní</span>
+                  <h3 className="arca-h3">{t("guardianCard.title")}</h3>
+                  <span className="arca-chip sage"><span className="dot" /> {t("guardianCard.activeBadge")}</span>
                 </div>
                 <p className="arca-sub" style={{ fontSize: 12.5, marginBottom: 14 }}>
-                  ARCA bdí jemně na pozadí. Pokud se po dlouhou dobu neozveš, zeptá se tvých strážců, než cokoli odešle.
+                  {t("guardianCard.description")}
                 </p>
                 <div className="arca-row arca-between" style={{ marginBottom: 8 }}>
-                  <span className="arca-mono" style={{ color: "var(--muted)" }}>Naposledy zde</span>
+                  <span className="arca-mono" style={{ color: "var(--muted)" }}>{t("guardianCard.lastSeen")}</span>
                   <span style={{ fontSize: 13, fontWeight: 500 }}>
-                    {daysSinceActive === 0 ? "právě teď" : `před ${daysSinceActive} ${daysSinceActive === 1 ? "dnem" : "dny"}`}
+                    {daysSinceActive === 0 ? t("guardianCard.justNow") : t("guardianCard.daysAgo", { days: daysSinceActive })}
                   </span>
                 </div>
                 <div className="arca-row arca-between">
-                  <span className="arca-mono" style={{ color: "var(--muted)" }}>Strážci</span>
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>{guardians.length} aktivních</span>
+                  <span className="arca-mono" style={{ color: "var(--muted)" }}>{t("guardianCard.guardiansLabel")}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>{t("guardianCard.guardiansActiveCount", { count: guardians.length })}</span>
                 </div>
                 <hr className="arca-divider" />
                 <div className="arca-row" style={{ gap: 8 }}>
@@ -233,10 +235,10 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
                     </span>
                   ))}
                   {guardians.length === 0 && (
-                    <span className="arca-sub" style={{ fontSize: 12 }}>Žádní strážci</span>
+                    <span className="arca-sub" style={{ fontSize: 12 }}>{t("guardianCard.noGuardians")}</span>
                   )}
                   <Link href="/dashboard/guardians" className="arca-btn sm arca-btn--ghost" style={{ marginLeft: "auto" }}>
-                    Spravovat
+                    {t("guardianCard.manageBtn")}
                   </Link>
                 </div>
               </div>
@@ -249,7 +251,7 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
           <div className="arca-card flat" style={{ background: "var(--ink)", color: "var(--bg)", border: "none" }}>
             <div style={{ padding: "20px 22px" }}>
               <div className="arca-row arca-between" style={{ marginBottom: 10 }}>
-                <span className="arca-kicker" style={{ color: "color-mix(in srgb, var(--bg) 55%, transparent)" }}>Týdenní rituál</span>
+                <span className="arca-kicker" style={{ color: "color-mix(in srgb, var(--bg) 55%, transparent)" }}>{t("ritual.titleLabel")}</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth={1.6}>
                   {unansweredSelfPack
                     ? <path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v1"/>
@@ -259,24 +261,25 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
               {unansweredSelfPack ? (
                 <>
                   <p style={{ fontFamily: "var(--f-serif)", fontSize: 22, lineHeight: 1.25, margin: "0 0 18px" }}>
-                    Tvoje minulé já ti něco <em style={{ color: "var(--accent)" }}>napsalo.</em><br />Chceš mu odpovědět?
+                    {t.rich("ritual.unansweredTitle", { em: (chunks) => <em style={{ color: "var(--accent)" }}>{chunks}</em>, br: () => <br /> })}
                   </p>
                   <Link href={`/dashboard/arca/new?replyTo=${unansweredSelfPack.id}`} className="arca-btn" style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-deep))", color: "#fff", border: "none" }}>
-                    Napsat odpověď
+                    {t("ritual.replyBtn")}
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                   </Link>
                   <div style={{ fontSize: 11, color: "color-mix(in srgb, var(--bg) 45%, transparent)", marginTop: 12 }}>
-                    „{unansweredSelfPack.title}"
-                    {unansweredSelfPack.deliveredAt && ` · doručeno ${new Date(unansweredSelfPack.deliveredAt).toLocaleDateString("cs-CZ")}`}
+                    {unansweredSelfPack.deliveredAt
+                      ? t("ritual.deliveredMetaWithDate", { title: unansweredSelfPack.title, date: new Date(unansweredSelfPack.deliveredAt).toLocaleDateString(dateLocale) })
+                      : t("ritual.deliveredMeta", { title: unansweredSelfPack.title })}
                   </div>
                 </>
               ) : (
                 <>
                   <p style={{ fontFamily: "var(--f-serif)", fontSize: 22, lineHeight: 1.2, margin: "0 0 18px" }}>
-                    Co bys chtěl, aby si dnes <em style={{ color: "var(--accent)" }}>někdo</em> pamatoval?
+                    {t.rich("ritual.defaultTitle", { em: (chunks) => <em style={{ color: "var(--accent)" }}>{chunks}</em> })}
                   </p>
                   <Link href="/dashboard/arca/new" className="arca-btn" style={{ background: "color-mix(in srgb, var(--bg) 8%, transparent)", color: "var(--bg)", borderColor: "color-mix(in srgb, var(--bg) 12%, transparent)" }}>
-                    Tříminutové psaní
+                    {t("ritual.writeBtn")}
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                   </Link>
                 </>
@@ -290,9 +293,9 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
       {recent.length > 0 && (
         <div style={{ marginTop: 44 }}>
           <div className="arca-row arca-between" style={{ marginBottom: 14 }}>
-            <h3 className="arca-h3">Naposledy uložené</h3>
+            <h3 className="arca-h3">{t("recent.title")}</h3>
             <Link href="/dashboard/vault" className="arca-btn sm arca-btn--ghost">
-              Vše ve schránce
+              {t("recent.viewAllBtn")}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M9 6l6 6-6 6"/></svg>
             </Link>
           </div>
@@ -319,11 +322,11 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 500, fontSize: 14 }}>{pack.title}</div>
                         <div className="arca-sub" style={{ fontSize: 12 }}>
-                          {pack.recipients.map((r) => r.name).join(", ") || "bez příjemce"} · {new Date(pack.updatedAt).toLocaleDateString("cs-CZ")}
+                          {pack.recipients.map((r) => r.name).join(", ") || t("recent.noRecipient")} · {new Date(pack.updatedAt).toLocaleDateString(dateLocale)}
                         </div>
                       </div>
                       <span className={`arca-chip ${pack.type === "EMOTIONAL" ? "clay" : "sky"}`}>
-                        {pack.type === "EMOTIONAL" ? "Emocionální" : "Praktická"}
+                        {pack.type === "EMOTIONAL" ? t("recent.emotional") : t("recent.practical")}
                       </span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{ color: "var(--muted)" }}><path d="M9 6l6 6-6 6"/></svg>
                     </div>
