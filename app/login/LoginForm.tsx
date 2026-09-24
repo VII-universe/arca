@@ -2,25 +2,27 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  missing_code: "Odkaz pro přihlášení je neplatný. Zkus to znovu.",
-  auth_failed: "Přihlášení selhalo. Zkus to znovu.",
-};
-
 export default function LoginForm() {
+  const t = useTranslations("Auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
+
+  const ERROR_MESSAGES: Record<string, string> = {
+    missing_code: t("errors.missing_code"),
+    auth_failed: t("errors.auth_failed"),
+  };
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<{ type: "error" | "success"; message: string } | null>(
-    urlError ? { type: "error", message: ERROR_MESSAGES[urlError] ?? "Nastala chyba." } : null
+    urlError ? { type: "error", message: ERROR_MESSAGES[urlError] ?? t("errors.unknown") } : null
   );
   const [loading, setLoading] = useState(false);
 
@@ -44,7 +46,7 @@ export default function LoginForm() {
           options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
         });
         if (error) throw error;
-        setStatus({ type: "success", message: "Zkontroluj svůj e-mail — poslali jsme ti potvrzovací odkaz." });
+        setStatus({ type: "success", message: t("status.signupSuccess") });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: emailVal, password: passwordVal });
         if (error) throw error;
@@ -53,7 +55,7 @@ export default function LoginForm() {
         router.refresh();
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Něco se pokazilo.";
+      const message = err instanceof Error ? err.message : t("errors.generic");
       setStatus({ type: "error", message });
       setLoading(false);
     }
@@ -103,7 +105,7 @@ export default function LoginForm() {
               boxShadow: mode === m ? "var(--sh-1)" : "none",
             }}
           >
-            {m === "login" ? "Přihlásit se" : "Vytvořit účet"}
+            {m === "login" ? t("form.tabLogin") : t("form.tabSignup")}
           </button>
         ))}
       </div>
@@ -112,7 +114,7 @@ export default function LoginForm() {
         {/* Email */}
         <div>
           <label style={{ display: "block", fontSize: 11, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 6, fontFamily: "var(--f-mono)" }}>
-            E-mail
+            {t("form.emailLabel")}
           </label>
           <input
             id="email"
@@ -132,7 +134,7 @@ export default function LoginForm() {
         {/* Password */}
         <div>
           <label style={{ display: "block", fontSize: 11, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)", marginBottom: 6, fontFamily: "var(--f-mono)" }}>
-            Heslo
+            {t("form.passwordLabel")}
           </label>
           <input
             id="password"
@@ -149,7 +151,7 @@ export default function LoginForm() {
             onBlur={e => { e.target.style.borderColor = "var(--hairline-2)"; e.target.style.boxShadow = "none"; }}
           />
           {mode === "signup" && (
-            <p style={{ fontSize: 12, color: "var(--muted-2)", marginTop: 5 }}>Minimálně 8 znaků.</p>
+            <p style={{ fontSize: 12, color: "var(--muted-2)", marginTop: 5 }}>{t("form.passwordHint")}</p>
           )}
         </div>
 
@@ -188,10 +190,10 @@ export default function LoginForm() {
           }}
         >
           {loading
-            ? "Moment…"
+            ? t("form.submitLoading")
             : mode === "login"
-            ? "Přihlásit se →"
-            : "Vytvořit účet →"}
+            ? t("form.submitLogin")
+            : t("form.submitSignup")}
         </button>
       </form>
     </div>

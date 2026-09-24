@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display, Instrument_Serif } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { VibeProvider } from "@/contexts/vibe-context";
@@ -34,25 +36,29 @@ export const metadata: Metadata = {
     "A secure vault for time capsules and legacy messages — delivered precisely when they're needed most.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+
   return (
-    <html lang="cs" className={`dark ${inter.variable} ${playfair.variable} ${instrumentSerif.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`dark ${inter.variable} ${playfair.variable} ${instrumentSerif.variable}`} suppressHydrationWarning>
       {/* Flash-prevention: reads localStorage before first paint and sets ARCA theme attrs */}
       <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('arca.theme')||'light';var a=localStorage.getItem('arca.accent')||'clay';var dark=t==='dark'||(t==='auto'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-accent',a);if(dark)document.documentElement.setAttribute('data-arca-dark','true');else document.documentElement.removeAttribute('data-arca-dark');}catch(e){}})();` }} />
       <body className="bg-background text-foreground antialiased font-sans">
-        <ThemeProvider defaultTheme="dark">
-          <VibeProvider>
-            <UpgradeModalProvider>
-              <VibeBackground />
-              {children}
-              <Toaster position="bottom-right" richColors />
-            </UpgradeModalProvider>
-          </VibeProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider>
+          <ThemeProvider defaultTheme="dark">
+            <VibeProvider>
+              <UpgradeModalProvider>
+                <VibeBackground />
+                {children}
+                <Toaster position="bottom-right" richColors />
+              </UpgradeModalProvider>
+            </VibeProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

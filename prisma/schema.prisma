@@ -109,6 +109,13 @@ model User {
   // Defaults to a UUID so existing rows are populated automatically by the DB.
   webhookSecret String @unique @default(uuid())
 
+  // i18n — the user's saved language preference, set explicitly via the
+  // language switcher. Nullable: null means "no explicit choice yet, fall
+  // back to the arca_locale cookie / browser Accept-Language". Stored as a
+  // plain string, not an enum — matches the LOCALES list in i18n/request.ts
+  // rather than requiring a migration for every new locale.
+  locale String?
+
   // Monetization
   role                   String  @default("USER")   // "USER" | "ADMIN"
   isPremium              Boolean @default(false)

@@ -1,10 +1,16 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import LoginForm from "./LoginForm";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
-export const metadata = { title: "Přihlásit se — ARCA" };
+export async function generateMetadata() {
+  const t = await getTranslations("Auth");
+  return { title: t("meta.title") };
+}
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const t = await getTranslations("Auth");
   return (
     <div
       data-arca-theme=""
@@ -76,25 +82,24 @@ export default function LoginPage() {
         {/* Central quote */}
         <div style={{ position: "relative", zIndex: 1 }}>
           <p style={{ fontFamily: "var(--f-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: "var(--muted)", marginBottom: 18 }}>
-            Bezpečně · Soukromě · Navždy
+            {t("brand.tagline")}
           </p>
           <h2 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 42, lineHeight: 1.2, margin: "0 0 20px", color: "var(--ink)" }}>
-            Tvoje slova,<br />
-            <em style={{ color: "var(--accent)" }}>zachovaná</em><br />
-            s péčí.
+            {t("brand.headingLine1")}<br />
+            <em style={{ color: "var(--accent)" }}>{t("brand.headingItalic")}</em><br />
+            {t("brand.headingLine2")}
           </h2>
           <p style={{ color: "var(--muted)", fontSize: 14.5, lineHeight: 1.6, maxWidth: 360, margin: 0 }}>
-            ARCA je bezpečná schránka pro zprávy, které záleží nejvíc —
-            doručená přesně tehdy, kdy je zapotřebí.
+            {t("brand.body")}
           </p>
         </div>
 
         {/* Bottom features */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "relative", zIndex: 1 }}>
           {[
-            { icon: "⊞", text: "Šifrováno end-to-end" },
-            { icon: "✦", text: "Strážci jako pojistka" },
-            { icon: "◈", text: "Doručeno přesně, jak si přeješ" },
+            { icon: "⊞", text: t("brand.featureEncrypted") },
+            { icon: "✦", text: t("brand.featureGuardians") },
+            { icon: "◈", text: t("brand.featureDelivery") },
           ].map(f => (
             <div key={f.text} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ color: "var(--accent)", fontSize: 14, width: 20, textAlign: "center", flexShrink: 0 }}>{f.icon}</span>
@@ -113,15 +118,19 @@ export default function LoginPage() {
         padding: "48px 40px",
         background: "var(--glass-bg)",
         backdropFilter: "blur(var(--glass-blur)) saturate(var(--glass-saturation))",
+        position: "relative",
       }}>
+        <div style={{ position: "absolute", top: 24, right: 24 }}>
+          <LanguageSwitcher />
+        </div>
         <div style={{ width: "100%", maxWidth: 380 }}>
           {/* Heading */}
           <div style={{ marginBottom: 32 }}>
             <h1 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 30, margin: "0 0 6px", color: "var(--ink)" }}>
-              Vítej zpět.
+              {t("form.heading")}
             </h1>
             <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>
-              Přihlaš se ke své schránce.
+              {t("form.subheading")}
             </p>
           </div>
 
@@ -130,10 +139,10 @@ export default function LoginPage() {
           </Suspense>
 
           <p style={{ textAlign: "center", fontSize: 12, color: "var(--muted-2)", marginTop: 28 }}>
-            Pokračováním souhlasíš s{" "}
-            <a href="#" style={{ color: "var(--muted)", textDecoration: "underline" }}>podmínkami použití</a>
-            {" "}a{" "}
-            <a href="#" style={{ color: "var(--muted)", textDecoration: "underline" }}>zásadami ochrany soukromí</a>.
+            {t("form.legalPrefix")}{" "}
+            <a href="#" style={{ color: "var(--muted)", textDecoration: "underline" }}>{t("form.terms")}</a>
+            {" "}{t("form.and")}{" "}
+            <a href="#" style={{ color: "var(--muted)", textDecoration: "underline" }}>{t("form.privacy")}</a>.
           </p>
         </div>
       </div>
