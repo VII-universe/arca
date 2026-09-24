@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import VaultClient from "@/components/arca/VaultClient";
@@ -7,7 +8,10 @@ import type { VaultPerson, VaultGroup } from "@/components/arca/VaultClient";
 import { getSignedAvatarUrl } from "@/app/actions/recipients";
 import { APP_URL } from "@/lib/resend";
 
-export const metadata = { title: "Schránka — ARCA" };
+export async function generateMetadata() {
+  const t = await getTranslations("Vault");
+  return { title: `${t("kicker")} — ARCA` };
+}
 
 const IcPlus = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
@@ -20,14 +24,14 @@ const IcSparkle = () => (
   </svg>
 );
 
-function Topbar() {
+function Topbar({ crumb }: { crumb: string }) {
   return (
     <div className="arca-topbar">
       <div className="arca-topbar__crumbs">
         <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M9 6l6 6-6 6"/></svg>
-          <span className="here">Schránka</span>
+          <span className="here">{crumb}</span>
         </span>
       </div>
     </div>
@@ -39,6 +43,7 @@ export default async function VaultPage({
 }: {
   searchParams: Promise<{ group?: string }>;
 }) {
+  const t = await getTranslations("Vault");
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
@@ -106,20 +111,20 @@ export default async function VaultPage({
 
   return (
     <>
-      <Topbar />
+      <Topbar crumb={t("kicker")} />
       <div className="arca-inner arca-fade-in" style={{ color: "var(--ink)" }}>
         <div className="arca-row arca-between" style={{ marginBottom: 8 }}>
           <div>
-            <div className="arca-kicker">Schránka</div>
-            <h1 className="arca-h1" style={{ marginTop: 8 }}>Komu zanecháváš <em>stopu.</em></h1>
+            <div className="arca-kicker">{t("kicker")}</div>
+            <h1 className="arca-h1" style={{ marginTop: 8 }}>{t.rich("title", { em: (chunks) => <em>{chunks}</em> })}</h1>
           </div>
           <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary">
-            <IcPlus /> Nová zpráva
+            <IcPlus /> {t("newMessageBtn")}
           </Link>
         </div>
 
         <p className="arca-sub" style={{ maxWidth: 540, marginBottom: 24 }}>
-          Každý člověk má vlastní schránku. Otevři kohokoli a uvidíš zprávy, fotky a vzpomínky, které ho jednou najdou.
+          {t("subtitle")}
         </p>
 
         <VaultClient
@@ -134,12 +139,12 @@ export default async function VaultPage({
         <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none", marginTop: 32, padding: "20px 24px", display: "flex", alignItems: "center", gap: 16 }}>
           <IcSparkle />
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 550, fontSize: 14 }}>Tip pro psaní</div>
+            <div style={{ fontWeight: 550, fontSize: 14 }}>{t("tip.title")}</div>
             <p className="arca-sub" style={{ fontSize: 12.5, margin: "2px 0 0" }}>
-              Nemusíš psát nic velkého. Často stačí jedna věta a vůně okamžiku.
+              {t("tip.body")}
             </p>
           </div>
-          <Link href="/dashboard/arca/new" className="arca-btn sm arca-btn--outline">Začít psát</Link>
+          <Link href="/dashboard/arca/new" className="arca-btn sm arca-btn--outline">{t("tip.cta")}</Link>
         </div>
       </div>
     </>

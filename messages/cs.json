@@ -137,6 +137,108 @@
       "practical": "Praktická"
     }
   },
+  "Vault": {
+    "kicker": "Schránka",
+    "title": "Komu zanecháváš <em>stopu.</em>",
+    "subtitle": "Každý člověk má vlastní schránku. Otevři kohokoli a uvidíš zprávy, fotky a vzpomínky, které ho jednou najdou.",
+    "newMessageBtn": "Nová zpráva",
+    "tip": {
+      "title": "Tip pro psaní",
+      "body": "Nemusíš psát nic velkého. Často stačí jedna věta a vůně okamžiku.",
+      "cta": "Začít psát"
+    },
+    "filterBar": {
+      "all": "Všichni",
+      "newGroup": "Nová skupina",
+      "groupOptions": "Možnosti skupiny",
+      "editGroup": "Upravit skupinu",
+      "deleteGroup": "Smazat skupinu",
+      "groupDeletedToast": "Skupina smazána."
+    },
+    "groupPicker": {
+      "noGroup": "Bez skupiny"
+    },
+    "createGroup": {
+      "quickGroups": "Rychlé skupiny",
+      "namePlaceholder": "Název skupiny…",
+      "colorLabel": "Barva",
+      "saving": "Ukládám…",
+      "createBtn": "Vytvořit skupinu",
+      "cancelBtn": "Zrušit",
+      "createdToast": "Skupina „{name}\" vytvořena.",
+      "presets": {
+        "family": "Rodina",
+        "friends": "Přátelé",
+        "colleagues": "Kolegové",
+        "partner": "Partner"
+      }
+    },
+    "editGroupModal": {
+      "title": "Upravit skupinu",
+      "colorLabel": "Barva",
+      "membersLabel": "Členové",
+      "membersCount": "{selected} z {total}",
+      "noContacts": "Zatím žádné kontakty ve schránce.",
+      "deleteBtn": "Smazat skupinu",
+      "cancelBtn": "Zrušit",
+      "saveBtn": "Uložit změny",
+      "savedToast": "Skupina „{name}\" uložena.",
+      "groupFallback": "Skupina"
+    },
+    "addPerson": {
+      "addAnother": "Přidat dalšího člověka",
+      "fullName": "Celé jméno *",
+      "namePlaceholder": "Jan Novák",
+      "email": "E-mail",
+      "notes": "Poznámky",
+      "notesPlaceholder": "Co o tomto člověku chceš pamatovat…",
+      "securityQuestion": "Bezpečnostní otázka",
+      "securityHint": "Příjemce musí znát odpověď, aby zprávu otevřel.",
+      "challengeQuestionPlaceholder": "Jak se jmenoval náš první pes?",
+      "challengeAnswerPlaceholder": "Odpověď",
+      "saving": "Ukládám…",
+      "addBtn": "Přidat osobu",
+      "cancelBtn": "Zrušit",
+      "addedToast": "{name} přidán/a.",
+      "sections": {
+        "channels": {
+          "label": "Telefon & messenger",
+          "phone": { "label": "Telefon", "placeholder": "+420 600 000 000" },
+          "whatsapp": { "label": "WhatsApp", "placeholder": "+420 600 000 000" }
+        },
+        "social": {
+          "label": "Sociální sítě",
+          "facebook": { "label": "Facebook", "placeholder": "facebook.com/…" },
+          "instagram": { "label": "Instagram", "placeholder": "@uživatelskéjméno" }
+        },
+        "address": {
+          "label": "Adresa",
+          "address": { "label": "Adresa", "placeholder": "Ulice, město, PSČ" }
+        },
+        "personal": {
+          "label": "Osobní info",
+          "relationship": { "label": "Vztah", "placeholder": "máma, partner, kamarád…" },
+          "birthday": { "label": "Narozeniny" },
+          "anniversary": { "label": "Výročí" }
+        }
+      }
+    },
+    "personCard": {
+      "noEmail": "Bez e-mailu",
+      "packsTag": "{count, plural, one {# zpráva} few {# zprávy} other {# zpráv}}",
+      "activeTag": "{count} aktivní",
+      "deliveredOpen": "Doručeno · Otevřít",
+      "changeGroupTitle": "Změnit skupinu",
+      "groupFallback": "Skupina",
+      "packsMono": "zpráv",
+      "assignedToast": "Přiřazeno do skupiny „{name}\".",
+      "unassignedToast": "Skupina odebrána."
+    },
+    "empty": {
+      "groupNoMembers": "Tato skupina zatím nemá žádné členy. Přiřaď lidi přes jejich kartu.",
+      "noRecipients": "Zatím žádní příjemci. Přidej je přes editor zprávy."
+    }
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Tvůj odkaz, uchovaný pro budoucnost.",

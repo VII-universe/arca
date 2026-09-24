@@ -137,6 +137,108 @@
       "practical": "Practical"
     }
   },
+  "Vault": {
+    "kicker": "Vault",
+    "title": "Who are you leaving <em>a trace</em> for.",
+    "subtitle": "Every person has their own vault. Open anyone to see the messages, photos, and memories that will one day find them.",
+    "newMessageBtn": "New message",
+    "tip": {
+      "title": "Writing tip",
+      "body": "You don't have to write anything big. Often one sentence and the scent of the moment is enough.",
+      "cta": "Start writing"
+    },
+    "filterBar": {
+      "all": "Everyone",
+      "newGroup": "New group",
+      "groupOptions": "Group options",
+      "editGroup": "Edit group",
+      "deleteGroup": "Delete group",
+      "groupDeletedToast": "Group deleted."
+    },
+    "groupPicker": {
+      "noGroup": "No group"
+    },
+    "createGroup": {
+      "quickGroups": "Quick groups",
+      "namePlaceholder": "Group name…",
+      "colorLabel": "Color",
+      "saving": "Saving…",
+      "createBtn": "Create group",
+      "cancelBtn": "Cancel",
+      "createdToast": "Group \"{name}\" created.",
+      "presets": {
+        "family": "Family",
+        "friends": "Friends",
+        "colleagues": "Colleagues",
+        "partner": "Partner"
+      }
+    },
+    "editGroupModal": {
+      "title": "Edit group",
+      "colorLabel": "Color",
+      "membersLabel": "Members",
+      "membersCount": "{selected} of {total}",
+      "noContacts": "No contacts in the vault yet.",
+      "deleteBtn": "Delete group",
+      "cancelBtn": "Cancel",
+      "saveBtn": "Save changes",
+      "savedToast": "Group \"{name}\" saved.",
+      "groupFallback": "Group"
+    },
+    "addPerson": {
+      "addAnother": "Add another person",
+      "fullName": "Full name *",
+      "namePlaceholder": "Jane Smith",
+      "email": "Email",
+      "notes": "Notes",
+      "notesPlaceholder": "What you want to remember about this person…",
+      "securityQuestion": "Security question",
+      "securityHint": "The recipient must know the answer to open the message.",
+      "challengeQuestionPlaceholder": "What was our first dog's name?",
+      "challengeAnswerPlaceholder": "Answer",
+      "saving": "Saving…",
+      "addBtn": "Add person",
+      "cancelBtn": "Cancel",
+      "addedToast": "{name} added.",
+      "sections": {
+        "channels": {
+          "label": "Phone & messenger",
+          "phone": { "label": "Phone", "placeholder": "+1 555 000 0000" },
+          "whatsapp": { "label": "WhatsApp", "placeholder": "+1 555 000 0000" }
+        },
+        "social": {
+          "label": "Social media",
+          "facebook": { "label": "Facebook", "placeholder": "facebook.com/…" },
+          "instagram": { "label": "Instagram", "placeholder": "@username" }
+        },
+        "address": {
+          "label": "Address",
+          "address": { "label": "Address", "placeholder": "Street, city, ZIP" }
+        },
+        "personal": {
+          "label": "Personal info",
+          "relationship": { "label": "Relationship", "placeholder": "mom, partner, friend…" },
+          "birthday": { "label": "Birthday" },
+          "anniversary": { "label": "Anniversary" }
+        }
+      }
+    },
+    "personCard": {
+      "noEmail": "No email",
+      "packsTag": "{count, plural, one {# message} other {# messages}}",
+      "activeTag": "{count} active",
+      "deliveredOpen": "Delivered · Open",
+      "changeGroupTitle": "Change group",
+      "groupFallback": "Group",
+      "packsMono": "messages",
+      "assignedToast": "Assigned to group \"{name}\".",
+      "unassignedToast": "Group removed."
+    },
+    "empty": {
+      "groupNoMembers": "This group doesn't have any members yet. Assign people from their card.",
+      "noRecipients": "No recipients yet. Add them through the message editor."
+    }
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Your legacy, secured for the future.",
