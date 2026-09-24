@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useTransition } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { useVibe, GRADIENTS, PHOTOS, type Vibe } from "@/contexts/vibe-context";
 import { uploadGlobalVibe } from "@/app/actions/settings";
 
@@ -10,26 +11,19 @@ type Accent = "clay" | "sage" | "dusk" | "sea" | "ink" | "custom";
 
 const DEFAULT_CUSTOM = "#B6754A";
 
-const SCENES: { id: Vibe; label: string }[] = [
-  { id: "nebula", label: "Výchozí" },
-  { id: "midnight", label: "Půlnoc" },
-  { id: "sunset", label: "Soumrak" },
-  { id: "ocean", label: "Oceán" },
-  { id: "forest", label: "Les" },
-  { id: "stars", label: "Hvězdy" },
-];
+const SCENE_IDS: Vibe[] = ["nebula", "midnight", "sunset", "ocean", "forest", "stars"];
 function scenePreview(id: Vibe): React.CSSProperties {
   if (GRADIENTS[id]) return { backgroundImage: GRADIENTS[id] };
   if (PHOTOS[id]) return { backgroundImage: `url(${PHOTOS[id]})`, backgroundSize: "cover", backgroundPosition: "center" };
   return { background: "radial-gradient(circle,#3f3f46 1px,transparent 1px) 0 0/10px 10px,#0a0510" };
 }
 
-const ACCENTS: { id: Accent; label: string; swatch: string }[] = [
-  { id: "clay", label: "Terakota",  swatch: "#B6754A" },
-  { id: "sage", label: "Šalvěj",   swatch: "#7C8A6B" },
-  { id: "dusk", label: "Soumrak",  swatch: "#9B6A8B" },
-  { id: "sea",  label: "Moře",     swatch: "#4F8B95" },
-  { id: "ink",  label: "Grafit",   swatch: "#4A4540" },
+const ACCENT_IDS: { id: Accent; swatch: string }[] = [
+  { id: "clay", swatch: "#B6754A" },
+  { id: "sage", swatch: "#7C8A6B" },
+  { id: "dusk", swatch: "#9B6A8B" },
+  { id: "sea",  swatch: "#4F8B95" },
+  { id: "ink",  swatch: "#4A4540" },
 ];
 
 const Svg = ({ children, size = 14 }: { children: React.ReactNode; size?: number }) => (
@@ -82,6 +76,9 @@ function applyGlow(on: boolean) {
 }
 
 export default function AppearanceButton() {
+  const t = useTranslations("Appearance");
+  const SCENES = SCENE_IDS.map(id => ({ id, label: t(`scenes.${id}`) }));
+  const ACCENTS = ACCENT_IDS.map(a => ({ ...a, label: t(`accents.${a.id}`) }));
   const [theme, setTheme]     = useState<Theme>("light");
   const [accent, setAccent]   = useState<Accent>("clay");
   const [customColor, setCustomColor] = useState(DEFAULT_CUSTOM);
@@ -177,11 +174,11 @@ export default function AppearanceButton() {
         ref={triggerRef}
         onClick={handleOpen}
         className="arca-btn sm arca-btn--outline"
-        title="Změnit vzhled"
+        title={t("changeAppearance")}
         style={{ gap: 6, width: "100%" }}
       >
         <ThemeIcon theme={theme} />
-        <span>Vzhled</span>
+        <span>{t("buttonLabel")}</span>
         <span style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--accent)", boxShadow: "inset 0 0 0 2px var(--surface-2)", flexShrink: 0, marginLeft: "auto" }} />
       </button>
 
@@ -210,12 +207,12 @@ export default function AppearanceButton() {
             }}
           >
             {/* Mode */}
-            <div className="arca-kicker" style={{ marginBottom: 10 }}>Režim</div>
+            <div className="arca-kicker" style={{ marginBottom: 10 }}>{t("mode")}</div>
             <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
               {([
-                { id: "light" as Theme, label: "Světlý",  Ic: SunIc,  bg: "#F6F2EB", fg: "#1C1A16" },
-                { id: "dark"  as Theme, label: "Tmavý",   Ic: MoonIc, bg: "#15120F", fg: "#F2EDE3" },
-                { id: "auto"  as Theme, label: "Auto",    Ic: AutoIc, bg: "linear-gradient(135deg,#F6F2EB 50%,#15120F 50%)", fg: "#807868" },
+                { id: "light" as Theme, label: t("modes.light"), Ic: SunIc,  bg: "#F6F2EB", fg: "#1C1A16" },
+                { id: "dark"  as Theme, label: t("modes.dark"),  Ic: MoonIc, bg: "#15120F", fg: "#F2EDE3" },
+                { id: "auto"  as Theme, label: t("modes.auto"),  Ic: AutoIc, bg: "linear-gradient(135deg,#F6F2EB 50%,#15120F 50%)", fg: "#807868" },
               ]).map((m) => (
                 <button
                   key={m.id}
@@ -240,7 +237,7 @@ export default function AppearanceButton() {
 
             {/* Accent */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span className="arca-kicker">Akcent</span>
+              <span className="arca-kicker">{t("accent")}</span>
               <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 10 }}>{accent}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -284,7 +281,7 @@ export default function AppearanceButton() {
                   boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.1)",
                 }} />
                 <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500, color: accent === "custom" ? "var(--accent-deep)" : "var(--ink)" }}>
-                  Vlastní barva
+                  {t("customColor")}
                 </span>
                 {accent === "custom" && <span style={{ color: "var(--accent-deep)" }}><CheckIc /></span>}
                 <input
@@ -302,22 +299,22 @@ export default function AppearanceButton() {
             {/* Podsvícení (glow) */}
             <hr className="arca-divider" />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-              <span className="arca-kicker">Podsvícení</span>
+              <span className="arca-kicker">{t("glow")}</span>
               <button
                 type="button"
                 onClick={() => handleGlow(!glowOn)}
                 className={`arca-switch${glowOn ? " on" : ""}`}
                 aria-pressed={glowOn}
-                title={glowOn ? "Vypnout podsvícení karet" : "Zapnout podsvícení karet"}
+                title={glowOn ? t("glowOnTitle") : t("glowOffTitle")}
               />
             </div>
             <p className="arca-sub" style={{ fontSize: 11.5, margin: "0 0 4px" }}>
-              Jemná záře kolem karet v barvě akcentu.
+              {t("glowHint")}
             </p>
 
             {/* Vlastní pozadí */}
             <hr className="arca-divider" />
-            <div className="arca-kicker" style={{ marginBottom: 10 }}>Pozadí</div>
+            <div className="arca-kicker" style={{ marginBottom: 10 }}>{t("background")}</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
               {SCENES.map((s) => {
                 const active = vibe === s.id;
@@ -346,7 +343,7 @@ export default function AppearanceButton() {
                 ref={bgUrlRef}
                 type="url"
                 defaultValue={customImageUrl}
-                placeholder="URL vlastního obrázku…"
+                placeholder={t("customImageUrlPlaceholder")}
                 onBlur={handleBgUrlCommit}
                 onKeyDown={(e) => e.key === "Enter" && handleBgUrlCommit()}
                 className="arca-input"
@@ -357,7 +354,7 @@ export default function AppearanceButton() {
                 className="arca-btn sm arca-btn--outline icon-btn"
                 disabled={uploading}
                 onClick={() => bgFileRef.current?.click()}
-                title="Nahrát vlastní obrázek"
+                title={t("uploadImageTitle")}
               >
                 {uploading ? "…" : <SparkIc />}
               </button>
@@ -374,7 +371,7 @@ export default function AppearanceButton() {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ color: "var(--accent)" }}><SparkIc /></span>
               <span className="arca-sub" style={{ fontSize: 12, lineHeight: 1.45 }}>
-                Vzhled je tvůj. Tvoji blízcí uvidí ten svůj při doručení.
+                {t("footerNote")}
               </span>
             </div>
           </div>

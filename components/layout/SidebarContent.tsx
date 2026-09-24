@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { signOut } from "@/app/actions/auth";
 import AppearanceButton from "./AppearanceButton";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Avatar } from "@/components/arca/Avatar";
 import type { ResolvedUser } from "@/lib/auth/user";
 
@@ -206,6 +207,10 @@ export default function SidebarContent({
 
         <div style={{ marginBottom: 4 }}>
           <AppearanceButton />
+        </div>
+
+        <div style={{ marginBottom: 10, display: "flex", justifyContent: "center" }}>
+          <LanguageSwitcher />
         </div>
 
         <div className="arca-foot">
