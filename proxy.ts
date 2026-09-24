@@ -1,5 +1,27 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, type Locale } from "@/i18n/config";
+
+// i18n first-visit language detection — "without i18n routing" (see the i18n
+// design review), so this only ever sets a cookie, never redirects or
+// changes the URL. Runs before anything else in this file so it applies
+// uniformly, including on the public/short-circuited paths below.
+function pickLocaleFromAcceptLanguage(header: string | null): Locale {
+  if (!header) return DEFAULT_LOCALE;
+  const preferred = header
+    .split(",")
+    .map((part) => part.split(";")[0].trim().toLowerCase().slice(0, 2));
+  for (const lang of preferred) {
+    if ((LOCALES as readonly string[]).includes(lang)) return lang as Locale;
+  }
+  return DEFAULT_LOCALE;
+}
+function applyLocaleCookie(request: NextRequest, response: NextResponse) {
+  if (!request.cookies.has(LOCALE_COOKIE)) {
+    const locale = pickLocaleFromAcceptLanguage(request.headers.get("accept-language"));
+    response.cookies.set(LOCALE_COOKIE, locale, { maxAge: 60 * 60 * 24 * 365, path: "/" });
+  }
+}
 
 const PROTECTED_PATHS = ["/dashboard"];
 const AUTH_PATHS = ["/login"];
@@ -11,7 +33,9 @@ export async function proxy(request: NextRequest) {
 
   // Short-circuit for public routes before touching Supabase auth
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
+    const res = NextResponse.next();
+    applyLocaleCookie(request, res);
+    return res;
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -21,7 +45,9 @@ export async function proxy(request: NextRequest) {
     console.error("[proxy] Supabase env vars missing");
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    const res = NextResponse.redirect(url);
+    applyLocaleCookie(request, res);
+    return res;
   }
 
   const supabase = createServerClient(
@@ -61,16 +87,21 @@ export async function proxy(request: NextRequest) {
   if (!user && PROTECTED_PATHS.some((p) => pathname.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    const res = NextResponse.redirect(url);
+    applyLocaleCookie(request, res);
+    return res;
   }
 
   // Redirect authenticated users away from auth pages
   if (user && AUTH_PATHS.some((p) => pathname.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+    const res = NextResponse.redirect(url);
+    applyLocaleCookie(request, res);
+    return res;
   }
 
+  applyLocaleCookie(request, supabaseResponse);
   return supabaseResponse;
 }
 

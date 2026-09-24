@@ -1,0 +1,176 @@
+{
+  "Common": {
+    "languageSwitcher": {
+      "label": "Jazyk",
+      "cs": "Čeština",
+      "en": "English"
+    }
+  },
+  "Landing": {
+    "meta": {
+      "title": "ARCA — Tvůj odkaz, uchovaný pro budoucnost.",
+      "description": "Vysoce zabezpečená digitální schránka a pojistka pro tvé nejdůležitější zprávy, dokumenty a vzpomínky."
+    },
+    "nav": {
+      "features": "Funkce",
+      "security": "Zabezpečení",
+      "pricing": "Ceník",
+      "signIn": "Přihlásit se",
+      "cta": "Vytvořit svou Arcu"
+    },
+    "hero": {
+      "eyebrow": "Bezpečně · Soukromě · Navždy",
+      "titleLine1": "Tvůj odkaz,",
+      "titleItalic": "uchovaný",
+      "titleLine2": "pro budoucnost.",
+      "subheadline": "Vysoce zabezpečená digitální schránka a pojistka pro tvé nejdůležitější zprávy, dokumenty a vzpomínky — doručené přesně tehdy, kdy na nich záleží nejvíc.",
+      "ctaPrimary": "Začít vytvářet svou Arcu",
+      "ctaSecondary": "Jak to funguje",
+      "trustEncrypted": "Šifrováno end-to-end",
+      "trustFree": "Zdarma na začátek",
+      "trustNoCard": "Bez platební karty",
+      "trustVoice": "Nahrávání hlasu a videa"
+    },
+    "howItWorks": {
+      "label": "Jak to funguje",
+      "titlePlain": "Čtyři kroky mezi teď",
+      "titleItalic": "a navždy.",
+      "steps": [
+        { "title": "Napiš svou zprávu", "body": "Napiš, nahraj nebo přilož cokoliv — text, hlas, video, fotky, dokumenty. Použij bohatý editor nebo nahrávej přímo v prohlížeči." },
+        { "title": "Nastav spouštěč", "body": "Zvol konkrétní datum doručení, nebo aktivuj pojistku pro případ nedostupnosti. ARCA sleduje tvou přítomnost a zasáhne jen tehdy, kdy má." },
+        { "title": "Strážci to potvrdí", "body": "Než se cokoliv odešle, tví důvěryhodní kontakti potvrdí tvůj stav. Jedno jejich kliknutí drží všechno zapečetěné dalších 30 dní." },
+        { "title": "Doručeno ve správnou chvíli", "body": "Příjemci dostanou soukromý, zabezpečený odkaz — nic dřív, nic pozdě. Tvá slova dorazí přesně tak, jak jsi zamýšlel." }
+      ]
+    },
+    "features": {
+      "label": "Postavené jinak",
+      "titlePlain": "Každý detail navržený",
+      "titleItalic": "pro důvěru.",
+      "items": [
+        {
+          "title": "Zabezpečení vojenské úrovně",
+          "body": "Šifrování se znalostí nuly znamená, že tvůj obsah je zašifrovaný dřív, než opustí tvoje zařízení. Nepřečteme ho ani my. Tvá tajemství zůstávají tvoje.",
+          "pills": ["AES-256-GCM", "End-to-end šifrováno", "Zero knowledge"]
+        },
+        {
+          "title": "Důvěryhodní strážci",
+          "body": "Než se tvá Arca vůbec doručí, nejdřív se zeptáme až 3 důvěryhodných kontaktů. Jediný falešný poplach je nepřijatelný — proto máme pojistku.",
+          "pills": ["Ochrana proti falešnému poplachu", "Odkazy v e-mailu", "72hodinové okno"]
+        },
+        {
+          "title": "Bohatá média a postupné doručení",
+          "body": "Nahraj hlasové zprávy a videa. Přilož soubory. Naplánuj, aby se části zprávy odemykaly v různých časech — dopis dnes, video k narozeninám.",
+          "pills": ["Hlas a video", "Postupné kapitoly", "5 GB úložiště"]
+        }
+      ]
+    },
+    "security": {
+      "label": "Zabezpečení",
+      "titlePlain": "Tvoje zprávy nepřečteme.",
+      "titleItalic": "V tom je to celé.",
+      "body": "Šifrování se znalostí nuly znamená, že tvůj obsah je zašifrovaný na tvém zařízení dřív, než se vůbec dostane na naše servery. Ukládáme jen zašifrovaná data. I v případě úniku zůstává tvůj odkaz soukromý.",
+      "items": [
+        "Šifrování AES-256-GCM v klidu",
+        "TLS 1.3 při přenosu",
+        "Nezfalšovatelný záznam o doručení",
+        "HMAC-podepsané tokeny příjemců",
+        "Pojistka strážců před každým doručením"
+      ],
+      "cardPath": "arca://schranka/stav",
+      "cardRows": [
+        { "label": "Stav", "value": "Zapečetěno" },
+        { "label": "Šifrování", "value": "AES-256-GCM" },
+        { "label": "Uložení klíče", "value": "Jen u tebe" },
+        { "label": "Schválení strážci", "value": "Vyžadováno" },
+        { "label": "Náš přístup", "value": "Žádný" },
+        { "label": "Stav doručení", "value": "Čeká na spouštěč" }
+      ]
+    },
+    "pricing": {
+      "label": "Ceník",
+      "title": "Jednoduché, poctivé ceny.",
+      "subtitle": "Začni zdarma, bez platební karty. Upgraduj, až budeš chtít neomezeně všechno.",
+      "free": {
+        "tier": "Základní",
+        "price": "0 Kč",
+        "period": "Navždy zdarma",
+        "features": ["1 Arca", "50 MB úložiště", "Bohatý textový editor", "Spouštěč nedostupnosti", "Spouštěč podle data", "Důvěryhodní strážci", "Chytrý Heartbeat webhook"],
+        "cta": "Začít zdarma"
+      },
+      "pro": {
+        "tier": "Arca Pro",
+        "badge": "NEJVÝHODNĚJŠÍ",
+        "price": "229 Kč",
+        "period": "/ měsíc",
+        "altPricePrefix": "nebo",
+        "altPriceAmount": "2 290 Kč jednorázově",
+        "altPriceSuffix": "· doživotní přístup",
+        "features": [
+          { "text": "Neomezené Arcy", "highlight": true },
+          { "text": "5 GB úložiště pro média", "highlight": true },
+          { "text": "Šifrování se znalostí nuly", "highlight": true },
+          { "text": "Nahrávání hlasu a videa", "highlight": true },
+          { "text": "Postupné doručení kapitol", "highlight": true },
+          { "text": "Doručení fyzického dopisu", "highlight": true },
+          { "text": "Důvěryhodní strážci", "highlight": false },
+          { "text": "Chytrý Heartbeat webhook", "highlight": false },
+          { "text": "Prioritní podpora", "highlight": false }
+        ],
+        "cta": "Odemknout Pro",
+        "footnote": "Zabezpečená platba přes Stripe · Zrušitelné kdykoliv"
+      }
+    },
+    "finalCta": {
+      "label": "Začni dnes",
+      "titlePlain": "Některé věci jsou příliš důležité",
+      "titleItalic": "na to, abys je nechal náhodě.",
+      "subtitle": "Vytvoř svou první Arcu za pár minut. Zdarma na začátek, bez karty.",
+      "ctaPrimary": "Začít vytvářet svou Arcu",
+      "ctaSecondary": "Už máš účet? Přihlas se"
+    },
+    "footer": {
+      "privacy": "Zásady ochrany soukromí",
+      "terms": "Podmínky použití",
+      "contact": "Kontakt",
+      "rights": "Všechna práva vyhrazena."
+    }
+  },
+  "Auth": {
+    "meta": { "title": "Přihlásit se — ARCA" },
+    "brand": {
+      "tagline": "Bezpečně · Soukromě · Navždy",
+      "headingLine1": "Tvoje slova,",
+      "headingItalic": "zachovaná",
+      "headingLine2": "s péčí.",
+      "body": "ARCA je bezpečná schránka pro zprávy, které záleží nejvíc — doručená přesně tehdy, kdy je zapotřebí.",
+      "featureEncrypted": "Šifrováno end-to-end",
+      "featureGuardians": "Strážci jako pojistka",
+      "featureDelivery": "Doručeno přesně, jak si přeješ"
+    },
+    "form": {
+      "heading": "Vítej zpět.",
+      "subheading": "Přihlaš se ke své schránce.",
+      "tabLogin": "Přihlásit se",
+      "tabSignup": "Vytvořit účet",
+      "emailLabel": "E-mail",
+      "passwordLabel": "Heslo",
+      "passwordHint": "Minimálně 8 znaků.",
+      "submitLoading": "Moment…",
+      "submitLogin": "Přihlásit se →",
+      "submitSignup": "Vytvořit účet →",
+      "legalPrefix": "Pokračováním souhlasíš s",
+      "terms": "podmínkami použití",
+      "and": "a",
+      "privacy": "zásadami ochrany soukromí"
+    },
+    "errors": {
+      "missing_code": "Odkaz pro přihlášení je neplatný. Zkus to znovu.",
+      "auth_failed": "Přihlášení selhalo. Zkus to znovu.",
+      "generic": "Něco se pokazilo.",
+      "unknown": "Nastala chyba."
+    },
+    "status": {
+      "signupSuccess": "Zkontroluj svůj e-mail — poslali jsme ti potvrzovací odkaz."
+    }
+  }
+}

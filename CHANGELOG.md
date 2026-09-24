@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.6.0] - i18n: infrastruktura + landing page a auth flow
+### Přidáno
+- **i18n infrastruktura (next-intl, "without i18n routing"):** appka teď má jeden systém pro čeština/angličtina místo napevno psaného textu. URL zůstávají beze změny (`/dashboard`, `/login`, ...) — žádný `[locale]` prefix, žádné přesouvání existujících routes. Jazyk se určuje: uložená volba na `User.locale` (přihlášený uživatel, nové nepovinné DB pole) → cookie `arca_locale` → `Accept-Language` hlavička při první návštěvě (nastaví ji `proxy.ts`).
+- **Přepínač jazyka** (`components/LanguageSwitcher.tsx`) — zapojený na landing page a login stránce. Zápis přes server action `setLocale`, která nastaví cookie vždy a `User.locale` navíc, pokud je uživatel přihlášený (preference pak jede napříč zařízeními).
+- **Landing page** (`app/page.tsx`) a **auth flow** (`app/login/page.tsx`, `LoginForm.tsx`) plně přeloženy do češtiny a angličtiny — `messages/cs.json` a `messages/en.json`, namespaces `Landing` a `Auth`.
+
+### Datový model
+- `User.locale` (`String?`, `null` = řiď se cookie/prohlížečem) — migrace `20260923143755_add_user_locale`, aplikována na produkční DB.
+
+### Technická poznámka
+- Objevili jsme, že projekt už má `proxy.ts` (Next.js 16 přejmenoval `middleware.ts` → `proxy.ts`) s existující Supabase auth-session logikou — i18n detekce jazyka z `Accept-Language` byla sloučena do něj, ne vytvořena jako konfliktní samostatný `middleware.ts`.
+- `cookies()` použité pro čtení locale vynucuje dynamické renderování na stránkách, které dřív mohly být statické (landing page, login) — vědomý kompromis za jednotný mechanismus, jak jsme se domluvili.
+
+### Zbývá (další PR)
+- Dashboard, Schránka, Kalendář, Strážci, Manuál k životu.
+- Texty z Fází 0–2 (výběr režimu, SELF/LEGACY tón v ArcaReveal, karta roční rituál).
+- Transakční e-maily (Resend šablony).
+
 ## [1.5.0] - Fáze 2: Roční rituál + "Odpověz svému minulému já"
 ### Přidáno
 - **Odpovědi na doručené SELF zprávy:** nové volitelné pole `MessagePack.replyToMessageId` (self-relace, `onDelete: SetNull`) — odpověď je obyčejná nová zpráva, jen propojená s tou, na kterou reaguje. Žádný nový trigger typ ani samostatná "roční rituál" logika — je to jeden a ten samý mechanismus.

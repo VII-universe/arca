@@ -14,101 +14,49 @@ import {
   Eye,
   FileText,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { cn } from "@/lib/utils";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
-export const metadata = {
-  title: "ARCA — Your legacy, secured for the future.",
-  description:
-    "A highly secure digital time capsule and dead-man switch for your most important messages, documents, and memories.",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("Landing.meta");
+  return { title: t("title"), description: t("description") };
+}
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Data — visual metadata only, text comes from Landing.* translations ──────
+// Each array is index-matched to the corresponding translations array (see
+// messages/{locale}.json → Landing.*), pulled at render time via t.raw().
 
-const FEATURES = [
-  {
-    icon: <ShieldCheck className="size-5" />,
-    color: "text-emerald-400",
-    border: "border-emerald-500/15",
-    bg: "bg-emerald-500/[0.08]",
-    shadow: "hover:shadow-emerald-500/10",
-    title: "Military-Grade Security",
-    body: "Zero-Knowledge Encryption means your content is encrypted before it ever leaves your device. Not even we can read it. Your secrets stay yours.",
-    pills: ["AES-256-GCM", "End-to-end encrypted", "Zero knowledge"],
-  },
-  {
-    icon: <Users className="size-5" />,
-    color: "text-violet-400",
-    border: "border-violet-500/15",
-    bg: "bg-violet-500/[0.08]",
-    shadow: "hover:shadow-violet-500/10",
-    title: "Trusted Guardians",
-    body: "Before your Arca is ever delivered, up to 3 trusted contacts are consulted first. A single false positive is unacceptable — so we built a failsafe.",
-    pills: ["False-positive protection", "Email action links", "72-hour window"],
-  },
-  {
-    icon: <Layers className="size-5" />,
-    color: "text-sky-400",
-    border: "border-sky-500/15",
-    bg: "bg-sky-500/[0.08]",
-    shadow: "hover:shadow-sky-500/10",
-    title: "Rich Media & Drip Delivery",
-    body: "Record voice messages and videos. Attach files. Schedule parts of your message to unlock at different times — a letter today, a video on their birthday.",
-    pills: ["Voice & video", "Drip chapters", "5 GB storage"],
-  },
+const FEATURE_STYLES = [
+  { icon: <ShieldCheck className="size-5" />, color: "text-emerald-400", border: "border-emerald-500/15", bg: "bg-emerald-500/[0.08]", shadow: "hover:shadow-emerald-500/10" },
+  { icon: <Users className="size-5" />, color: "text-violet-400", border: "border-violet-500/15", bg: "bg-violet-500/[0.08]", shadow: "hover:shadow-violet-500/10" },
+  { icon: <Layers className="size-5" />, color: "text-sky-400", border: "border-sky-500/15", bg: "bg-sky-500/[0.08]", shadow: "hover:shadow-sky-500/10" },
 ];
 
-const FREE_FEATURES = [
-  "1 Arca",
-  "50 MB storage",
-  "Rich text editor",
-  "Inactivity trigger",
-  "Date-based trigger",
-  "Trusted Guardians",
-  "Smart Heartbeat webhook",
+const HOW_STEP_ICONS = [
+  <FileText key="0" className="size-4" />,
+  <Clock key="1" className="size-4" />,
+  <Eye key="2" className="size-4" />,
+  <Mail key="3" className="size-4" />,
 ];
 
-const PRO_FEATURES = [
-  { text: "Unlimited Arcas", highlight: true },
-  { text: "5 GB media storage", highlight: true },
-  { text: "Zero-Knowledge Encryption", highlight: true },
-  { text: "Voice & video recording", highlight: true },
-  { text: "Drip chapter delivery", highlight: true },
-  { text: "Physical letter delivery", highlight: true },
-  { text: "Trusted Guardians", highlight: false },
-  { text: "Smart Heartbeat webhook", highlight: false },
-  { text: "Priority support", highlight: false },
-];
-
-const HOW_STEPS = [
-  {
-    n: "01",
-    icon: <FileText className="size-4" />,
-    title: "Compose your message",
-    body: "Write, record, or upload anything — text, voice, video, photos, documents. Use the rich editor or record directly in your browser.",
-  },
-  {
-    n: "02",
-    icon: <Clock className="size-4" />,
-    title: "Set your trigger",
-    body: "Choose a specific delivery date, or activate the dead-man switch. ARCA monitors your presence and acts only when it should.",
-  },
-  {
-    n: "03",
-    icon: <Eye className="size-4" />,
-    title: "Guardians are consulted",
-    body: "Before anything is sent, your trusted contacts confirm your status. One click from them keeps everything sealed for another 30 days.",
-  },
-  {
-    n: "04",
-    icon: <Mail className="size-4" />,
-    title: "Delivered at the right moment",
-    body: "Recipients receive a private, secure link — nothing before, nothing after. Your words arrive exactly as intended.",
-  },
-];
+type FeatureText = { title: string; body: string; pills: string[] };
+type StepText = { title: string; body: string };
+type SecurityCardRow = { label: string; value: string };
+type ProFeature = { text: string; highlight: boolean };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const t = await getTranslations("Landing");
+
+  const features = t.raw("features.items") as FeatureText[];
+  const steps = t.raw("howItWorks.steps") as StepText[];
+  const securityItems = t.raw("security.items") as string[];
+  const securityRows = t.raw("security.cardRows") as SecurityCardRow[];
+  const freeFeatures = t.raw("pricing.free.features") as string[];
+  const proFeatures = t.raw("pricing.pro.features") as ProFeature[];
+
   return (
     <div className="min-h-screen flex flex-col">
 
@@ -125,9 +73,9 @@ export default function LandingPage() {
 
           <div className="hidden md:flex items-center gap-8">
             {[
-              ["#features", "Features"],
-              ["#security", "Security"],
-              ["#pricing", "Pricing"],
+              ["#features", t("nav.features")],
+              ["#security", t("nav.security")],
+              ["#pricing", t("nav.pricing")],
             ].map(([href, label]) => (
               <a
                 key={href}
@@ -140,11 +88,12 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <Link
               href="/login"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
             >
-              Sign in
+              {t("nav.signIn")}
             </Link>
             <Link
               href="/dashboard"
@@ -154,7 +103,7 @@ export default function LandingPage() {
                 "shadow-lg shadow-black/20"
               )}
             >
-              Create your Arca
+              {t("nav.cta")}
             </Link>
           </div>
         </nav>
@@ -178,23 +127,21 @@ export default function LandingPage() {
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/[0.08] px-4 py-1.5">
               <Sparkles className="size-3 text-violet-400" />
               <span className="text-[11px] font-semibold uppercase tracking-widest text-violet-300">
-                Secure · Private · Timeless
+                {t("hero.eyebrow")}
               </span>
             </div>
 
             {/* Headline */}
             <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-normal leading-[1.08] tracking-tight text-foreground">
-              Your legacy,{" "}
+              {t("hero.titleLine1")}{" "}
               <br className="hidden sm:block" />
-              <span className="italic text-muted-foreground">secured</span>{" "}
-              for the future.
+              <span className="italic text-muted-foreground">{t("hero.titleItalic")}</span>{" "}
+              {t("hero.titleLine2")}
             </h1>
 
             {/* Subheadline */}
             <p className="mx-auto mt-7 max-w-2xl text-base md:text-lg text-muted-foreground leading-relaxed">
-              A highly secure digital time capsule and dead-man switch for your
-              most important messages, documents, and memories — delivered
-              precisely when they matter most.
+              {t("hero.subheadline")}
             </p>
 
             {/* CTAs */}
@@ -207,26 +154,26 @@ export default function LandingPage() {
                   "shadow-xl shadow-black/25"
                 )}
               >
-                Start building your Arca
+                {t("hero.ctaPrimary")}
                 <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
               </Link>
               <a
                 href="#how-it-works"
                 className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
               >
-                See how it works
+                {t("hero.ctaSecondary")}
               </a>
             </div>
 
             {/* Trust strip */}
             <div className="mt-14 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-muted-foreground/40">
-              <span className="flex items-center gap-1.5"><Lock className="size-3" /> End-to-end encrypted</span>
+              <span className="flex items-center gap-1.5"><Lock className="size-3" /> {t("hero.trustEncrypted")}</span>
               <span className="opacity-30">·</span>
-              <span>Free to start</span>
+              <span>{t("hero.trustFree")}</span>
               <span className="opacity-30">·</span>
-              <span>No credit card required</span>
+              <span>{t("hero.trustNoCard")}</span>
               <span className="opacity-30">·</span>
-              <span className="flex items-center gap-1.5"><Mic className="size-3" /> Voice &amp; video recording</span>
+              <span className="flex items-center gap-1.5"><Mic className="size-3" /> {t("hero.trustVoice")}</span>
             </div>
           </div>
         </section>
@@ -235,26 +182,26 @@ export default function LandingPage() {
         <section id="how-it-works" className="border-t border-border/40 px-6 py-24 md:px-10">
           <div className="mx-auto max-w-6xl">
 
-            <SectionLabel>How it works</SectionLabel>
+            <SectionLabel>{t("howItWorks.label")}</SectionLabel>
             <h2 className="mt-4 font-serif text-3xl md:text-4xl text-foreground">
-              Four steps between now{" "}
-              <span className="italic text-muted-foreground">and forever.</span>
+              {t("howItWorks.titlePlain")}{" "}
+              <span className="italic text-muted-foreground">{t("howItWorks.titleItalic")}</span>
             </h2>
 
             <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {HOW_STEPS.map((step, i) => (
+              {steps.map((step, i) => (
                 <div
-                  key={step.n}
+                  key={step.title}
                   className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
                   style={{ animationDelay: `${i * 120}ms` }}
                 >
                   <div className="flex items-center gap-3 mb-5">
                     <span className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-muted/30 text-muted-foreground/60">
-                      {step.icon}
+                      {HOW_STEP_ICONS[i]}
                     </span>
                     <div className="h-px flex-1 bg-border/40" />
                     <span className="text-[10px] font-bold tabular-nums text-muted-foreground/25">
-                      {step.n}
+                      {String(i + 1).padStart(2, "0")}
                     </span>
                   </div>
                   <h3 className="font-medium text-foreground mb-2">{step.title}</h3>
@@ -269,52 +216,55 @@ export default function LandingPage() {
         <section id="features" className="border-t border-border/40 px-6 py-24 md:px-10">
           <div className="mx-auto max-w-6xl">
 
-            <SectionLabel>Built different</SectionLabel>
+            <SectionLabel>{t("features.label")}</SectionLabel>
             <h2 className="mt-4 font-serif text-3xl md:text-4xl text-foreground">
-              Every detail designed{" "}
-              <span className="italic text-muted-foreground">for trust.</span>
+              {t("features.titlePlain")}{" "}
+              <span className="italic text-muted-foreground">{t("features.titleItalic")}</span>
             </h2>
 
             <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-5">
-              {FEATURES.map((f) => (
-                <div
-                  key={f.title}
-                  className={cn(
-                    "group relative rounded-3xl border p-7 transition-all duration-300",
-                    "bg-card/40 backdrop-blur-sm",
-                    "hover:shadow-xl hover:-translate-y-0.5",
-                    f.border,
-                    f.shadow
-                  )}
-                >
-                  {/* Icon */}
-                  <div className={cn(
-                    "mb-5 inline-flex size-10 items-center justify-center rounded-2xl border",
-                    f.bg, f.border, f.color
-                  )}>
-                    {f.icon}
-                  </div>
+              {features.map((f, i) => {
+                const style = FEATURE_STYLES[i];
+                return (
+                  <div
+                    key={f.title}
+                    className={cn(
+                      "group relative rounded-3xl border p-7 transition-all duration-300",
+                      "bg-card/40 backdrop-blur-sm",
+                      "hover:shadow-xl hover:-translate-y-0.5",
+                      style.border,
+                      style.shadow
+                    )}
+                  >
+                    {/* Icon */}
+                    <div className={cn(
+                      "mb-5 inline-flex size-10 items-center justify-center rounded-2xl border",
+                      style.bg, style.border, style.color
+                    )}>
+                      {style.icon}
+                    </div>
 
-                  <h3 className="font-semibold text-foreground mb-2">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-5">
-                    {f.body}
-                  </p>
+                    <h3 className="font-semibold text-foreground mb-2">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+                      {f.body}
+                    </p>
 
-                  <div className="flex flex-wrap gap-2">
-                    {f.pills.map((p) => (
-                      <span
-                        key={p}
-                        className={cn(
-                          "rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide",
-                          f.border, f.color
-                        )}
-                      >
-                        {p}
-                      </span>
-                    ))}
+                    <div className="flex flex-wrap gap-2">
+                      {f.pills.map((p) => (
+                        <span
+                          key={p}
+                          className={cn(
+                            "rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide",
+                            style.border, style.color
+                          )}
+                        >
+                          {p}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -326,25 +276,16 @@ export default function LandingPage() {
 
               {/* Text */}
               <div className="space-y-6">
-                <SectionLabel>Security</SectionLabel>
+                <SectionLabel>{t("security.label")}</SectionLabel>
                 <h2 className="font-serif text-3xl md:text-4xl text-foreground leading-snug">
-                  We can&apos;t read your messages.{" "}
-                  <span className="italic text-muted-foreground">That&apos;s the point.</span>
+                  {t("security.titlePlain")}{" "}
+                  <span className="italic text-muted-foreground">{t("security.titleItalic")}</span>
                 </h2>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Zero-Knowledge Encryption means your content is encrypted
-                  client-side before it ever reaches our servers. We store only
-                  ciphertext. Even in the event of a breach, your legacy remains
-                  private.
+                  {t("security.body")}
                 </p>
                 <ul className="space-y-3">
-                  {[
-                    "AES-256-GCM encryption at rest",
-                    "TLS 1.3 in transit",
-                    "Tamper-proof delivery audit trail",
-                    "HMAC-signed recipient tokens",
-                    "Guardian failsafe before any delivery",
-                  ].map((item) => (
+                  {securityItems.map((item) => (
                     <li key={item} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                       <span className="size-4 shrink-0 rounded-full bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
                         <Check className="size-2.5 text-emerald-400" strokeWidth={3} />
@@ -364,22 +305,18 @@ export default function LandingPage() {
                     <span className="size-2.5 rounded-full bg-rose-400/60" />
                     <span className="size-2.5 rounded-full bg-amber-400/60" />
                     <span className="size-2.5 rounded-full bg-emerald-400/60" />
-                    <span className="ml-2 text-[10px] font-mono text-muted-foreground/30">arca://vault/status</span>
+                    <span className="ml-2 text-[10px] font-mono text-muted-foreground/30">{t("security.cardPath")}</span>
                   </div>
 
-                  {[
-                    { label: "Status", value: "Sealed", color: "text-emerald-400" },
-                    { label: "Encryption", value: "AES-256-GCM", color: "text-sky-400" },
-                    { label: "Key storage", value: "Client only", color: "text-violet-400" },
-                    { label: "Guardian approval", value: "Required", color: "text-amber-400" },
-                    { label: "Our access", value: "None", color: "text-rose-400" },
-                    { label: "Delivery status", value: "Pending trigger", color: "text-muted-foreground" },
-                  ].map((row) => (
-                    <div key={row.label} className="flex items-center justify-between py-2.5 border-b border-border/20 last:border-0">
-                      <span className="text-xs text-muted-foreground/50 font-mono">{row.label}</span>
-                      <span className={cn("text-xs font-semibold font-mono", row.color)}>{row.value}</span>
-                    </div>
-                  ))}
+                  {securityRows.map((row, i) => {
+                    const rowColors = ["text-emerald-400", "text-sky-400", "text-violet-400", "text-amber-400", "text-rose-400", "text-muted-foreground"];
+                    return (
+                      <div key={row.label} className="flex items-center justify-between py-2.5 border-b border-border/20 last:border-0">
+                        <span className="text-xs text-muted-foreground/50 font-mono">{row.label}</span>
+                        <span className={cn("text-xs font-semibold font-mono", rowColors[i])}>{row.value}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -391,13 +328,12 @@ export default function LandingPage() {
         <section id="pricing" className="border-t border-border/40 px-6 py-24 md:px-10">
           <div className="mx-auto max-w-6xl">
 
-            <SectionLabel>Pricing</SectionLabel>
+            <SectionLabel>{t("pricing.label")}</SectionLabel>
             <h2 className="mt-4 font-serif text-3xl md:text-4xl text-foreground">
-              Simple, honest pricing.
+              {t("pricing.title")}
             </h2>
             <p className="mt-3 text-muted-foreground text-sm max-w-md">
-              Start free, no credit card required. Upgrade when you&apos;re
-              ready for unlimited everything.
+              {t("pricing.subtitle")}
             </p>
 
             <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl">
@@ -406,14 +342,14 @@ export default function LandingPage() {
               <div className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-sm p-8 space-y-6">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                    Basic
+                    {t("pricing.free.tier")}
                   </p>
-                  <p className="text-4xl font-semibold text-foreground">$0</p>
-                  <p className="text-xs text-muted-foreground mt-1">Forever free</p>
+                  <p className="text-4xl font-semibold text-foreground">{t("pricing.free.price")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("pricing.free.period")}</p>
                 </div>
 
                 <ul className="space-y-2.5">
-                  {FREE_FEATURES.map((f) => (
+                  {freeFeatures.map((f) => (
                     <li key={f} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                       <span className="size-4 shrink-0 rounded-full border border-border/60 flex items-center justify-center">
                         <Check className="size-2.5 text-muted-foreground/50" strokeWidth={3} />
@@ -427,7 +363,7 @@ export default function LandingPage() {
                   href="/dashboard"
                   className="block w-full rounded-xl border border-border/60 bg-muted/20 py-2.5 text-center text-sm font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-all duration-200"
                 >
-                  Get started free
+                  {t("pricing.free.cta")}
                 </Link>
               </div>
 
@@ -440,25 +376,25 @@ export default function LandingPage() {
                 <div className="relative">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">
-                      Arca Pro
+                      {t("pricing.pro.tier")}
                     </p>
                     <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold text-amber-300">
-                      BEST VALUE
+                      {t("pricing.pro.badge")}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1.5">
-                    <p className="text-4xl font-semibold text-white">$9.99</p>
-                    <p className="text-sm text-muted-foreground">/ month</p>
+                    <p className="text-4xl font-semibold text-white">{t("pricing.pro.price")}</p>
+                    <p className="text-sm text-muted-foreground">{t("pricing.pro.period")}</p>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    or{" "}
-                    <span className="font-semibold text-violet-300">$99 once</span>
-                    {" "}· lifetime access
+                    {t("pricing.pro.altPricePrefix")}{" "}
+                    <span className="font-semibold text-violet-300">{t("pricing.pro.altPriceAmount")}</span>
+                    {" "}{t("pricing.pro.altPriceSuffix")}
                   </p>
                 </div>
 
                 <ul className="relative space-y-2.5">
-                  {PRO_FEATURES.map((f) => (
+                  {proFeatures.map((f) => (
                     <li key={f.text} className="flex items-center gap-2.5 text-sm">
                       <span className={cn(
                         "size-4 shrink-0 rounded-full flex items-center justify-center border",
@@ -485,12 +421,12 @@ export default function LandingPage() {
                 >
                   <span className="flex items-center justify-center gap-2">
                     <InfinityIcon className="size-4" />
-                    Unlock Pro
+                    {t("pricing.pro.cta")}
                   </span>
                 </Link>
 
                 <p className="relative text-center text-[10px] text-zinc-600">
-                  Secure checkout via Stripe · Cancel anytime
+                  {t("pricing.pro.footnote")}
                 </p>
               </div>
 
@@ -505,14 +441,14 @@ export default function LandingPage() {
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-64 rounded-full bg-violet-600/10 blur-3xl" />
             </div>
 
-            <SectionLabel>Begin today</SectionLabel>
+            <SectionLabel>{t("finalCta.label")}</SectionLabel>
 
             <h2 className="mt-6 font-serif text-4xl md:text-5xl text-foreground leading-snug">
-              Some things are too important{" "}
-              <span className="italic text-muted-foreground">to leave to chance.</span>
+              {t("finalCta.titlePlain")}{" "}
+              <span className="italic text-muted-foreground">{t("finalCta.titleItalic")}</span>
             </h2>
             <p className="mt-6 text-muted-foreground text-sm">
-              Create your first Arca in minutes. Free to start, no card needed.
+              {t("finalCta.subtitle")}
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
@@ -523,14 +459,14 @@ export default function LandingPage() {
                   "shadow-xl shadow-black/20"
                 )}
               >
-                Start building your Arca
+                {t("finalCta.ctaPrimary")}
                 <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
               </Link>
               <Link
                 href="/login"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Already have an account? Sign in
+                {t("finalCta.ctaSecondary")}
               </Link>
             </div>
           </div>
@@ -546,17 +482,17 @@ export default function LandingPage() {
           </span>
           <div className="flex items-center gap-6">
             <a href="#" className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors">
-              Privacy Policy
+              {t("footer.privacy")}
             </a>
             <a href="#" className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors">
-              Terms of Service
+              {t("footer.terms")}
             </a>
             <a href="#" className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors">
-              Contact
+              {t("footer.contact")}
             </a>
           </div>
           <p className="text-[11px] text-muted-foreground/30">
-            © {new Date().getFullYear()} ARCA. All rights reserved.
+            © {new Date().getFullYear()} ARCA. {t("footer.rights")}
           </p>
         </div>
       </footer>
