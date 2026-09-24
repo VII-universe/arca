@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { sendSanctuaryInvitation } from "@/app/actions/delivery";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -21,6 +22,7 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function DeliverySimulator({ personId, personEmail, packs, appUrl }: Props) {
+  const t = useTranslations("Vault.detail.deliverySimulator");
   const [selectedPackId, setSelectedPackId] = useState(packs[0]?.id ?? "");
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<"idle" | "ok" | "error">("idle");
@@ -69,10 +71,10 @@ export default function DeliverySimulator({ personId, personEmail, packs, appUrl
             <path d="M22 2L15 22l-4-9-9-4 20-7z"/>
           </svg>
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--accent)" }}>
-            Simulovat doručení
+            {t("title")}
           </span>
           <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "var(--accent)", color: "var(--bg)", fontWeight: 600, letterSpacing: "0.05em", marginLeft: 2 }}>
-            TEST
+            {t("testBadge")}
           </span>
         </div>
 
@@ -80,7 +82,7 @@ export default function DeliverySimulator({ personId, personEmail, packs, appUrl
         {packs.length > 1 && (
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 11, color: "var(--muted)", display: "block", marginBottom: 4 }}>
-              Schránka
+              {t("packLabel")}
             </label>
             <select
               value={selectedPackId}
@@ -99,7 +101,7 @@ export default function DeliverySimulator({ personId, personEmail, packs, appUrl
         {sanctuaryUrl && (
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: 11, color: "var(--muted)", display: "block", marginBottom: 4 }}>
-              Odkaz na Svatyni
+              {t("sanctuaryLinkLabel")}
             </label>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{
@@ -122,7 +124,7 @@ export default function DeliverySimulator({ personId, personEmail, packs, appUrl
                 className="arca-btn sm arca-btn--ghost"
                 style={{ flexShrink: 0, fontSize: 11, padding: "5px 10px" }}
               >
-                {copied ? "✓" : "Kopírovat"}
+                {copied ? "✓" : t("copyBtn")}
               </button>
             </div>
           </div>
@@ -131,14 +133,14 @@ export default function DeliverySimulator({ personId, personEmail, packs, appUrl
         {/* Recipient email */}
         <div style={{ marginBottom: 14 }}>
           <label style={{ fontSize: 11, color: "var(--muted)", display: "block", marginBottom: 4 }}>
-            Odeslat na
+            {t("sendToLabel")}
           </label>
           <div style={{
             fontSize: 12,
             color: personEmail ? "var(--ink)" : "var(--muted)",
             fontStyle: personEmail ? "normal" : "italic",
           }}>
-            {personEmail ?? "Příjemce nemá e-mailovou adresu"}
+            {personEmail ?? t("noRecipientEmail")}
           </div>
         </div>
 
@@ -149,14 +151,14 @@ export default function DeliverySimulator({ personId, personEmail, packs, appUrl
           className="arca-btn sm arca-btn--primary"
           style={{ width: "100%", justifyContent: "center", opacity: pending || !personEmail ? 0.55 : 1 }}
         >
-          {pending ? "Odesílám…" : "Odeslat testovací e-mail"}
+          {pending ? t("sendingBtn") : t("sendTestBtn")}
         </button>
 
         {/* Status feedback */}
         {status === "ok" && (
           <p style={{ fontSize: 12, color: "#2d9e5c", margin: "10px 0 0", display: "flex", alignItems: "center", gap: 5 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-            E-mail byl odeslán na {personEmail}
+            {t("emailSentToast", { email: personEmail ?? "" })}
           </p>
         )}
         {status === "error" && (

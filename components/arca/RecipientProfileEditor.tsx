@@ -2,6 +2,7 @@
 
 import { useState, useRef, useTransition, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations, useLocale } from "next-intl";
 import { updateRecipientProfile, uploadRecipientAvatar, uploadRecipientCover, addMemory, deleteMemory } from "@/app/actions/recipients";
 import { Avatar } from "@/components/arca/Avatar";
 
@@ -22,7 +23,7 @@ const IcCake    = () => <Ic d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3v4M
 const IcHeart   = () => <Ic d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10Z" size={13} />;
 const IcImage   = () => <Ic d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2ZM9 10.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM21 15l-5-5L5 21" />;
 
-const RELATIONSHIPS = ["máma", "táta", "partner", "partnerka", "kamarád", "kamarádka", "kolega", "kolegyně", "dítě", "sourozenec", "babička", "děda", "vlastní"];
+const RELATIONSHIP_KEYS = ["mom", "dad", "partnerM", "partnerF", "friendM", "friendF", "colleagueM", "colleagueF", "child", "sibling", "grandma", "grandpa", "custom"] as const;
 
 // ── Date utilities ────────────────────────────────────────────────────────────
 
@@ -56,14 +57,16 @@ function ProfileEditSheet({
   onClose: () => void;
   onSaved: (data: ProfileData) => void;
 }) {
+  const t = useTranslations("Vault.detail");
+  const presetLabels = RELATIONSHIP_KEYS.filter(k => k !== "custom").map(k => t(`relationships.${k}`));
   const [relationship, setRelationship] = useState(initial.relationship ?? "");
   const [customRel, setCustomRel] = useState(
-    initial.relationship && !RELATIONSHIPS.slice(0, -1).includes(initial.relationship)
+    initial.relationship && !presetLabels.includes(initial.relationship)
       ? initial.relationship
       : ""
   );
   const [showCustom, setShowCustom] = useState(
-    !!initial.relationship && !RELATIONSHIPS.slice(0, -1).includes(initial.relationship)
+    !!initial.relationship && !presetLabels.includes(initial.relationship)
   );
   const [birthday, setBirthday] = useState(
     initial.birthday ? initial.birthday.toISOString().split("T")[0] : ""
@@ -74,7 +77,7 @@ function ProfileEditSheet({
   const [notes, setNotes] = useState(initial.notes ?? "");
   const [isPending, startTransition] = useTransition();
 
-  const effectiveRel = showCustom ? customRel : relationship === "vlastní" ? "" : relationship;
+  const effectiveRel = showCustom ? customRel : relationship === t("relationships.custom") ? "" : relationship;
 
   function save() {
     startTransition(async () => {
@@ -91,11 +94,11 @@ function ProfileEditSheet({
       if (res.staleMilestones > 0) {
         toast.warning(
           res.staleMilestones === 1
-            ? "Profil uložen — jedna zpráva s věkovým milníkem teď míří do minulosti. Uprav ji v Přehledu."
-            : `Profil uložen — ${res.staleMilestones} zprávy s věkovým milníkem teď míří do minulosti. Uprav je v Přehledu.`
+            ? t("staleMilestoneToastOne")
+            : t("staleMilestoneToastMany", { count: res.staleMilestones })
         );
       } else {
-        toast.success("Profil uložen.");
+        toast.success(t("profileSavedToast"));
       }
       onSaved({
         relationship: effectiveRel || null,
@@ -121,7 +124,7 @@ function ProfileEditSheet({
         }}
       >
         <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 10 }}>
-          <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 20, margin: 0, flex: 1 }}>Upravit profil</h3>
+          <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 20, margin: 0, flex: 1 }}>{t("profileSheet.title")}</h3>
           <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}>
             <IcX />
           </button>
@@ -130,35 +133,38 @@ function ProfileEditSheet({
         <div style={{ padding: "24px", flex: 1, display: "flex", flexDirection: "column", gap: 22 }}>
           {/* Vztah */}
           <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>Vztah</label>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>{t("profileSheet.relationshipLabel")}</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {RELATIONSHIPS.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => {
-                    if (r === "vlastní") { setShowCustom(true); setRelationship("vlastní"); }
-                    else { setRelationship(r); setShowCustom(false); }
-                  }}
-                  style={{
-                    padding: "5px 12px", borderRadius: "var(--r-pill)", fontSize: 12.5, cursor: "pointer",
-                    border: "1px solid",
-                    borderColor: relationship === r ? "var(--accent)" : "var(--hairline-2)",
-                    background: relationship === r ? "var(--accent-tint)" : "var(--surface-2)",
-                    color: relationship === r ? "var(--accent-deep)" : "var(--ink-2)",
-                    fontFamily: "var(--f-sans)",
-                  }}
-                >
-                  {r}
-                </button>
-              ))}
+              {RELATIONSHIP_KEYS.map((key) => {
+                const r = t(`relationships.${key}`);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      if (key === "custom") { setShowCustom(true); setRelationship(r); }
+                      else { setRelationship(r); setShowCustom(false); }
+                    }}
+                    style={{
+                      padding: "5px 12px", borderRadius: "var(--r-pill)", fontSize: 12.5, cursor: "pointer",
+                      border: "1px solid",
+                      borderColor: relationship === r ? "var(--accent)" : "var(--hairline-2)",
+                      background: relationship === r ? "var(--accent-tint)" : "var(--surface-2)",
+                      color: relationship === r ? "var(--accent-deep)" : "var(--ink-2)",
+                      fontFamily: "var(--f-sans)",
+                    }}
+                  >
+                    {r}
+                  </button>
+                );
+              })}
             </div>
             {showCustom && (
               <input
                 autoFocus
                 className="arca-input"
                 style={{ marginTop: 8 }}
-                placeholder="Vlastní popis vztahu…"
+                placeholder={t("profileSheet.customRelationshipPlaceholder")}
                 value={customRel}
                 onChange={e => setCustomRel(e.target.value)}
               />
@@ -167,23 +173,23 @@ function ProfileEditSheet({
 
           {/* Narozeniny */}
           <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Narozeniny</label>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("profileSheet.birthdayLabel")}</label>
             <input type="date" className="arca-input" value={birthday} onChange={e => setBirthday(e.target.value)} />
           </div>
 
           {/* Výročí */}
           <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Výročí (setkání, svatba…)</label>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("profileSheet.anniversaryLabel")}</label>
             <input type="date" className="arca-input" value={anniversary} onChange={e => setAnniversary(e.target.value)} />
           </div>
 
           {/* Poznámky */}
           <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Poznámky</label>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("profileSheet.notesLabel")}</label>
             <textarea
               className="arca-input"
               rows={4}
-              placeholder="Co o této osobě víš, co bys chtěl zachovat…"
+              placeholder={t("profileSheet.notesPlaceholder")}
               value={notes}
               onChange={e => setNotes(e.target.value)}
               style={{ resize: "vertical", fontFamily: "var(--f-sans)" }}
@@ -199,9 +205,9 @@ function ProfileEditSheet({
             className="arca-btn arca-btn--primary"
             style={{ flex: 1, justifyContent: "center" }}
           >
-            {isPending ? "Ukládám…" : <><IcCheck /> Uložit</>}
+            {isPending ? t("profileSheet.saving") : <><IcCheck /> {t("profileSheet.saveBtn")}</>}
           </button>
-          <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost">Zrušit</button>
+          <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost">{t("profileSheet.cancelBtn")}</button>
         </div>
       </div>
     </div>
@@ -228,6 +234,7 @@ function MemoryAddSheet({
   const [preview, setPreview] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations("Vault.detail");
 
   const handleFile = (f: File) => {
     setFile(f);
@@ -246,7 +253,7 @@ function MemoryAddSheet({
         mediaFile: file ?? null,
       });
       if ("error" in res) { toast.error(res.error); return; }
-      toast.success("Okamžik uložen.");
+      toast.success(t("memorySavedToast"));
       onAdded();
       onClose();
     });
@@ -263,7 +270,7 @@ function MemoryAddSheet({
         }}
       >
         <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 10 }}>
-          <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 20, margin: 0, flex: 1 }}>Uložit okamžik</h3>
+          <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 20, margin: 0, flex: 1 }}>{t("memorySheet.title")}</h3>
           <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}><IcX /></button>
         </div>
 
@@ -284,7 +291,7 @@ function MemoryAddSheet({
             ) : (
               <>
                 <span style={{ color: "var(--muted)", opacity: 0.6 }}><IcImage /></span>
-                <span className="arca-sub" style={{ fontSize: 12 }}>Klikni nebo přetáhni fotku / audio</span>
+                <span className="arca-sub" style={{ fontSize: 12 }}>{t("memorySheet.dropzoneHint")}</span>
               </>
             )}
           </div>
@@ -292,19 +299,19 @@ function MemoryAddSheet({
             onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
 
           <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Název (volitelný)</label>
-            <input className="arca-input" placeholder="Název vzpomínky…" value={title} onChange={e => setTitle(e.target.value)} />
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("memorySheet.titleLabel")}</label>
+            <input className="arca-input" placeholder={t("memorySheet.titlePlaceholder")} value={title} onChange={e => setTitle(e.target.value)} />
           </div>
 
           <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Příběh</label>
-            <textarea className="arca-input" rows={4} placeholder="Co se stalo, proč to pro tebe znamená…"
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("memorySheet.storyLabel")}</label>
+            <textarea className="arca-input" rows={4} placeholder={t("memorySheet.storyPlaceholder")}
               value={note} onChange={e => setNote(e.target.value)}
               style={{ resize: "vertical", fontFamily: "var(--f-sans)" }} />
           </div>
 
           <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Datum (kdy se to stalo)</label>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("memorySheet.dateLabel")}</label>
             <input type="date" className="arca-input" value={happenedAt} onChange={e => setHappenedAt(e.target.value)} />
           </div>
         </div>
@@ -312,9 +319,9 @@ function MemoryAddSheet({
         <div style={{ padding: "16px 24px", borderTop: "1px solid var(--hairline)", display: "flex", gap: 10 }}>
           <button type="button" onClick={save} disabled={isPending}
             className="arca-btn arca-btn--primary" style={{ flex: 1, justifyContent: "center" }}>
-            {isPending ? "Ukládám…" : <><IcCheck /> Uložit okamžik</>}
+            {isPending ? t("memorySheet.saving") : <><IcCheck /> {t("memorySheet.saveBtn")}</>}
           </button>
-          <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost">Zrušit</button>
+          <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost">{t("memorySheet.cancelBtn")}</button>
         </div>
       </div>
     </div>
@@ -338,6 +345,8 @@ function MemoryCard({
   };
   onDelete: (id: string) => void;
 }) {
+  const t = useTranslations("Vault.detail");
+  const dateLocale = useLocale() === "cs" ? "cs-CZ" : "en-GB";
   const [confirming, setConfirming] = useState(false);
   const [deleting, startDelete] = useTransition();
 
@@ -345,7 +354,7 @@ function MemoryCard({
     startDelete(async () => {
       const res = await deleteMemory(memory.id);
       if ("error" in res) { toast.error(res.error); return; }
-      toast.success("Okamžik odstraněn.");
+      toast.success(t("memoryDeletedToast"));
       onDelete(memory.id);
       setConfirming(false);
     });
@@ -360,7 +369,7 @@ function MemoryCard({
         {memory.title && <div style={{ fontWeight: 550, fontSize: 13.5, marginBottom: 4 }}>{memory.title}</div>}
         {memory.happenedAt && (
           <div className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, marginBottom: 6 }}>
-            {new Date(memory.happenedAt).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" })}
+            {new Date(memory.happenedAt).toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" })}
           </div>
         )}
         {memory.note && (
@@ -371,12 +380,12 @@ function MemoryCard({
         <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
           {confirming ? (
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <span className="arca-sub" style={{ fontSize: 12 }}>Opravdu?</span>
+              <span className="arca-sub" style={{ fontSize: 12 }}>{t("memoryCard.confirmDelete")}</span>
               <button type="button" onClick={handleDelete} disabled={deleting}
                 className="arca-btn sm" style={{ color: "#c00", borderColor: "#fcc" }}>
-                {deleting ? "…" : "Smazat"}
+                {deleting ? t("memoryCard.deleting") : t("memoryCard.deleteBtn")}
               </button>
-              <button type="button" onClick={() => setConfirming(false)} className="arca-btn sm arca-btn--ghost">Ne</button>
+              <button type="button" onClick={() => setConfirming(false)} className="arca-btn sm arca-btn--ghost">{t("memoryCard.noBtn")}</button>
             </div>
           ) : (
             <button type="button" onClick={() => setConfirming(true)}
@@ -421,6 +430,7 @@ export default function RecipientProfileEditor({
   tone,
   initials,
 }: RecipientProfileEditorProps) {
+  const t = useTranslations("Vault.detail");
   const [profile, setProfile] = useState<ProfileData>(initialProfile);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl);
   const [memories, setMemories] = useState(initialMemories);
@@ -440,7 +450,7 @@ export default function RecipientProfileEditor({
       fd.set("file", file);
       const res = await uploadRecipientCover(recipientId, fd);
       if ("error" in res) { toast.error(res.error); return; }
-      toast.success("Úvodní fotka uložena.");
+      toast.success(t("coverSavedToast"));
       window.location.reload();
     });
   }, [recipientId]);
@@ -454,7 +464,7 @@ export default function RecipientProfileEditor({
       if ("error" in res) { toast.error(res.error); return; }
       const blobUrl = URL.createObjectURL(file);
       setAvatarUrl(blobUrl);
-      toast.success("Foto uloženo.");
+      toast.success(t("avatarSavedToast"));
     });
   }, [recipientId]);
 
@@ -472,11 +482,11 @@ export default function RecipientProfileEditor({
   const milestones: Array<{ label: string; days: number; type: "birthday" | "anniversary"; icon: React.ReactNode }> = [];
   if (profile.birthday) {
     const days = daysUntilNextOccurrence(profile.birthday);
-    milestones.push({ label: "Narozeniny", days, type: "birthday", icon: <IcCake /> });
+    milestones.push({ label: t("milestones.birthdayLabel"), days, type: "birthday", icon: <IcCake /> });
   }
   if (profile.anniversary) {
     const days = daysUntilNextOccurrence(profile.anniversary);
-    milestones.push({ label: "Výročí", days, type: "anniversary", icon: <IcHeart /> });
+    milestones.push({ label: t("milestones.anniversaryLabel"), days, type: "anniversary", icon: <IcHeart /> });
   }
 
   return (
@@ -492,7 +502,7 @@ export default function RecipientProfileEditor({
           style={{ background: "rgba(0,0,0,0.5)", color: "#fff", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(10px)", opacity: uploadingCover ? 0.5 : 1 }}
           disabled={uploadingCover}
         >
-          {uploadingCover ? "Nahrávám..." : "Změnit úvodní fotku"}
+          {uploadingCover ? t("coverUploading") : t("coverBtn")}
         </button>
         <input ref={coverInputRef} type="file" accept="image/*" style={{ display: "none" }}
           onChange={e => { const f = e.target.files?.[0]; if (f) handleCoverFile(f); e.target.value = ""; }} />
@@ -515,7 +525,7 @@ export default function RecipientProfileEditor({
           />
           <button
             type="button"
-            title="Změnit foto"
+            title={t("avatarChangeTitle")}
             onClick={() => avatarInputRef.current?.click()}
             style={{
               position: "absolute", right: -4, bottom: -4,
@@ -539,7 +549,7 @@ export default function RecipientProfileEditor({
           )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setShowProfileEdit(true)} className="arca-btn sm arca-btn--ghost">
-              <IcEdit /> Upravit profil
+              <IcEdit /> {t("editProfileBtn")}
             </button>
           </div>
         </div>
@@ -585,17 +595,17 @@ export default function RecipientProfileEditor({
                 <span style={{ color: "var(--accent)", flexShrink: 0 }}>{m.icon}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 550, fontSize: 13 }}>
-                    {m.label} za {m.days} {m.days === 1 ? "den" : m.days < 5 ? "dny" : "dní"}
+                    {m.label} {t("milestones.inDays", { days: m.days })}
                   </div>
                   <div className="arca-sub" style={{ fontSize: 12 }}>
-                    {urgent ? "Brzy — napiš zprávu teď" : "Máš čas připravit se"}
+                    {urgent ? t("milestones.urgentHint") : t("milestones.soonHint")}
                   </div>
                 </div>
                 <a
                   href={`/dashboard/arca/new?recipientId=${recipientId}&occasion=${m.type}`}
                   className="arca-btn sm arca-btn--clay"
                 >
-                  Napsat zprávu
+                  {t("milestones.writeBtn")}
                 </a>
               </div>
             );
@@ -617,9 +627,9 @@ export default function RecipientProfileEditor({
       >
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <h3 className="arca-h3">Galerie okamžiků <span className="arca-mono" style={{ color: "var(--muted)", fontWeight: 400 }}>({memories.length})</span></h3>
+          <h3 className="arca-h3">{t("gallery.title")} <span className="arca-mono" style={{ color: "var(--muted)", fontWeight: 400 }}>({memories.length})</span></h3>
           <button type="button" onClick={() => { setPendingDropFile(null); setShowMemoryAdd(true); }} className="arca-btn sm arca-btn--clay">
-            <IcPlus /> Uložit okamžik
+            <IcPlus /> {t("gallery.saveMomentBtn")}
           </button>
         </div>
 
@@ -629,7 +639,7 @@ export default function RecipientProfileEditor({
             padding: "36px 24px", textAlign: "center",
           }}>
             <p className="arca-sub" style={{ fontSize: 13 }}>
-              Přetáhni sem fotku nebo klikni „Uložit okamžik" — každý příběh si zaslouží místo.
+              {t("gallery.empty")}
             </p>
           </div>
         ) : (

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getTranslations, getLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -11,8 +12,9 @@ import { APP_URL } from "@/lib/resend";
 
 export async function generateMetadata({ params }: { params: Promise<{ personId: string }> }) {
   const { personId } = await params;
+  const t = await getTranslations("Vault.detail");
   const r = await prisma.recipient.findUnique({ where: { id: personId }, select: { name: true } });
-  return { title: r ? `${r.name} — ARCA` : "Příjemce" };
+  return { title: r ? `${r.name} — ARCA` : t("recipientFallback") };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -55,14 +57,14 @@ const IcChev  = ({ rotate }: { rotate?: boolean }) => (
 const IcPlus  = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>;
 const IcSparkle = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>;
 
-function Topbar({ name }: { name: string }) {
+function Topbar({ name, vaultLabel }: { name: string; vaultLabel: string }) {
   return (
     <div className="arca-topbar">
       <div className="arca-topbar__crumbs">
         <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <IcChev />
-          <Link href="/dashboard/vault" style={{ color: "var(--muted)", textDecoration: "none" }}>Schránka</Link>
+          <Link href="/dashboard/vault" style={{ color: "var(--muted)", textDecoration: "none" }}>{vaultLabel}</Link>
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <IcChev />
@@ -93,6 +95,10 @@ function KindIcon({ kind }: { kind: ContentKind }) {
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default async function RecipientDetailPage({ params }: { params: Promise<{ personId: string }> }) {
   const { personId } = await params;
+  const t = await getTranslations("Vault.detail");
+  const tVault = await getTranslations("Vault");
+  const locale = await getLocale();
+  const dateLocale = locale === "cs" ? "cs-CZ" : "en-GB";
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
@@ -148,25 +154,25 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
   const msgCount = packs.length;
 
   function triggerLabel(pack: typeof packs[0]): string {
-    const t = pack.triggerCondition;
-    if (!t) return "kdykoli";
-    if (t.type === "SPECIFIC_DATE" && t.executeAtDate) {
-      return t.executeAtDate.toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" });
+    const trig = pack.triggerCondition;
+    if (!trig) return t("trigger.anytime");
+    if (trig.type === "SPECIFIC_DATE" && trig.executeAtDate) {
+      return trig.executeAtDate.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" });
     }
-    if (t.type === "INACTIVITY" && t.inactivityDaysLimit) return `po ${t.inactivityDaysLimit} dnech`;
-    if (t.type === "MANUAL_EMERGENCY") return "při události";
+    if (trig.type === "INACTIVITY" && trig.inactivityDaysLimit) return t("trigger.afterDays", { days: trig.inactivityDaysLimit });
+    if (trig.type === "MANUAL_EMERGENCY") return t("trigger.onEvent");
     return "—";
   }
 
   return (
     <>
-      <Topbar name={recipient.name} />
+      <Topbar name={recipient.name} vaultLabel={tVault("kicker")} />
       <div className="arca-inner arca-fade-in" style={{ color: "var(--ink)" }}>
 
         {/* Back */}
         <Link href="/dashboard/vault" className="arca-btn sm arca-btn--ghost"
           style={{ marginLeft: -10, marginBottom: 14, display: "inline-flex" }}>
-          <IcChev rotate /> Schránka
+          <IcChev rotate /> {tVault("kicker")}
         </Link>
 
         {/* Hero card */}
@@ -192,12 +198,12 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
                 {recipient.email && <span>{recipient.email}</span>}
                 {recipient.phone && <><span style={{ opacity: .4 }}>·</span><span>{recipient.phone}</span></>}
                 <span style={{ opacity: .4 }}>·</span>
-                <span>{msgCount} {msgCount === 1 ? "zpráva" : msgCount < 5 ? "zprávy" : "zpráv"}</span>
+                <span>{t("messagesCount", { count: msgCount })}</span>
               </div>
             </div>
             <div style={{ paddingBottom: 4, flexShrink: 0 }}>
               <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary sm">
-                <IcPlus /> Nová zpráva
+                <IcPlus /> {tVault("newMessageBtn")}
               </Link>
             </div>
           </div>
@@ -225,7 +231,7 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
             />
 
             <div>
-              <h3 className="arca-h3" style={{ marginBottom: 14 }}>Zprávy pro {recipient.name.split(" ")[0]}</h3>
+              <h3 className="arca-h3" style={{ marginBottom: 14 }}>{t("messagesForTitle", { name: recipient.name.split(" ")[0] })}</h3>
               <RecipientTimeline
                 recipientFirstName={recipient.name.split(" ")[0]}
                 // "Otevřít" only makes sense when this recipient card IS the
@@ -252,14 +258,14 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
           <div className="arca-stack-4">
             <div className="arca-card">
               <div style={{ padding: "20px 22px" }}>
-                <h3 className="arca-h3" style={{ marginBottom: 14 }}>O příjemci</h3>
+                <h3 className="arca-h3" style={{ marginBottom: 14 }}>{t("aboutRecipient")}</h3>
                 {[
-                  ["E-mail", recipient.email ?? "—"],
-                  ["Telefon", recipient.phone ?? "—"],
-                  ["Vztah", recipient.relationship ?? "—"],
-                  ["Zpráv", msgCount.toString()],
-                  ...(recipient.birthday ? [["Narozeniny", new Date(recipient.birthday).toLocaleDateString("cs-CZ", { day: "numeric", month: "long" })]] : []),
-                  ...(recipient.anniversary ? [["Výročí", new Date(recipient.anniversary).toLocaleDateString("cs-CZ", { day: "numeric", month: "long" })]] : []),
+                  [t("fields.email"), recipient.email ?? "—"],
+                  [t("fields.phone"), recipient.phone ?? "—"],
+                  [t("fields.relationship"), recipient.relationship ?? "—"],
+                  [t("fields.messages"), msgCount.toString()],
+                  ...(recipient.birthday ? [[t("fields.birthday"), new Date(recipient.birthday).toLocaleDateString(dateLocale, { day: "numeric", month: "long" })]] : []),
+                  ...(recipient.anniversary ? [[t("fields.anniversary"), new Date(recipient.anniversary).toLocaleDateString(dateLocale, { day: "numeric", month: "long" })]] : []),
                 ].map(([label, value]) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--hairline)" }}>
                     <span className="arca-mono" style={{ color: "var(--muted)" }}>{label}</span>
@@ -273,18 +279,18 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
             {packs.length > 0 && (
               <div className="arca-card">
                 <div style={{ padding: "20px 22px" }}>
-                  <h3 className="arca-h3" style={{ marginBottom: 12 }}>Obsah</h3>
+                  <h3 className="arca-h3" style={{ marginBottom: 12 }}>{t("content.title")}</h3>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     {[
-                      { label: "Texty",  count: packs.filter(p => p.contents.some(c => c.type === "TEXT")).length,  Ic: IcText },
-                      { label: "Videa",  count: packs.filter(p => p.contents.some(c => c.type === "VIDEO")).length, Ic: IcVideo },
-                      { label: "Hlas",   count: packs.filter(p => p.contents.some(c => c.type === "AUDIO")).length, Ic: IcVoice },
-                      { label: "Soubory",count: packs.filter(p => p.contents.some(c => c.type === "FILE")).length,  Ic: IcPhoto },
-                    ].filter(t => t.count > 0).map(t => (
-                      <div key={t.label} style={{ padding: "8px 12px", borderRadius: "var(--r-md)", background: "var(--bg-tint)", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ color: "var(--accent)" }}><t.Ic /></span>
-                        <span style={{ fontWeight: 550, fontSize: 13 }}>{t.count}</span>
-                        <span className="arca-sub" style={{ fontSize: 12 }}>{t.label}</span>
+                      { label: t("content.texts"),  count: packs.filter(p => p.contents.some(c => c.type === "TEXT")).length,  Ic: IcText },
+                      { label: t("content.videos"), count: packs.filter(p => p.contents.some(c => c.type === "VIDEO")).length, Ic: IcVideo },
+                      { label: t("content.voice"),  count: packs.filter(p => p.contents.some(c => c.type === "AUDIO")).length, Ic: IcVoice },
+                      { label: t("content.files"),  count: packs.filter(p => p.contents.some(c => c.type === "FILE")).length,  Ic: IcPhoto },
+                    ].filter(item => item.count > 0).map(item => (
+                      <div key={item.label} style={{ padding: "8px 12px", borderRadius: "var(--r-md)", background: "var(--bg-tint)", display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ color: "var(--accent)" }}><item.Ic /></span>
+                        <span style={{ fontWeight: 550, fontSize: 13 }}>{item.count}</span>
+                        <span className="arca-sub" style={{ fontSize: 12 }}>{item.label}</span>
                       </div>
                     ))}
                   </div>
@@ -309,14 +315,14 @@ export default async function RecipientDetailPage({ params }: { params: Promise<
               <div style={{ padding: "20px 22px" }}>
                 <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
                   <span style={{ color: "var(--accent)" }}><IcSparkle /></span>
-                  <span style={{ fontSize: 12, fontWeight: 550, color: "var(--accent-deep)" }}>Návrh od ARCA</span>
+                  <span style={{ fontSize: 12, fontWeight: 550, color: "var(--accent-deep)" }}>{t("suggestion.label")}</span>
                 </div>
                 <p style={{ fontFamily: "var(--f-serif)", fontSize: 17, lineHeight: 1.3, margin: "0 0 14px", color: "var(--accent-deep)" }}>
-                  „Napiš {recipient.name.split(" ")[0]}, co pro tebe znamená."
+                  {t("suggestion.quote", { name: recipient.name.split(" ")[0] })}
                 </p>
                 <Link href={`/dashboard/arca/new?recipientId=${recipient.id}`} className="arca-btn sm"
                   style={{ background: "var(--surface-2)", color: "var(--accent)", textDecoration: "none" }}>
-                  Začít psát <IcChev />
+                  {t("suggestion.writeBtn")} <IcChev />
                 </Link>
               </div>
             </div>

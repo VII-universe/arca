@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 type ContentKind = "text" | "video" | "voice" | "photo";
 type Filter = "all" | ContentKind;
@@ -15,14 +16,14 @@ interface Pack {
   contents: ContentRow[];
 }
 
-const STATUS: Record<string, { label: string; chip: string; tl: string }> = {
-  DRAFT:    { label: "Návrh",        chip: "",      tl: "" },
-  ACTIVE:   { label: "Naplánováno",  chip: "clay",  tl: "scheduled" },
-  TRIGGERED:{ label: "Doručeno",     chip: "sage",  tl: "released" },
-  DELIVERED:{ label: "Doručeno",     chip: "sage",  tl: "released" },
-  GRACE_PERIOD:{ label: "Lhůta",     chip: "",      tl: "scheduled" },
-  PENDING_GUARDIAN_APPROVAL:{ label: "Strážci", chip: "", tl: "scheduled" },
-  ARCHIVED: { label: "Archiv",       chip: "",      tl: "" },
+const STATUS: Record<string, { statusKey: string; chip: string; tl: string }> = {
+  DRAFT:    { statusKey: "draft",       chip: "",      tl: "" },
+  ACTIVE:   { statusKey: "scheduled",   chip: "clay",  tl: "scheduled" },
+  TRIGGERED:{ statusKey: "delivered",   chip: "sage",  tl: "released" },
+  DELIVERED:{ statusKey: "delivered",   chip: "sage",  tl: "released" },
+  GRACE_PERIOD:{ statusKey: "gracePeriod", chip: "",   tl: "scheduled" },
+  PENDING_GUARDIAN_APPROVAL:{ statusKey: "guardians", chip: "", tl: "scheduled" },
+  ARCHIVED: { statusKey: "archived",    chip: "",      tl: "" },
 };
 
 const IcText  = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg>;
@@ -47,24 +48,23 @@ function KindIc({ kind }: { kind: ContentKind }) {
   return <IcText />;
 }
 
-const KIND_LABEL: Record<ContentKind, string> = { text: "Text", video: "Video", voice: "Hlas", photo: "Foto" };
-
 export default function RecipientTimeline({ packs, recipientFirstName, canOpen, appUrl }: { packs: Pack[]; recipientFirstName: string; canOpen: boolean; appUrl: string }) {
+  const t = useTranslations("Vault.detail");
   const [filter, setFilter] = useState<Filter>("all");
 
   const visible = filter === "all" ? packs : packs.filter(p => p.kind === filter);
   const filters: { id: Filter; label: string }[] = [
-    { id: "all", label: `Vše · ${packs.length}` },
-    ...(packs.some(p => p.kind === "text")  ? [{ id: "text"  as Filter, label: "Texty" }] : []),
-    ...(packs.some(p => p.kind === "voice") ? [{ id: "voice" as Filter, label: "Hlas" }]  : []),
-    ...(packs.some(p => p.kind === "video") ? [{ id: "video" as Filter, label: "Video" }] : []),
-    ...(packs.some(p => p.kind === "photo") ? [{ id: "photo" as Filter, label: "Foto" }]  : []),
+    { id: "all", label: t("filterAll", { count: packs.length }) },
+    ...(packs.some(p => p.kind === "text")  ? [{ id: "text"  as Filter, label: t("kind.text") }] : []),
+    ...(packs.some(p => p.kind === "voice") ? [{ id: "voice" as Filter, label: t("kind.voice") }]  : []),
+    ...(packs.some(p => p.kind === "video") ? [{ id: "video" as Filter, label: t("kind.video") }] : []),
+    ...(packs.some(p => p.kind === "photo") ? [{ id: "photo" as Filter, label: t("kind.photo") }]  : []),
   ];
 
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 550, margin: 0 }}>Co {recipientFirstName} jednou najde</h3>
+        <h3 style={{ fontSize: 15, fontWeight: 550, margin: 0 }}>{t("whatWillFind", { name: recipientFirstName })}</h3>
         {filters.length > 1 && (
           <div className="arca-seg">
             {filters.map(f => (
@@ -78,7 +78,7 @@ export default function RecipientTimeline({ packs, recipientFirstName, canOpen, 
 
       {visible.length === 0 ? (
         <div className="arca-card" style={{ padding: "28px 24px", textAlign: "center" }}>
-          <p className="arca-sub">Žádné zprávy tohoto typu.</p>
+          <p className="arca-sub">{t("noMessagesOfType")}</p>
         </div>
       ) : (
         <div className="arca-tl">
@@ -103,12 +103,12 @@ export default function RecipientTimeline({ packs, recipientFirstName, canOpen, 
                     </div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
                       <span className={`arca-chip ${st.chip}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 }}>
-                        <StatusIc />{st.label}
+                        <StatusIc />{t(`status.${st.statusKey}`)}
                       </span>
                       {canOpen && (pack.status === "TRIGGERED" || pack.status === "DELIVERED") && (
                         <a href={`${appUrl}/arca/${pack.livingLinkHash}`} target="_blank" rel="noopener noreferrer"
                           className="arca-btn sm arca-btn--outline">
-                          Otevřít
+                          {t("openBtn")}
                         </a>
                       )}
                       <Link href={`/dashboard/arca/${pack.id}/edit`} className="arca-btn icon-btn arca-btn--ghost">
@@ -147,7 +147,7 @@ export default function RecipientTimeline({ packs, recipientFirstName, canOpen, 
                           return <div key={i} style={{ width: 3, height: h, background: "var(--accent)", borderRadius: 2, opacity: 0.7 }} />;
                         })}
                       </div>
-                      <span style={{ fontFamily: "var(--f-mono)", color: "var(--muted)", fontSize: 12, flexShrink: 0 }}>hlas</span>
+                      <span style={{ fontFamily: "var(--f-mono)", color: "var(--muted)", fontSize: 12, flexShrink: 0 }}>{t("kind.voice").toLowerCase()}</span>
                     </div>
                   )}
 
@@ -161,9 +161,9 @@ export default function RecipientTimeline({ packs, recipientFirstName, canOpen, 
 
                   <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 8, borderTop: "1px solid var(--hairline)" }}>
                     <span className={`arca-tag ${pack.type === "EMOTIONAL" ? "clay" : "sky"}`}>
-                      {pack.type === "EMOTIONAL" ? "✦ Emocionální" : "⬡ Praktická"}
+                      {pack.type === "EMOTIONAL" ? `✦ ${t("type.emotional")}` : `⬡ ${t("type.practical")}`}
                     </span>
-                    <span className="arca-tag">{KIND_LABEL[pack.kind]}</span>
+                    <span className="arca-tag">{t(`kind.${pack.kind}`)}</span>
                   </div>
                 </div>
               </div>
@@ -175,7 +175,7 @@ export default function RecipientTimeline({ packs, recipientFirstName, canOpen, 
       <Link href="/dashboard/arca/new"
         style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", marginTop: 8, borderStyle: "dashed", background: "transparent", color: "var(--muted)", cursor: "pointer", textDecoration: "none", borderRadius: "var(--r-lg)", border: "1px dashed var(--hairline)" }}>
         <IcPlus />
-        <span>Přidat další zprávu pro {recipientFirstName}</span>
+        <span>{t("addAnotherMessage", { name: recipientFirstName })}</span>
       </Link>
     </>
   );

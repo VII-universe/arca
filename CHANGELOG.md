@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.9.0] - i18n: Schránka (detail příjemce)
+### Přidáno
+- **Detail příjemce plně přeložen** do češtiny a angličtiny (`app/dashboard/vault/[personId]/page.tsx`, `RecipientTimeline.tsx`, `RecipientProfileEditor.tsx`, `DeliverySimulator.tsx`) — rozšíření `Vault.detail` v `messages/cs.json`/`messages/en.json`: hlavička s počtem zpráv, stavové štítky (Návrh/Naplánováno/Doručeno/Lhůta/Strážci/Archiv), časová osa zpráv s filtrem podle typu obsahu, panel „O příjemci", přehled obsahu, simulátor doručení, návrh od ARCA, editor profilu (vztah, narozeniny, výročí, poznámky), milníky, galerie okamžiků a přidávání vzpomínek.
+- Datumy (narozeniny/výročí, datum vzpomínky, datum doručení zprávy) se teď formátují podle aktivního jazyka (`cs-CZ`/`en-GB`).
+- Počty zpráv a dnů do milníku přes ICU plural, konzistentně s Dashboardem a Schránkou.
+- **Rychlé předvolby vztahu** (máma, táta, partner/partnerka, kamarád/kamarádka…) se teď při výběru ukládají v jazyce aktuálního uživatelského rozhraní — stejný princip jako u předvoleb skupin v přehledu Schránky (PR #24): kliknutí na anglickou předvolbu "mom" uloží "mom", ne "máma". Existující, dříve uložené hodnoty v jiném jazyce než aktuální UI se zobrazí ve volném poli „vlastní popis vztahu" (stejné chování jako předtím pro jakoukoli hodnotu neodpovídající žádné předvolbě) — ověřeno ručně na testovacím účtu.
+- Opravena drobná potenciální kolize: `triggerLabel()` a blok se souhrnem typů obsahu ve `vault/[personId]/page.tsx` používaly lokální proměnnou/parametr jménem `t`, což by po zavedení `useTranslations`/`getTranslations` (taky `t`) stínilo překladovou funkci — přejmenováno na `trig`/`item`.
+
+### Zbývá (další PR)
+- Kalendář, Strážci, Manuál k životu.
+- Texty z Fází 0–2 (výběr režimu, SELF/LEGACY tón v ArcaReveal, karta roční rituál mimo Dashboard).
+- Transakční e-maily (Resend šablony).
+- Settings stránka + `AppearanceButton.tsx` + přepínač jazyka v Dashboard chrome.
+
 ## [1.8.0] - i18n: Schránka (přehled)
 ### Přidáno
 - **Přehled Schránky přeložen** do češtiny a angličtiny (`app/dashboard/vault/page.tsx`, `components/arca/VaultClient.tsx`) — nový namespace `Vault` v `messages/cs.json`/`messages/en.json`: nadpis/podtitul, tip pro psaní, filtr skupin (vytvoření/úprava/smazání skupiny, přiřazení lidí), formulář pro přidání osoby (včetně rozbalovacích sekcí kontaktů/sociálních sítí/adresy/osobních údajů), karta osoby (počet zpráv, aktivní zprávy, doručeno-otevřít odkaz), prázdné stavy.
