@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.12.0] - i18n: Manuál k životu
+### Přidáno
+- **Manuál k životu plně přeložen** do češtiny a angličtiny (`app/dashboard/blueprint/page.tsx`, `app/dashboard/blueprint/BlueprintClient.tsx`) — nový namespace `Blueprint` v `messages/cs.json`/`messages/en.json`: hlavička, statistické štítky, banner s kritickými položkami, čtyři kategorie (Předplatné/Dokumenty/Majetek/Instrukce) s popisky a placeholdery pro název i obsah, editační panel, karty položek, prázdný stav, ujišťovací blok.
+- `CATEGORIES` (dřív modulová konstanta s natvrdo psaným `label`/`sub`) rozdělena na neutrální `CATEGORY_META` (jen `id`/`color`/`icon`, beze změny) + nový `useCategories()` hook, který popisky dotahuje z překladů — stejný vzor jako u skupinových předvoleb ve Schránce/Strážcích.
+- Placeholdery v editačním panelu (název i instrukce) se teď mění podle zvolené kategorie a jazyka místo jedné natvrdo psané řady ternárních výrazů.
+
+### Opraveno po review
+- Banner s kritickými položkami (`{count} urgentní {položka vyžaduje/položky vyžadují} okamžitou pozornost`) měl v originále stejnou gramatickou mezeru jako `GuardianListClient.tsx` z PR #27 — binární `count === 1` bez zvláštního tvaru pro 2–4 (`"položky vyžadují"` i pro 5+, správně by mělo být `"položek vyžaduje"`). Protože soubor stejně celý přepisujeme kvůli i18n, opraveno rovnou na plnohodnotný ICU plural (`1 položka vyžaduje` / `2 položky vyžadují` / `5 položek vyžaduje`) místo zakonzervování chyby v překladu — stejné rozhodnutí, jaké padlo pro "1 strážci" v předchozí PR.
+
+### Zbývá (další PR)
+- Texty z Fází 0–2 (výběr režimu, SELF/LEGACY tón v ArcaReveal, karta roční rituál mimo Dashboard).
+- Transakční e-maily (Resend šablony) + `/guardian/confirmed`.
+- Settings stránka + `AppearanceButton.tsx` + přepínač jazyka v Dashboard chrome.
+
+Tímhle je hotový celý původní rozsah "Dashboard/Schránka/Kalendář/Strážci/Manuál k životu" z bodu 2) zadání.
+
 ## [1.11.0] - i18n: Strážci
 ### Přidáno
 - **Strážci plně přeloženi** do češtiny a angličtiny (`app/dashboard/guardians/page.tsx`, `components/arca/GuardianListClient.tsx`, `components/dashboard/CheckInButton.tsx`, `components/dashboard/HeartbeatWidget.tsx`) — nový namespace `Guardians` v `messages/cs.json`/`messages/en.json`: hlavička, karta pravidla „Tichý strážce", seznam strážců se skupinami (přidání/úprava/smazání, přiřazení do skupiny), formulář pro pozvání strážce, karta Přítomnost (check-in), Heartbeat webhook, tři kroky jemného kontaktování, ujišťovací blok.

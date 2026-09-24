@@ -528,6 +528,73 @@
     },
     "createGroupLink": "Vytvořit skupinu strážců"
   },
+  "Blueprint": {
+    "kicker": "Manuál k životu",
+    "title": "Průvodce tvým světem pro ty, kdo to <em>budou potřebovat.</em>",
+    "subtitle": "Ulož sem instrukce, smlouvy, běžící závazky a cokoliv, co by jinak nikdo nevěděl. Tvoji blízcí to najdou, až to bude potřeba — přehledně, krok za krokem.",
+    "itemsCount": "{count, plural, one {# položka} few {# položky} other {# položek}}",
+    "urgentCount": "{count} urgentní",
+    "reassurance": {
+      "titlePlain": "Informace vidíš jen ty.",
+      "titleItalic": "Vždy.",
+      "body": "Strážci ani příjemci nemají k manuálu přístup. Data jsou součástí tvého uzamčeného profilu."
+    },
+    "categories": {
+      "SUBSCRIPTION": { "label": "Předplatné", "sub": "Netflix, Spotify, pojistky, nájmy…" },
+      "DOCUMENT": { "label": "Dokumenty", "sub": "Závěť, pojistky, smlouvy, kde leží…" },
+      "PROPERTY": { "label": "Majetek", "sub": "Nemovitosti, vozidla, účty, klíče…" },
+      "INSTRUCTION": { "label": "Instrukce", "sub": "Jak na co, co zařídit, kde co najít…" }
+    },
+    "placeholders": {
+      "title": {
+        "SUBSCRIPTION": "Netflix Premium",
+        "DOCUMENT": "Závěť u notáře",
+        "PROPERTY": "Chata Jeseníky",
+        "INSTRUCTION": "Popis instrukce"
+      },
+      "content": {
+        "SUBSCRIPTION": "Platba každý měsíc, karta končí 12/27. Zrušit přes web netflix.com/cancel.",
+        "DOCUMENT": "Uloženo v červené složce v horní zásuvce pracovního stolu. Kopie u notáře Jana Nováka.",
+        "PROPERTY": "Klíče visí na háčku v předsíni. Pojistná smlouva v Google Drive, složka Pojistky.",
+        "INSTRUCTION": "Krok za krokem — co udělat jako první, na koho se obrátit…"
+      }
+    },
+    "sheet": {
+      "editTitle": "Upravit položku",
+      "newTitle": "Nová položka",
+      "itemFallback": "Položka",
+      "close": "Zavřít",
+      "categoryLabel": "Kategorie",
+      "nameLabel": "Název *",
+      "contentLabel": "Instrukce / popis *",
+      "criticalLabel": "Kritické — řešit urgentně",
+      "criticalHint": "Zobrazí se s výrazným upozorněním",
+      "saveChangesBtn": "Uložit změny",
+      "addBtn": "Přidat do manuálu",
+      "savedToast": "Položka upravena.",
+      "createdToast": "Položka přidána do manuálu."
+    },
+    "card": {
+      "urgentBadge": "Urgentní",
+      "less": "Méně ▲",
+      "fullText": "Celý text ▼",
+      "editBtn": "Upravit",
+      "editTitle": "Upravit",
+      "deleteTitle": "Smazat",
+      "deleteConfirm": "Smazat?",
+      "yes": "Ano",
+      "no": "Ne",
+      "deletedToast": "Položka smazána."
+    },
+    "section": {
+      "addBtn": "+ přidat"
+    },
+    "empty": {
+      "text": "Manuál je zatím prázdný. Začni přidáním první položky výše.",
+      "addFirstBtn": "Přidat první položku"
+    },
+    "criticalBanner": "{count, plural, one {# urgentní položka vyžaduje} few {# urgentní položky vyžadují} other {# urgentní položek vyžaduje}} okamžitou pozornost"
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Tvůj odkaz, uchovaný pro budoucnost.",
