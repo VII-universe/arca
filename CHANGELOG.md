@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.11.0] - i18n: Strážci
+### Přidáno
+- **Strážci plně přeloženi** do češtiny a angličtiny (`app/dashboard/guardians/page.tsx`, `components/arca/GuardianListClient.tsx`, `components/dashboard/CheckInButton.tsx`, `components/dashboard/HeartbeatWidget.tsx`) — nový namespace `Guardians` v `messages/cs.json`/`messages/en.json`: hlavička, karta pravidla „Tichý strážce", seznam strážců se skupinami (přidání/úprava/smazání, přiřazení do skupiny), formulář pro pozvání strážce, karta Přítomnost (check-in), Heartbeat webhook, tři kroky jemného kontaktování, ujišťovací blok.
+- Relativní časy (naposledy zde, check-in) přes vlastní překladové řetězce místo natvrdo psaných jednotek — `CheckInButton.tsx` teď bere fallback formát data (`cs-CZ`/`en-GB`) podle aktivního jazyka místo napevno `cs-CZ`.
+- Počet strážců ve skupině přes ICU plural, včetně vědomého zachování původní české gramatické zvláštnosti kódu (`items.length < 5 ? "strážci" : "strážců"` nikdy nerozlišovalo `1` od `2–4`, takže i "1 strážce" se v originále zobrazovalo jako "1 strážci") — anglická verze naopak používá standardní plural (`1 guardian` / `2 guardians`), protože tahle konkrétní čequina zvláštnost se anglické gramatiky netýká.
+- Rychlé předvolby skupin (Rodina, Přátelé, Kolegové) se ukládají v jazyce aktuálního UI — stejný princip jako v předchozích PR (#24, #25).
+
+### Zjištěno, mimo scope
+- `components/dashboard/GuardianManager.tsx` (135 řádků) není nikde v appce importovaný — mrtvý kód, zřejmě nahrazený `GuardianListClient.tsx`. Neupravováno (překládat nepoužívaný soubor by nemělo smysl); ponecháno beze změny pro případ, že bude potřeba ho někdy smazat samostatně.
+- `app/guardian/confirmed/page.tsx` (stránka, na kterou kliká **strážce** z e-mailového odkazu, ne majitel účtu) záměrně nepřeložena v tomto PR — jazyk téhle stránky by měl navazovat na jazyk transakčních e-mailů, ne na `arca_locale` cookie přihlášeného uživatele, takže patří spíš do poslední fáze (e-maily), ne do "Strážci" sekce dashboardu.
+
+### Zbývá (další PR)
+- Manuál k životu.
+- Texty z Fází 0–2 (výběr režimu, SELF/LEGACY tón v ArcaReveal, karta roční rituál mimo Dashboard).
+- Transakční e-maily (Resend šablony) + `/guardian/confirmed` (viz výše).
+- Settings stránka + `AppearanceButton.tsx` + přepínač jazyka v Dashboard chrome.
+
 ## [1.10.0] - i18n: Kalendář
 ### Přidáno
 - **Kalendář plně přeložen** do češtiny a angličtiny (`app/dashboard/calendar/page.tsx`, `components/arca/CalendarClient.tsx`) — nový namespace `Calendar` v `messages/cs.json`/`messages/en.json`: nadpis/podtitul, měsíční mřížka, výběr měsíce/roku, denní modal (existující události, přidání narozeninové/výroční/jednorázové zprávy), postranní panel (souhrn dne/měsíce, nadcházející zprávy).

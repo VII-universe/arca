@@ -412,6 +412,122 @@
     "scheduleMessageBtn": "Naplánovat zprávu",
     "noRecipient": "—"
   },
+  "Guardians": {
+    "kicker": "Strážci",
+    "title": "Lidé, kterým <em>věříš.</em>",
+    "subtitle": "Strážci nikdy nevidí obsah tvých zpráv. Jen rozhodují společně o tom, kdy je čas, aby je ARCA doručila. Doporučujeme aspoň tři.",
+    "ruleCard": {
+      "badge": "Pravidlo doručení",
+      "title": "Tichý strážce",
+      "body": "Když se v ARCA dlouho neukážeš, jemně se zeptá tvých strážců. Pokud <strong>2 ze 3</strong> potvrdí, naplánované zprávy se začnou doručovat.",
+      "status": "Status",
+      "allGood": "Vše v pořádku",
+      "lastSeen": "Naposledy jsi byl zde",
+      "justNow": "právě teď",
+      "daysAgo": "před {days} dny",
+      "confirmRule": "Strážci potvrdí",
+      "confirmRatio": "2 ze 3",
+      "guardianCount": "Počet strážců",
+      "firstDeliveryLabel": "První doručení po",
+      "firstDeliveryValue": "14 dní od potvrzení"
+    },
+    "yourGuardians": "Tvoji strážci",
+    "presence": {
+      "title": "Přítomnost",
+      "active": "Aktivní",
+      "hint": "Potvrď, že jsi tu a resetuj všechny časovače nečinnosti.",
+      "justNow": "právě teď",
+      "minsAgo": "před {mins} min",
+      "hoursAgo": "před {hours} hod",
+      "yesterday": "včera",
+      "daysAgo": "před {days} dny",
+      "confirming": "Potvrzuji…",
+      "imHere": "Jsem tady",
+      "lastSeenHere": "Naposledy zde"
+    },
+    "heartbeat": {
+      "hint": "Pošli požadavek na tuto URL z jakékoliv automatizace a resetuješ svůj časovač.",
+      "copyLabel": "Kopírovat URL",
+      "setupUptimeRobot": "Nastavit přes UptimeRobot (zdarma)"
+    },
+    "pingSteps": {
+      "title": "Jemné kontaktování",
+      "subtitle": "Před tím, než ARCA cokoli doručí, tě kontaktuje ve třech krocích.",
+      "step1Label": "60 dní",
+      "step1Sub": "Mírná notifikace v aplikaci.",
+      "step2Label": "75 dní",
+      "step2Sub": "E-mail s dotazem 'Jsi tu?'",
+      "step3Label": "90 dní",
+      "step3Sub": "Aktivace strážců — 14 dní na reakci."
+    },
+    "reassurance": {
+      "titlePlain": "Můžeš si oddechnout.",
+      "titleItalic": "Máme to.",
+      "body": "Tvoje zprávy jsou šifrované a doručí se přesně tehdy, kdy jsi to chtěl. Ani dříve, ani později.",
+      "explorePlanBtn": "Prozkoumat plán"
+    },
+    "groupPicker": { "noGroup": "Bez skupiny" },
+    "contactScore": { "none": "Žádný kontakt", "minimum": "Minimum", "good": "Dobré pokrytí" },
+    "card": {
+      "confirmedBadge": "Potvrzeno",
+      "groupFallback": "Skupina",
+      "editTitle": "Upravit strážce",
+      "removeTitle": "Odebrat strážce",
+      "removeConfirm": "Odebrat?",
+      "yes": "Ano",
+      "no": "Ne",
+      "nameLabel": "Jméno",
+      "emailLabel": "E-mail",
+      "phoneLabel": "Telefon",
+      "saveBtn": "Uložit",
+      "cancelBtn": "Zrušit",
+      "savedToast": "Strážce uložen.",
+      "removedToast": "{name} odebrán ze strážců.",
+      "assignedToast": "Přiřazeno do skupiny „{name}\".",
+      "unassignedToast": "Skupina odebrána."
+    },
+    "addForm": {
+      "inviteAnother": "Pozvat dalšího strážce",
+      "fullName": "Celé jméno *",
+      "namePlaceholder": "Jan Novák",
+      "email": "E-mail *",
+      "channelsLabel": "Telefon & WhatsApp",
+      "phoneLabel": "Telefon",
+      "whatsappLabel": "WhatsApp",
+      "phonePlaceholder": "+420 600 000 000",
+      "securityQuestion": "Bezpečnostní otázka",
+      "securityHint": "Tato otázka chrání přístup — příjemce musí znát odpověď, aby zprávu otevřel.",
+      "challengeQuestionPlaceholder": "Jak se jmenoval náš první pes?",
+      "challengeAnswerPlaceholder": "Odpověď (uchovává se zahashovaná)",
+      "addBtn": "Přidat strážce",
+      "cancelBtn": "Zrušit",
+      "addedToast": "{name} přidán/a jako strážce.",
+      "genericError": "Chyba při přidávání"
+    },
+    "createGroup": {
+      "presets": { "family": "Rodina", "friends": "Přátelé", "colleagues": "Kolegové" },
+      "namePlaceholder": "Název skupiny…",
+      "colorLabel": "Barva",
+      "createBtn": "Vytvořit",
+      "cancelBtn": "Zrušit",
+      "createdToast": "Skupina „{name}\" vytvořena."
+    },
+    "filterBar": {
+      "all": "Všichni",
+      "deleteGroupTitle": "Smazat skupinu",
+      "newGroup": "Nová skupina",
+      "groupDeletedToast": "Skupina smazána."
+    },
+    "sections": {
+      "guardiansCount": "{count, plural, =1 {# strážci} few {# strážci} other {# strážců}}",
+      "ungrouped": "Bez skupiny"
+    },
+    "empty": {
+      "noGuardians": "Zatím žádní strážci.",
+      "groupNoMembers": "Tato skupina nemá žádné členy."
+    },
+    "createGroupLink": "Vytvořit skupinu strážců"
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Tvůj odkaz, uchovaný pro budoucnost.",

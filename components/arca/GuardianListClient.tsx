@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { addGuardian, removeGuardian, updateGuardian } from "@/app/actions/guardians";
 import { assignGuardianGroup, createGroup, deleteGroup } from "@/app/actions/groups";
 
@@ -23,11 +24,11 @@ const COLOR_OPTIONS = [
   { value: "sky",  bg: "var(--sky-soft)",    text: "#3E5A7E",            border: "#AABFD8",               label: "Sky"   },
   { value: "ink",  bg: "var(--bg-tint)",     text: "var(--ink-2)",       border: "var(--hairline-2)",     label: "Ink"   },
 ];
-const GROUP_PRESETS = [
-  { name: "Rodina",   emoji: "👨‍👩‍👧", color: "clay" },
-  { name: "Přátelé", emoji: "🤝",    color: "sage" },
-  { name: "Kolegové",emoji: "💼",    color: "sky"  },
-];
+const GROUP_PRESET_META = [
+  { key: "family",     emoji: "👨‍👩‍👧", color: "clay" },
+  { key: "friends",    emoji: "🤝",    color: "sage" },
+  { key: "colleagues", emoji: "💼",    color: "sky"  },
+] as const;
 function colorFor(color: string) { return COLOR_OPTIONS.find(c => c.value === color) ?? COLOR_OPTIONS[0]; }
 
 const TONES = ["sage", "sky", "clay", "ink"];
@@ -41,10 +42,10 @@ function initials(n: string) {
 
 // ── Contact completeness ──────────────────────────────────────────────────────
 
-function contactScore(fields: { email?: string; phone?: string }): { score: number; max: number; label: string; color: string } {
+function contactScore(fields: { email?: string; phone?: string }, labels: { none: string; minimum: string; good: string }): { score: number; max: number; label: string; color: string } {
   const max = 2;
   const score = [fields.email, fields.phone].filter(Boolean).length;
-  const label = score === 0 ? "Žádný kontakt" : score === 1 ? "Minimum" : "Dobré pokrytí";
+  const label = score === 0 ? labels.none : score === 1 ? labels.minimum : labels.good;
   const color = score === 0 ? "var(--muted-2)" : score === 1 ? "#D4863A" : "var(--sage)";
   return { score, max, label, color };
 }
@@ -82,6 +83,7 @@ function GroupPicker({ guardianId, currentGroupId, groups, onAssign, onClose }: 
   groups: GuardianGroup[]; onAssign: (id: string, gid: string | null) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("Guardians");
   const ref = useRef<HTMLDivElement>(null);
   const [pending, startT] = useTransition();
 
@@ -130,7 +132,7 @@ function GroupPicker({ guardianId, currentGroupId, groups, onAssign, onClose }: 
           style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"8px 14px",
             border:"none", background: !currentGroupId ? "var(--bg-tint)" : "transparent", cursor:"pointer" }}>
           <span style={{ width:8, height:8, borderRadius:"50%", border:"1.5px dashed var(--muted-2)", flexShrink:0 }}/>
-          <span style={{ fontSize:13, fontFamily:"var(--f-sans)", color:"var(--muted)" }}>Bez skupiny</span>
+          <span style={{ fontSize:13, fontFamily:"var(--f-sans)", color:"var(--muted)" }}>{t("groupPicker.noGroup")}</span>
           {!currentGroupId && <IcCheck />}
         </button>
       </div>
@@ -146,6 +148,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
   onGroupAssign: (id: string, groupId: string | null) => void;
   onUpdated: (id: string, data: Partial<GuardianItem>) => void;
 }) {
+  const t = useTranslations("Guardians");
   const [guardian, setGuardian] = useState(initial);
   const [pickerOpen, setPicker] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -176,7 +179,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
       const updated = { ...guardian, name: editName, email: editEmail, phone: editPhone || null };
       setGuardian(updated);
       onUpdated(guardian.id, updated);
-      toast.success("Strážce uložen.");
+      toast.success(t("card.savedToast"));
       setEditing(false);
     });
   }
@@ -185,14 +188,15 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
     startRemove(async () => {
       await removeGuardian(guardian.id);
       onRemove(guardian.id);
-      toast.success(`${guardian.name} odebrán ze strážců.`);
+      toast.success(t("card.removedToast", { name: guardian.name }));
     });
   }
 
   const tone = toneFor(guardian.name);
   const c = guardian.group ? colorFor(guardian.group.color) : null;
-  const editScore = contactScore({ email: editEmail, phone: editPhone });
-  const viewScore = contactScore({ email: guardian.email, phone: guardian.phone ?? undefined });
+  const scoreLabels = { none: t("contactScore.none"), minimum: t("contactScore.minimum"), good: t("contactScore.good") };
+  const editScore = contactScore({ email: editEmail, phone: editPhone }, scoreLabels);
+  const viewScore = contactScore({ email: guardian.email, phone: guardian.phone ?? undefined }, scoreLabels);
 
   return (
     <div className="arca-card" style={{ overflow: "hidden" }}>
@@ -207,7 +211,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
             <span style={{ fontWeight: 550, fontSize: 14.5 }}>{guardian.name}</span>
             <span className="arca-chip sage" style={{ fontSize: 10.5 }}>
               <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M5 12l4 4 10-10"/></svg>
-              Potvrzeno
+              {t("card.confirmedBadge")}
             </span>
           </div>
           <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 2 }}>
@@ -229,7 +233,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
                   fontSize: 11.5, cursor: "pointer", fontFamily: "var(--f-sans)",
                 }}>
                   {guardian.group?.emoji && <span style={{ fontSize: 12 }}>{guardian.group.emoji}</span>}
-                  <span>{guardian.group?.name ?? "Skupina"}</span>
+                  <span>{guardian.group?.name ?? t("card.groupFallback")}</span>
                   <IcChev />
                 </button>
                 {pickerOpen && (
@@ -239,7 +243,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
                       const g = gid ? groups.find(x => x.id === gid) ?? null : null;
                       onGroupAssign(id, gid);
                       setGuardian(prev => ({ ...prev, groupId: gid, group: g }));
-                      toast.success(g ? `Přiřazeno do skupiny „${g.name}".` : "Skupina odebrána.");
+                      toast.success(g ? t("card.assignedToast", { name: g.name }) : t("card.unassignedToast"));
                     }}
                     onClose={() => setPicker(false)} />
                 )}
@@ -256,7 +260,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
             onClick={() => editing ? setEditing(false) : openEdit()}
             className="arca-btn sm arca-btn--ghost"
             style={{ color: editing ? "var(--accent)" : "var(--muted)", padding: "6px 8px" }}
-            title="Upravit strážce"
+            title={t("card.editTitle")}
           >
             <IcSettings />
           </button>
@@ -264,18 +268,18 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
           {/* Delete */}
           {confirming ? (
             <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-              <span className="arca-sub" style={{ fontSize: 11.5 }}>Odebrat?</span>
+              <span className="arca-sub" style={{ fontSize: 11.5 }}>{t("card.removeConfirm")}</span>
               <button type="button" onClick={handleRemove} disabled={removing}
                 className="arca-btn sm" style={{ color: "#c00", borderColor: "#fcc", padding: "4px 8px" }}>
-                {removing ? <IcSpin /> : "Ano"}
+                {removing ? <IcSpin /> : t("card.yes")}
               </button>
               <button type="button" onClick={() => setConfirming(false)}
-                className="arca-btn sm arca-btn--ghost" style={{ padding: "4px 8px" }}>Ne</button>
+                className="arca-btn sm arca-btn--ghost" style={{ padding: "4px 8px" }}>{t("card.no")}</button>
             </div>
           ) : (
             <button type="button" onClick={() => setConfirming(true)}
               className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "6px 8px" }}
-              title="Odebrat strážce">
+              title={t("card.removeTitle")}>
               <IcTrash />
             </button>
           )}
@@ -291,7 +295,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
         }}>
           <div className="arca-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
             <div>
-              <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>Jméno</label>
+              <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>{t("card.nameLabel")}</label>
               <input
                 className="arca-input"
                 value={editName}
@@ -300,7 +304,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
               />
             </div>
             <div>
-              <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>E-mail</label>
+              <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>{t("card.emailLabel")}</label>
               <input
                 type="email"
                 className="arca-input"
@@ -312,7 +316,7 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>Telefon</label>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>{t("card.phoneLabel")}</label>
             <input
               type="tel"
               className="arca-input"
@@ -338,10 +342,10 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
               disabled={saving || !editName.trim() || !editEmail.trim()}
               className="arca-btn arca-btn--primary sm"
             >
-              {saving ? <IcSpin /> : <IcCheck />} Uložit
+              {saving ? <IcSpin /> : <IcCheck />} {t("card.saveBtn")}
             </button>
             <button type="button" onClick={() => setEditing(false)} className="arca-btn arca-btn--ghost sm">
-              Zrušit
+              {t("card.cancelBtn")}
             </button>
           </div>
         </div>
@@ -354,15 +358,18 @@ function GuardianCard({ guardian: initial, groups, showGroupChip, onRemove, onGr
 
 const CHANNEL_SECTIONS = [
   {
-    key: "contacts", label: "Telefon & WhatsApp",
+    key: "contacts",
     fields: [
-      { name: "phone",    label: "Telefon",   placeholder: "+420 600 000 000", type: "tel"   },
-      { name: "whatsapp", label: "WhatsApp",  placeholder: "+420 600 000 000", type: "tel"   },
+      { name: "phone",    type: "tel" },
+      { name: "whatsapp", type: "tel" },
     ],
   },
-];
+] as const;
 
 function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
+  const t = useTranslations("Guardians");
+  const FIELD_LABELS: Record<string, string> = { phone: t("addForm.phoneLabel"), whatsapp: t("addForm.whatsappLabel") };
+  const FIELD_PLACEHOLDERS: Record<string, string> = { phone: t("addForm.phonePlaceholder"), whatsapp: t("addForm.phonePlaceholder") };
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
@@ -371,7 +378,7 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
 
   // Live completeness tracking
   const [vals, setVals] = useState<Record<string, string>>({});
-  const score = contactScore({ email: vals.email, phone: vals.phone });
+  const score = contactScore({ email: vals.email, phone: vals.phone }, { none: t("contactScore.none"), minimum: t("contactScore.minimum"), good: t("contactScore.good") });
 
   function handleAdd(formData: FormData) {
     setError(null);
@@ -382,12 +389,12 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
         const email = (formData.get("email") as string).trim().toLowerCase();
         const phone = (formData.get("phone") as string)?.trim() || undefined;
         onAdded({ id: `temp-${Date.now()}`, name, email, phone, groupId: null, group: null });
-        toast.success(`${name} přidán/a jako strážce.`);
+        toast.success(t("addForm.addedToast", { name }));
         setOpen(false);
         formRef.current?.reset();
         setVals({});
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Chyba při přidávání");
+        setError(err instanceof Error ? err.message : t("addForm.genericError"));
       }
     });
   }
@@ -398,7 +405,7 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
         style={{ width:"100%", padding:"14px 18px", display:"flex", alignItems:"center",
           gap:10, borderStyle:"dashed", background:"transparent",
           color:"var(--muted)", cursor:"pointer", justifyContent:"center" }}>
-        <IcPlus /> Pozvat dalšího strážce
+        <IcPlus /> {t("addForm.inviteAnother")}
       </button>
     );
   }
@@ -414,13 +421,13 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
         {/* Required fields */}
         <div className="arca-form-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
           <div>
-            <label className="arca-mono" style={{ color:"var(--muted)", fontSize:10, display:"block", marginBottom:5 }}>Celé jméno *</label>
-            <input name="name" required placeholder="Jan Novák" className="arca-input" style={{ fontSize:13 }}
+            <label className="arca-mono" style={{ color:"var(--muted)", fontSize:10, display:"block", marginBottom:5 }}>{t("addForm.fullName")}</label>
+            <input name="name" required placeholder={t("addForm.namePlaceholder")} className="arca-input" style={{ fontSize:13 }}
               onChange={e => setVals(v => ({ ...v, name: e.target.value }))} />
           </div>
           <div>
-            <label className="arca-mono" style={{ color:"var(--muted)", fontSize:10, display:"block", marginBottom:5 }}>E-mail *</label>
-            <input name="email" type="email" required placeholder="jan@example.com" className="arca-input" style={{ fontSize:13 }}
+            <label className="arca-mono" style={{ color:"var(--muted)", fontSize:10, display:"block", marginBottom:5 }}>{t("addForm.email")}</label>
+            <input name="email" type="email" required placeholder="name@example.com" className="arca-input" style={{ fontSize:13 }}
               onChange={e => setVals(v => ({ ...v, email: e.target.value }))} />
           </div>
         </div>
@@ -437,14 +444,14 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
                 style={{ transform: expanded[section.key] ? "rotate(90deg)" : undefined, transition:"transform .15s" }}>
                 <path d="M9 6l6 6-6 6"/>
               </svg>
-              {section.label}
+              {t("addForm.channelsLabel")}
             </button>
             {expanded[section.key] && (
               <div className="arca-form-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:8 }}>
                 {section.fields.map(f => (
                   <div key={f.name}>
-                    <label className="arca-mono" style={{ color:"var(--muted)", fontSize:10, display:"block", marginBottom:5 }}>{f.label}</label>
-                    <input name={f.name} type={f.type} placeholder={f.placeholder} className="arca-input" style={{ fontSize:13 }}
+                    <label className="arca-mono" style={{ color:"var(--muted)", fontSize:10, display:"block", marginBottom:5 }}>{FIELD_LABELS[f.name]}</label>
+                    <input name={f.name} type={f.type} placeholder={FIELD_PLACEHOLDERS[f.name]} className="arca-input" style={{ fontSize:13 }}
                       onChange={e => setVals(v => ({ ...v, [f.name]: e.target.value }))} />
                   </div>
                 ))}
@@ -464,15 +471,15 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
               style={{ transform: expanded.challenge ? "rotate(90deg)" : undefined, transition:"transform .15s" }}>
               <path d="M9 6l6 6-6 6"/>
             </svg>
-            Bezpečnostní otázka
+            {t("addForm.securityQuestion")}
           </button>
           {expanded.challenge && (
             <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:8 }}>
               <p className="arca-sub" style={{ fontSize:12, margin:0 }}>
-                Tato otázka chrání přístup — příjemce musí znát odpověď, aby zprávu otevřel.
+                {t("addForm.securityHint")}
               </p>
-              <input name="challengeQuestion" placeholder="Jak se jmenoval náš první pes?" className="arca-input" style={{ fontSize:13 }} />
-              <input name="challengeAnswer" placeholder="Odpověď (uchovává se zahashovaná)" className="arca-input" style={{ fontSize:13 }} />
+              <input name="challengeQuestion" placeholder={t("addForm.challengeQuestionPlaceholder")} className="arca-input" style={{ fontSize:13 }} />
+              <input name="challengeAnswer" placeholder={t("addForm.challengeAnswerPlaceholder")} className="arca-input" style={{ fontSize:13 }} />
             </div>
           )}
         </div>
@@ -487,11 +494,11 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
 
         <div style={{ display:"flex", gap:8 }}>
           <button type="submit" disabled={pending} className="arca-btn arca-btn--primary sm">
-            {pending ? <IcSpin /> : <IcPlus />} Přidat strážce
+            {pending ? <IcSpin /> : <IcPlus />} {t("addForm.addBtn")}
           </button>
           <button type="button" className="arca-btn arca-btn--ghost sm"
             onClick={() => { setOpen(false); setError(null); setVals({}); }}>
-            Zrušit
+            {t("addForm.cancelBtn")}
           </button>
         </div>
       </form>
@@ -504,6 +511,8 @@ function AddGuardianForm({ onAdded }: { onAdded: (g: GuardianItem) => void }) {
 function CreateGroupPanel({ onCreated, onClose }: {
   onCreated: (g: GuardianGroup) => void; onClose: () => void;
 }) {
+  const t = useTranslations("Guardians");
+  const GROUP_PRESETS = GROUP_PRESET_META.map(p => ({ ...p, name: t(`createGroup.presets.${p.key}`) }));
   const [name, setName] = useState("");
   const [color, setColor] = useState("sage");
   const [emoji, setEmoji] = useState("");
@@ -517,7 +526,7 @@ function CreateGroupPanel({ onCreated, onClose }: {
       const res = await createGroup({ name, color, emoji: emoji || undefined });
       if ("error" in res) { toast.error(res.error); return; }
       onCreated(res);
-      toast.success(`Skupina „${res.name}" vytvořena.`);
+      toast.success(t("createGroup.createdToast", { name: res.name }));
       onClose();
     });
   }
@@ -536,14 +545,14 @@ function CreateGroupPanel({ onCreated, onClose }: {
         ))}
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 54px", gap:8, marginBottom:10 }}>
-        <input ref={ref} className="arca-input" placeholder="Název skupiny…"
+        <input ref={ref} className="arca-input" placeholder={t("createGroup.namePlaceholder")}
           value={name} onChange={e => setName(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }} />
         <input className="arca-input" placeholder="😀" value={emoji}
           onChange={e => setEmoji(e.target.value)} style={{ textAlign:"center", fontSize:17 }} maxLength={4} />
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-        <span className="arca-mono" style={{ color:"var(--muted)", fontSize:11 }}>Barva</span>
+        <span className="arca-mono" style={{ color:"var(--muted)", fontSize:11 }}>{t("createGroup.colorLabel")}</span>
         {COLOR_OPTIONS.map(c => (
           <button key={c.value} type="button" onClick={() => setColor(c.value)} title={c.label}
             style={{ width:18, height:18, borderRadius:"50%", border:"2px solid",
@@ -554,9 +563,9 @@ function CreateGroupPanel({ onCreated, onClose }: {
       </div>
       <div style={{ display:"flex", gap:8 }}>
         <button type="button" onClick={save} disabled={pending || !name.trim()} className="arca-btn arca-btn--primary sm">
-          {pending ? <IcSpin /> : <IcPlus />} Vytvořit
+          {pending ? <IcSpin /> : <IcPlus />} {t("createGroup.createBtn")}
         </button>
-        <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost sm">Zrušit</button>
+        <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost sm">{t("createGroup.cancelBtn")}</button>
       </div>
     </div>
   );
@@ -568,6 +577,7 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
   initialGuardians: GuardianItem[];
   initialGroups: GuardianGroup[];
 }) {
+  const t = useTranslations("Guardians");
   const [guardians, setGuardians] = useState(initialGuardians);
   const [groups, setGroups]       = useState(initialGroups);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
@@ -585,7 +595,7 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
     startDeleteG(async () => {
       const res = await deleteGroup(id);
       if ("error" in res) { toast.error(res.error); return; }
-      toast.success("Skupina smazána.");
+      toast.success(t("filterBar.groupDeletedToast"));
       setGroups(prev => prev.filter(g => g.id !== id));
       setGuardians(prev => prev.map(g => g.groupId === id ? { ...g, groupId: null, group: null } : g));
       if (activeGroup === id) setActiveGroup(null);
@@ -621,7 +631,7 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
               borderColor: !activeGroup ? "var(--ink)" : "var(--hairline-2)",
               background: !activeGroup ? "var(--ink)" : "var(--surface-2)",
               color: !activeGroup ? "var(--bg)" : "var(--ink-2)" }}>
-            Všichni <span style={{ opacity:.6, marginLeft:3 }}>{guardians.length}</span>
+            {t("filterBar.all")} <span style={{ opacity:.6, marginLeft:3 }}>{guardians.length}</span>
           </button>
 
           {groups.map(g => {
@@ -639,7 +649,7 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
                   {g.name}
                   <span style={{ opacity:.55, fontSize:11 }}>{guardians.filter(gd => gd.groupId === g.id).length}</span>
                 </button>
-                <button type="button" onClick={() => handleDeleteGroup(g.id)} title="Smazat skupinu"
+                <button type="button" onClick={() => handleDeleteGroup(g.id)} title={t("filterBar.deleteGroupTitle")}
                   style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)",
                     background:"transparent", border:"none", cursor:"pointer",
                     color: isSel ? c.text : "var(--muted-2)", opacity:.5, fontSize:12 }}>×</button>
@@ -649,7 +659,7 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
 
           <button type="button" onClick={() => setShowCreate(s => !s)}
             className="arca-btn sm arca-btn--ghost" style={{ gap:4 }}>
-            <IcPlus /> Nová skupina
+            <IcPlus /> {t("filterBar.newGroup")}
           </button>
         </div>
       )}
@@ -670,7 +680,7 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
               onUpdated={(id, data) => setGuardians(prev => prev.map(x => x.id === id ? { ...x, ...data } : x))} />
           ))}
           {guardians.length === 0 && (
-            <p className="arca-sub" style={{ fontSize:13, fontStyle:"italic" }}>Zatím žádní strážci.</p>
+            <p className="arca-sub" style={{ fontSize:13, fontStyle:"italic" }}>{t("empty.noGuardians")}</p>
           )}
         </div>
       ) : sections.length > 0 ? (
@@ -692,12 +702,12 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
                       {section.group.name}
                     </span>
                     <span className="arca-mono" style={{ color:"var(--muted)", fontSize:11 }}>
-                      {section.items.length} {section.items.length < 5 ? "strážci" : "strážců"}
+                      {t("sections.guardiansCount", { count: section.items.length })}
                     </span>
                   </>
                 ) : (
                   <span className="arca-mono" style={{ color:"var(--muted)", fontSize:11, textTransform:"uppercase", letterSpacing:".06em" }}>
-                    Bez skupiny · {section.items.length}
+                    {t("sections.ungrouped")} · {section.items.length}
                   </span>
                 )}
                 <div style={{ flex:1, height:1, background:"var(--hairline)" }} />
@@ -723,7 +733,7 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
               onUpdated={(id, data) => setGuardians(prev => prev.map(x => x.id === id ? { ...x, ...data } : x))} />
           ))}
           {displayedGuardians.length === 0 && (
-            <p className="arca-sub" style={{ fontSize:13 }}>Tato skupina nemá žádné členy.</p>
+            <p className="arca-sub" style={{ fontSize:13 }}>{t("empty.groupNoMembers")}</p>
           )}
         </div>
       )}
@@ -737,7 +747,7 @@ export default function GuardianListClient({ initialGuardians, initialGroups }: 
       {!hasGroups && !showCreate && (
         <button type="button" onClick={() => setShowCreate(true)}
           className="arca-btn sm arca-btn--ghost" style={{ marginTop:10, gap:4, color:"var(--muted)" }}>
-          <IcPlus /> Vytvořit skupinu strážců
+          <IcPlus /> {t("createGroupLink")}
         </button>
       )}
 

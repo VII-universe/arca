@@ -412,6 +412,122 @@
     "scheduleMessageBtn": "Schedule a message",
     "noRecipient": "—"
   },
+  "Guardians": {
+    "kicker": "Guardians",
+    "title": "The people you <em>trust.</em>",
+    "subtitle": "Guardians never see the content of your messages. They only decide together when it's time for ARCA to deliver them. We recommend at least three.",
+    "ruleCard": {
+      "badge": "Delivery rule",
+      "title": "Silent Guardian",
+      "body": "If you're gone from ARCA for a long time, it gently asks your Guardians. If <strong>2 of 3</strong> confirm, your scheduled messages start being delivered.",
+      "status": "Status",
+      "allGood": "All good",
+      "lastSeen": "Last seen here",
+      "justNow": "just now",
+      "daysAgo": "{days} days ago",
+      "confirmRule": "Guardians confirm",
+      "confirmRatio": "2 of 3",
+      "guardianCount": "Number of Guardians",
+      "firstDeliveryLabel": "First delivery after",
+      "firstDeliveryValue": "14 days after confirmation"
+    },
+    "yourGuardians": "Your Guardians",
+    "presence": {
+      "title": "Presence",
+      "active": "Active",
+      "hint": "Confirm you're here and reset every inactivity timer.",
+      "justNow": "just now",
+      "minsAgo": "{mins} min ago",
+      "hoursAgo": "{hours} hr ago",
+      "yesterday": "yesterday",
+      "daysAgo": "{days} days ago",
+      "confirming": "Confirming…",
+      "imHere": "I'm here",
+      "lastSeenHere": "Last seen here"
+    },
+    "heartbeat": {
+      "hint": "Send a request to this URL from any automation to reset your timer.",
+      "copyLabel": "Copy URL",
+      "setupUptimeRobot": "Set up with UptimeRobot (free)"
+    },
+    "pingSteps": {
+      "title": "Gentle outreach",
+      "subtitle": "Before ARCA delivers anything, it reaches out to you in three steps.",
+      "step1Label": "60 days",
+      "step1Sub": "A gentle in-app notification.",
+      "step2Label": "75 days",
+      "step2Sub": "An email asking 'Are you there?'",
+      "step3Label": "90 days",
+      "step3Sub": "Guardians activated — 14 days to respond."
+    },
+    "reassurance": {
+      "titlePlain": "You can relax.",
+      "titleItalic": "We've got this.",
+      "body": "Your messages are encrypted and delivered exactly when you wanted. Not sooner, not later.",
+      "explorePlanBtn": "Explore the plan"
+    },
+    "groupPicker": { "noGroup": "No group" },
+    "contactScore": { "none": "No contact", "minimum": "Minimum", "good": "Good coverage" },
+    "card": {
+      "confirmedBadge": "Confirmed",
+      "groupFallback": "Group",
+      "editTitle": "Edit Guardian",
+      "removeTitle": "Remove Guardian",
+      "removeConfirm": "Remove?",
+      "yes": "Yes",
+      "no": "No",
+      "nameLabel": "Name",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "saveBtn": "Save",
+      "cancelBtn": "Cancel",
+      "savedToast": "Guardian saved.",
+      "removedToast": "{name} removed as Guardian.",
+      "assignedToast": "Assigned to group \"{name}\".",
+      "unassignedToast": "Group removed."
+    },
+    "addForm": {
+      "inviteAnother": "Invite another Guardian",
+      "fullName": "Full name *",
+      "namePlaceholder": "Jane Smith",
+      "email": "Email *",
+      "channelsLabel": "Phone & WhatsApp",
+      "phoneLabel": "Phone",
+      "whatsappLabel": "WhatsApp",
+      "phonePlaceholder": "+1 555 000 0000",
+      "securityQuestion": "Security question",
+      "securityHint": "This question protects access — the recipient must know the answer to open the message.",
+      "challengeQuestionPlaceholder": "What was our first dog's name?",
+      "challengeAnswerPlaceholder": "Answer (stored hashed)",
+      "addBtn": "Add Guardian",
+      "cancelBtn": "Cancel",
+      "addedToast": "{name} added as a Guardian.",
+      "genericError": "Error while adding"
+    },
+    "createGroup": {
+      "presets": { "family": "Family", "friends": "Friends", "colleagues": "Colleagues" },
+      "namePlaceholder": "Group name…",
+      "colorLabel": "Color",
+      "createBtn": "Create",
+      "cancelBtn": "Cancel",
+      "createdToast": "Group \"{name}\" created."
+    },
+    "filterBar": {
+      "all": "Everyone",
+      "deleteGroupTitle": "Delete group",
+      "newGroup": "New group",
+      "groupDeletedToast": "Group deleted."
+    },
+    "sections": {
+      "guardiansCount": "{count, plural, one {# guardian} other {# guardians}}",
+      "ungrouped": "No group"
+    },
+    "empty": {
+      "noGuardians": "No Guardians yet.",
+      "groupNoMembers": "This group has no members."
+    },
+    "createGroupLink": "Create a Guardian group"
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Your legacy, secured for the future.",
