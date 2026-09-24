@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 const IcCopy = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
@@ -19,6 +20,7 @@ const IcLink = () => (
 );
 
 export default function HeartbeatWidget({ webhookSecret, appUrl }: { webhookSecret: string; appUrl: string }) {
+  const t = useTranslations("Guardians.heartbeat");
   const [copied, setCopied] = useState(false);
   const url = `${appUrl}/api/heartbeat/${webhookSecret}`;
 
@@ -32,7 +34,7 @@ export default function HeartbeatWidget({ webhookSecret, appUrl }: { webhookSecr
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div>
         <div className="arca-sub" style={{ fontSize: 12.5, marginBottom: 10 }}>
-          Pošli požadavek na tuto URL z jakékoliv automatizace a resetuješ svůj časovač.
+          {t("hint")}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--bg-tint)", borderRadius: "var(--r-md)", padding: "10px 14px", border: "1px solid var(--hairline)" }}>
           <code className="arca-mono" style={{ flex: 1, fontSize: 11, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -42,7 +44,7 @@ export default function HeartbeatWidget({ webhookSecret, appUrl }: { webhookSecr
             onClick={copy}
             className="arca-btn sm arca-btn--ghost"
             style={{ flexShrink: 0, padding: "4px 8px", color: copied ? "var(--sage)" : "var(--muted)" }}
-            aria-label="Kopírovat URL"
+            aria-label={t("copyLabel")}
           >
             {copied ? <IcCheck /> : <IcCopy />}
           </button>
@@ -55,7 +57,7 @@ export default function HeartbeatWidget({ webhookSecret, appUrl }: { webhookSecr
         rel="noopener noreferrer"
         style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)", textDecoration: "none" }}
       >
-        <IcLink /> Nastavit přes UptimeRobot (zdarma)
+        <IcLink /> {t("setupUptimeRobot")}
       </a>
     </div>
   );
