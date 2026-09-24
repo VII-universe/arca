@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations, getLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { getSignedAvatarUrl } from "@/app/actions/recipients";
 import { Avatar } from "@/components/arca/Avatar";
 import ModeFilterSection from "@/components/dashboard/ModeFilterSection";
 import { APP_URL } from "@/lib/resend";
-export const metadata = { title: "Přehled — ARCA" };
+
+export async function generateMetadata() {
+  const t = await getTranslations("Nav");
+  return { title: `${t("overview")} — ARCA` };
+}
 
 function initialsFor(name: string): string {
   return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
@@ -28,10 +33,9 @@ function daysUntilNextOccurrence(date: Date): number {
 }
 
 // ── Topbar ────────────────────────────────────────────────────────────────────
-function Topbar({ crumbs }: { crumbs: string[] }) {
+function Topbar({ crumbs, dateLocale, syncedLabel }: { crumbs: string[]; dateLocale: string; syncedLabel: string }) {
   const now = new Date();
-  const dateStr = now.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const timeStr = now.toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
+  const timeStr = now.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" });
   return (
     <div className="arca-topbar">
       <div className="arca-topbar__crumbs">
@@ -45,7 +49,7 @@ function Topbar({ crumbs }: { crumbs: string[] }) {
       </div>
       <div className="arca-grow" />
       <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11 }}>
-        Vše synchronizováno · {timeStr}
+        {syncedLabel} · {timeStr}
       </span>
     </div>
   );
@@ -53,6 +57,11 @@ function Topbar({ crumbs }: { crumbs: string[] }) {
 
 
 export default async function DashboardPage() {
+  const t = await getTranslations("Dashboard");
+  const tNav = await getTranslations("Nav");
+  const locale = await getLocale();
+  const dateLocale = locale === "cs" ? "cs-CZ" : "en-GB";
+
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
@@ -110,7 +119,7 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const firstName = (dbUser?.name ?? email.split("@")[0] ?? "příteli").split(" ")[0];
+  const firstName = (dbUser?.name ?? email.split("@")[0] ?? t("greeting.fallbackName")).split(" ")[0];
   const isPro = isAdminEmail || dbUser?.isPremium === true || dbUser?.role === "ADMIN";
 
   const activePacks = packs.filter((p) => p.status === "ACTIVE").length;
@@ -177,7 +186,7 @@ export default async function DashboardPage() {
       const key = `${r.id}-birthday`;
       if (days <= 30 && !reminderSeen.has(key)) {
         reminderSeen.add(key);
-        reminders.push({ recipientId: r.id, name: r.name, relationship: r.relationship, label: "Narozeniny", days, occasion: "birthday", urgent: days <= 7 });
+        reminders.push({ recipientId: r.id, name: r.name, relationship: r.relationship, label: t("reminders.birthday"), days, occasion: "birthday", urgent: days <= 7 });
       }
     }
     if (r.anniversary) {
@@ -185,23 +194,23 @@ export default async function DashboardPage() {
       const key = `${r.id}-anniversary`;
       if (days <= 30 && !reminderSeen.has(key)) {
         reminderSeen.add(key);
-        reminders.push({ recipientId: r.id, name: r.name, relationship: r.relationship, label: "Výročí", days, occasion: "anniversary", urgent: days <= 7 });
+        reminders.push({ recipientId: r.id, name: r.name, relationship: r.relationship, label: t("reminders.anniversary"), days, occasion: "anniversary", urgent: days <= 7 });
       }
     }
   }
   reminders.sort((a, b) => a.days - b.days);
 
   const now = new Date();
-  const dayName = now.toLocaleDateString("cs-CZ", { weekday: "long" });
+  const dayName = now.toLocaleDateString(dateLocale, { weekday: "long" });
   const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-  const shortDate = now.toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" });
+  const shortDate = now.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" });
 
   const lastActive = dbUser?.lastActiveAt ?? new Date();
   const daysSinceActive = Math.floor((now.getTime() - lastActive.getTime()) / 86_400_000);
 
   return (
     <>
-      <Topbar crumbs={["Přehled"]} />
+      <Topbar crumbs={[tNav("overview")]} dateLocale={dateLocale} syncedLabel={t("topbar.synced")} />
       <div className="arca-inner arca-fade-in">
 
         {/* ── Ready-to-open alert — split by mode so a LEGACY delivery      ──
@@ -218,15 +227,15 @@ export default async function DashboardPage() {
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 550, fontSize: 14 }}>
                   {mode === "SELF"
-                    ? (single ? `Tvůj dopis „${single.title}" je připraven k otevření` : `${modePacks.length} dopisy jsou připravené k otevření`)
-                    : (single ? "Jedna z tvých zpráv byla doručena" : `${modePacks.length} tvé zprávy byly doručeny`)}
+                    ? (single ? t("readyToOpen.selfTitleSingle", { title: single.title }) : t("readyToOpen.selfTitleMultiple", { count: modePacks.length }))
+                    : (single ? t("readyToOpen.legacyTitleSingle") : t("readyToOpen.legacyTitleMultiple", { count: modePacks.length }))}
                 </div>
                 <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 2 }}>
-                  {mode === "SELF" ? "Napsal(a) jsi ho sám(a) sobě — nastal čas si ho přečíst." : "Nastal čas doručení."}
+                  {mode === "SELF" ? t("readyToOpen.selfSubtitle") : t("readyToOpen.legacySubtitle")}
                 </div>
               </div>
               <Link href={href} target={single ? "_blank" : undefined} rel={single ? "noopener noreferrer" : undefined} className="arca-btn arca-btn--clay sm">
-                {mode === "SELF" ? "Otevřít" : "Zobrazit"}
+                {mode === "SELF" ? t("readyToOpen.openBtn") : t("readyToOpen.viewBtn")}
               </Link>
             </div>
           );
@@ -238,13 +247,13 @@ export default async function DashboardPage() {
             <div style={{ fontSize: 20 }}>⚠️</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 550, fontSize: 14 }}>
-                {gracePacks.length === 1 ? "Jedna Arca" : `${gracePacks.length} Arcy`} čekají na potvrzení strážci
+                {gracePacks.length === 1 ? t("gracePeriod.titleSingle") : t("gracePeriod.titleMultiple", { count: gracePacks.length })}
               </div>
               <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 2 }}>
-                Zkontroluj stav a případně zrušit doručení.
+                {t("gracePeriod.subtitle")}
               </div>
             </div>
-            <Link href="/dashboard/vault" className="arca-btn arca-btn--clay sm">Zobrazit</Link>
+            <Link href="/dashboard/vault" className="arca-btn arca-btn--clay sm">{t("gracePeriod.viewBtn")}</Link>
           </div>
         )}
 
@@ -275,7 +284,7 @@ export default async function DashboardPage() {
                   </span>
                   {" "}
                   <span className="arca-sub" style={{ fontSize: 13 }}>
-                    za {r.days} {r.days === 1 ? "den" : r.days < 5 ? "dny" : "dní"}
+                    {t("reminders.inDays", { days: r.days })}
                   </span>
                 </div>
                 {r.urgent && (
@@ -290,7 +299,7 @@ export default async function DashboardPage() {
                   href={`/dashboard/arca/new?recipientId=${r.recipientId}&occasion=${r.occasion}`}
                   className="arca-btn sm arca-btn--clay"
                 >
-                  Napsat zprávu
+                  {t("reminders.writeMessageBtn")}
                 </Link>
               </div>
             ))}
@@ -307,15 +316,15 @@ export default async function DashboardPage() {
         <div style={{ marginBottom: 36 }}>
           <div className="arca-kicker" style={{ marginBottom: 10 }}>{dayNameCap} · {shortDate}</div>
           <h1 className="arca-h1 arca-greeting-h1" style={{ fontSize: 52 }}>
-            Dobrý den, {firstName}. <em>Co dnes uložíš?</em>
+            {t.rich("greeting.title", { name: firstName, em: (chunks) => <em>{chunks}</em> })}
           </h1>
           <p className="arca-sub" style={{ maxWidth: 580, marginTop: 12, fontSize: 15 }}>
-            Tvoje schránka nese{" "}
+            {t("greeting.subtitlePrefix")}{" "}
             <strong style={{ color: "var(--ink)", fontWeight: 550 }}>
-              {packs.length} {packs.length === 1 ? "zprávu" : packs.length < 5 ? "zprávy" : "zpráv"}
+              {t("greeting.packsCount", { count: packs.length })}
             </strong>{" "}
-            pro {totalRecipients} {totalRecipients === 1 ? "člověka" : "lidí"}.
-            {activePacks > 0 && ` ${activePacks} ${activePacks === 1 ? "je připravena" : "jsou připraveny"} k doručení.`}
+            {t("greeting.subtitleFor")} {t("greeting.peopleCount", { count: totalRecipients })}.
+            {activePacks > 0 && ` ${t("greeting.activeSuffix", { count: activePacks })}`}
           </p>
         </div>
 
@@ -324,20 +333,20 @@ export default async function DashboardPage() {
           <div className="arca-hero-split" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", minHeight: 200 }}>
             <div style={{ padding: "32px 36px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div>
-                <span className="arca-chip clay"><span className="dot" /> Navrhujeme dnes</span>
+                <span className="arca-chip clay"><span className="dot" /> {t("hero.badge")}</span>
                 <h2 className="arca-h1" style={{ marginTop: 14, marginBottom: 8, fontSize: 30, lineHeight: 1.25 }}>
-                  Otevřít editor <em>a začít psát.</em>
+                  {t.rich("hero.title", { em: (chunks) => <em>{chunks}</em> })}
                 </h2>
                 <p className="arca-sub" style={{ maxWidth: 360 }}>
-                  I krátká věta zanechá stopu. Vrátíš se k ní, kdykoli budeš chtít.
+                  {t("hero.subtitle")}
                 </p>
               </div>
               <div className="arca-row" style={{ gap: 10, marginTop: 24 }}>
                 <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary lg">
-                  Otevřít editor
+                  {t("hero.openEditorBtn")}
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </Link>
-                <Link href="/dashboard/vault" className="arca-btn arca-btn--ghost lg">Schránka</Link>
+                <Link href="/dashboard/vault" className="arca-btn arca-btn--ghost lg">{t("hero.vaultBtn")}</Link>
               </div>
             </div>
             <div className="arca-hero-right" style={{ background: "linear-gradient(160deg, var(--accent-tint) 0%, var(--accent-soft) 60%, color-mix(in srgb, var(--accent) 50%, var(--accent-soft)) 100%)", position: "relative", overflow: "hidden" }}>
@@ -362,7 +371,7 @@ export default async function DashboardPage() {
         {/* ── People strip — horizontally swipeable, esp. on mobile ── */}
         {people.length > 0 && (
           <div style={{ marginBottom: 36 }}>
-            <h3 className="arca-h3" style={{ marginBottom: 12 }}>Podle koho</h3>
+            <h3 className="arca-h3" style={{ marginBottom: 12 }}>{t("peopleStrip.label")}</h3>
             <div
               className="arca-side__scroll"
               style={{
@@ -398,7 +407,7 @@ export default async function DashboardPage() {
                     {person.name.split(" ")[0]}
                   </span>
                   <span className="arca-mono" style={{ fontSize: 10, color: "var(--muted)" }}>
-                    {person.packCount} {person.packCount === 1 ? "zpráva" : person.packCount < 5 ? "zprávy" : "zpráv"}
+                    {t("peopleStrip.messageCount", { count: person.packCount })}
                   </span>
                 </Link>
               ))}
@@ -428,18 +437,19 @@ export default async function DashboardPage() {
             title: unansweredSelfPack.title,
             deliveredAt: unansweredSelfPack.triggerCondition?.executeAtDate?.toISOString() ?? null,
           } : null}
+          dateLocale={dateLocale}
         />
 
         {/* ── Pro upsell (free users) ─────────────────────────────── */}
         {!isPro && (
           <div className="arca-card flat" style={{ background: "var(--accent-tint)", border: "none", marginTop: 36, padding: "20px 24px", display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 550, fontSize: 14 }}>ARCA Pro — bez hranic</div>
+              <div style={{ fontWeight: 550, fontSize: 14 }}>{t("proUpsell.title")}</div>
               <p className="arca-sub" style={{ fontSize: 12.5, margin: "2px 0 0" }}>
-                Neomezené zprávy, hlasové a video nahrávky, šifrování end-to-end a fyzické dopisy.
+                {t("proUpsell.subtitle")}
               </p>
             </div>
-            <Link href="/dashboard/billing" className="arca-btn arca-btn--clay sm">Upgradovat →</Link>
+            <Link href="/dashboard/billing" className="arca-btn arca-btn--clay sm">{t("proUpsell.upgradeBtn")}</Link>
           </div>
         )}
       </div>

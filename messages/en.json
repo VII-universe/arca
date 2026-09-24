@@ -6,6 +6,137 @@
       "en": "English"
     }
   },
+  "Nav": {
+    "overview": "Overview",
+    "vault": "Vault",
+    "newMessage": "New message",
+    "calendar": "Calendar",
+    "guardians": "Guardians",
+    "blueprint": "Life Manual",
+    "settings": "Settings",
+    "closeMenu": "Close menu",
+    "searchPlaceholder": "Search your vault…",
+    "recipients": "Recipients",
+    "everyone": "Everyone",
+    "addRecipient": "Add recipient",
+    "quietInspirationLabel": "Quiet inspiration",
+    "quietInspirationQuote": "\"Do you remember the day we first…\" — start there.",
+    "adminRole": "Admin · Full access",
+    "proPlan": "ARCA Pro",
+    "freePlan": "Free plan",
+    "signOut": "Sign out",
+    "openNav": "Open navigation",
+    "mainNav": "Main navigation"
+  },
+  "Dashboard": {
+    "topbar": {
+      "synced": "All synced"
+    },
+    "readyToOpen": {
+      "selfTitleSingle": "Your letter \"{title}\" is ready to open",
+      "selfTitleMultiple": "{count} letters are ready to open",
+      "selfSubtitle": "You wrote it to yourself — it's time to read it.",
+      "legacyTitleSingle": "One of your messages was delivered",
+      "legacyTitleMultiple": "{count} of your messages were delivered",
+      "legacySubtitle": "Its delivery time has come.",
+      "openBtn": "Open",
+      "viewBtn": "View"
+    },
+    "gracePeriod": {
+      "titleSingle": "One Arca is awaiting Guardian confirmation",
+      "titleMultiple": "{count} Arcas are awaiting Guardian confirmation",
+      "subtitle": "Check its status and cancel delivery if needed.",
+      "viewBtn": "View"
+    },
+    "reminders": {
+      "birthday": "Birthday",
+      "anniversary": "Anniversary",
+      "inDays": "in {days, plural, one {# day} other {# days}}",
+      "writeMessageBtn": "Write a message"
+    },
+    "greeting": {
+      "fallbackName": "friend",
+      "title": "Good day, {name}. <em>What will you save today?</em>",
+      "packsCount": "{count, plural, one {# message} other {# messages}}",
+      "peopleCount": "{count, plural, one {# person} other {# people}}",
+      "subtitlePrefix": "Your vault carries",
+      "subtitleFor": "for",
+      "activeSuffix": "{count, plural, one {# is ready} other {# are ready}} for delivery."
+    },
+    "hero": {
+      "badge": "Suggested for today",
+      "title": "Open the editor <em>and start writing.</em>",
+      "subtitle": "Even a short sentence leaves a mark. Come back to it whenever you want.",
+      "openEditorBtn": "Open editor",
+      "vaultBtn": "Vault"
+    },
+    "peopleStrip": {
+      "label": "By recipient",
+      "messageCount": "{count, plural, one {# message} other {# messages}}"
+    },
+    "proUpsell": {
+      "title": "ARCA Pro — without limits",
+      "subtitle": "Unlimited messages, voice and video recording, end-to-end encryption, and physical letters.",
+      "upgradeBtn": "Upgrade →"
+    },
+    "filter": {
+      "all": "All",
+      "self": "Self",
+      "legacy": "Legacy"
+    },
+    "stats": {
+      "inVault": "In vault",
+      "inVaultHint": "for {count, plural, one {# person} other {# people}}",
+      "active": "Active",
+      "activeHint": "ready for delivery",
+      "delivered": "Delivered",
+      "deliveredHint": "successfully delivered",
+      "drafts": "Drafts",
+      "draftsHintSome": "waiting to be finished",
+      "draftsHintNone": "none yet",
+      "guardiansLabel": "Guardians",
+      "guardiansHintSome": "active protection",
+      "guardiansHintNone": "none yet"
+    },
+    "upcoming": {
+      "title": "Coming up",
+      "openCalendarBtn": "Open calendar",
+      "empty": "No scheduled messages.",
+      "createFirst": "Create your first →",
+      "forRecipient": "for {name}",
+      "hiddenSelf": "{count, plural, one {# message to a loved one is hidden} other {# messages to loved ones are hidden}}",
+      "hiddenLegacy": "{count, plural, one {# letter to your future self is hidden} other {# letters to your future self are hidden}}",
+      "switchToAll": "— switch to \"All\""
+    },
+    "guardianCard": {
+      "title": "Silent Guardian",
+      "activeBadge": "Active",
+      "description": "ARCA watches gently in the background. If you're unreachable for a long time, it asks your Guardians before sending anything.",
+      "lastSeen": "Last seen here",
+      "justNow": "just now",
+      "daysAgo": "{days, plural, one {# day ago} other {# days ago}}",
+      "guardiansLabel": "Guardians",
+      "guardiansActiveCount": "{count} active",
+      "noGuardians": "No Guardians",
+      "manageBtn": "Manage"
+    },
+    "ritual": {
+      "titleLabel": "Weekly ritual",
+      "unansweredTitle": "Your past self wrote you <em>something.</em><br></br>Want to reply?",
+      "replyBtn": "Write a reply",
+      "deliveredMeta": "\"{title}\"",
+      "deliveredMetaWithDate": "\"{title}\" · delivered {date}",
+      "defaultTitle": "What would you want <em>someone</em> to remember today?",
+      "writeBtn": "Three-minute writing"
+    },
+    "recent": {
+      "title": "Recently saved",
+      "viewAllBtn": "View all in vault",
+      "noRecipient": "no recipient",
+      "emotional": "Emotional",
+      "practical": "Practical"
+    }
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Your legacy, secured for the future.",

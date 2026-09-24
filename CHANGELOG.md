@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.7.0] - i18n: Dashboard
+### Přidáno
+- **Dashboard plně přeložen** do češtiny a angličtiny (`app/dashboard/page.tsx`, `components/dashboard/ModeFilterSection.tsx`) — dva nové namespaces v `messages/cs.json`/`messages/en.json`: `Dashboard` (uvítání, hero karta, upozornění na připravené/doručené zprávy, grace period, připomínky narozenin/výročí, statistiky, nejbližší okamžiky, karta Tichý strážce, karta Týdenní rituál, naposledy uložené) a `Nav` (postranní menu, spodní mobilní navigace).
+- **Sdílená navigace přeložena** — `components/layout/SidebarContent.tsx` a `components/layout/DashboardShell.tsx` (desktopová i mobilní postranní lišta, spodní tab bar, vyhledávání, štítky rolí/plánu).
+- Datumy na Dashboardu (dnešní datum v hlavičce, "naposledy zde" u strážce, data u naposledy uložených/nejbližších zpráv) se teď formátují podle aktivního jazyka (`cs-CZ` vs. `en-GB`), ne napevno česky.
+- Množná čísla (počet zpráv, dní, lidí, aktivních strážců...) přes ICU `plural` syntaxi — včetně vědomého zachování původních jazykových zvláštností kódu (např. `daysSinceActive === 1 ? "dnem" : "dny"` bylo binární bez "few" tvaru, `{guardians.length} aktivních` se nikdy neskloňovalo) — beze změny byznys logiky, jen věrný přepis do překladového systému.
+
+### Vědomě mimo scope (další PR)
+- `components/AppearanceButton.tsx` (výběr vzhledu/tématu) — necháno pro budoucí PR se Settings stránkou, kde přirozeně patří.
+- Přepínač jazyka (`LanguageSwitcher`) zatím není nikde v Dashboard chrome — zůstává jen na landing page a login stránce z PR #22. Otestováno ručně nastavením cookie `arca_locale`, appka na ni Dashboard správně reaguje; UI přepínač do Dashboardu přidáme spolu se Settings PR.
+
+### Zbývá (další PR)
+- Schránka, Kalendář, Strážci, Manuál k životu.
+- Texty z Fází 0–2 (výběr režimu, SELF/LEGACY tón v ArcaReveal, karta roční rituál mimo Dashboard).
+- Transakční e-maily (Resend šablony).
+- Settings stránka + `AppearanceButton.tsx` + přepínač jazyka v Dashboard chrome.
+
 ## [1.6.0] - i18n: infrastruktura + landing page a auth flow
 ### Přidáno
 - **i18n infrastruktura (next-intl, "without i18n routing"):** appka teď má jeden systém pro čeština/angličtina místo napevno psaného textu. URL zůstávají beze změny (`/dashboard`, `/login`, ...) — žádný `[locale]` prefix, žádné přesouvání existujících routes. Jazyk se určuje: uložená volba na `User.locale` (přihlášený uživatel, nové nepovinné DB pole) → cookie `arca_locale` → `Accept-Language` hlavička při první návštěvě (nastaví ji `proxy.ts`).
