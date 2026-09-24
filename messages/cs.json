@@ -519,7 +519,7 @@
       "groupDeletedToast": "Skupina smazána."
     },
     "sections": {
-      "guardiansCount": "{count, plural, =1 {# strážci} few {# strážci} other {# strážců}}",
+      "guardiansCount": "{count, plural, one {# strážce} few {# strážci} other {# strážců}}",
       "ungrouped": "Bez skupiny"
     },
     "empty": {

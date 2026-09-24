@@ -4,7 +4,7 @@
 ### Přidáno
 - **Strážci plně přeloženi** do češtiny a angličtiny (`app/dashboard/guardians/page.tsx`, `components/arca/GuardianListClient.tsx`, `components/dashboard/CheckInButton.tsx`, `components/dashboard/HeartbeatWidget.tsx`) — nový namespace `Guardians` v `messages/cs.json`/`messages/en.json`: hlavička, karta pravidla „Tichý strážce", seznam strážců se skupinami (přidání/úprava/smazání, přiřazení do skupiny), formulář pro pozvání strážce, karta Přítomnost (check-in), Heartbeat webhook, tři kroky jemného kontaktování, ujišťovací blok.
 - Relativní časy (naposledy zde, check-in) přes vlastní překladové řetězce místo natvrdo psaných jednotek — `CheckInButton.tsx` teď bere fallback formát data (`cs-CZ`/`en-GB`) podle aktivního jazyka místo napevno `cs-CZ`.
-- Počet strážců ve skupině přes ICU plural, včetně vědomého zachování původní české gramatické zvláštnosti kódu (`items.length < 5 ? "strážci" : "strážců"` nikdy nerozlišovalo `1` od `2–4`, takže i "1 strážce" se v originále zobrazovalo jako "1 strážci") — anglická verze naopak používá standardní plural (`1 guardian` / `2 guardians`), protože tahle konkrétní čequina zvláštnost se anglické gramatiky netýká.
+- Počet strážců ve skupině přes ICU plural (`1 strážce` / `2 strážci` / `5 strážců`). Původní kód (`items.length < 5 ? "strážci" : "strážců"`) nikdy nerozlišoval `1` od `2–4`, takže se v originále chybně zobrazovalo "1 strážci" místo "1 strážce" — jelikož jsme soubor stejně celý přepisovali kvůli i18n, opravili jsme rovnou i tenhle drobný gramatický bug (žádná jiná část appky se na přesný text tohohle štítku nespoléhala).
 - Rychlé předvolby skupin (Rodina, Přátelé, Kolegové) se ukládají v jazyce aktuálního UI — stejný princip jako v předchozích PR (#24, #25).
 
 ### Zjištěno, mimo scope
