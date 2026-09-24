@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import SettingsClient from "./SettingsClient";
 
-export const metadata = { title: "Nastavení – Arca" };
+export async function generateMetadata() {
+  const t = await getTranslations("Settings");
+  return { title: `${t("metaTitle")} – Arca` };
+}
 
 export default async function SettingsPage() {
   const supabase = await createClient();

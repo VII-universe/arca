@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { updateProfile, updateSwitch, requestPasswordReset } from "@/app/actions/settings";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -72,6 +74,8 @@ function Feedback({ msg }: { msg: { ok?: boolean; text: string } | null }) {
 // ── SettingsClient ────────────────────────────────────────────────────────────
 
 export default function SettingsClient({ user }: Props) {
+  const t = useTranslations("Settings");
+  const dateLocale = useLocale() === "cs" ? "cs-CZ" : "en-GB";
   const [tab, setTab] = useState<Tab>("profile");
   const [isPending, startTransition] = useTransition();
 
@@ -115,7 +119,7 @@ export default function SettingsClient({ user }: Props) {
     setProfileMsg(null);
     startTransition(async () => {
       const res = await updateProfile(fd);
-      setProfileMsg("error" in res ? { text: res.error } : { ok: true, text: "Profil uložen." });
+      setProfileMsg("error" in res ? { text: res.error } : { ok: true, text: t("profile.savedMsg") });
     });
   }
 
@@ -126,7 +130,7 @@ export default function SettingsClient({ user }: Props) {
       setResetMsg(
         "error" in res
           ? { text: res.error }
-          : { ok: true, text: "Odkaz pro reset hesla byl odeslán na tvůj e-mail." }
+          : { ok: true, text: t("security.resetSentMsg") }
       );
     });
   }
@@ -151,7 +155,7 @@ export default function SettingsClient({ user }: Props) {
         gracePeriodDays,
       });
       setSwitchMsg(
-        "error" in res ? { text: res.error } : { ok: true, text: "Nastavení uloženo." }
+        "error" in res ? { text: res.error } : { ok: true, text: t("switch.savedMsg") }
       );
     });
   }
@@ -168,25 +172,25 @@ export default function SettingsClient({ user }: Props) {
         <div className="arca-topbar__crumbs">
           <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
           <span style={{ color: "var(--muted)", fontSize: 13 }}>›</span>
-          <span style={{ fontSize: 13 }}>Nastavení</span>
+          <span style={{ fontSize: 13 }}>{t("kicker")}</span>
         </div>
       </div>
 
       <div className="arca-inner" style={{ maxWidth: 700 }}>
         {/* Heading */}
         <div style={{ marginBottom: 28 }}>
-          <div className="arca-kicker">Nastavení</div>
+          <div className="arca-kicker">{t("kicker")}</div>
           <h1 className="arca-h1" style={{ marginTop: 8 }}>
-            Správa účtu a <em>mechanismů.</em>
+            {t.rich("title", { em: (chunks) => <em>{chunks}</em> })}
           </h1>
         </div>
 
         {/* Tabs */}
         <div className="arca-seg" style={{ marginBottom: 28 }}>
           {([
-            ["profile",  <IcUser key="u" />,  "Profil"],
-            ["security", <IcLock key="l" />,  "Bezpečnost"],
-            ["switch",   <IcZap key="z" />,   "Spouštěcí mechanismus"],
+            ["profile",  <IcUser key="u" />,  t("tabs.profile")],
+            ["security", <IcLock key="l" />,  t("tabs.security")],
+            ["switch",   <IcZap key="z" />,   t("tabs.switch")],
           ] as [Tab, React.ReactNode, string][]).map(([id, icon, label]) => (
             <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}
               style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -200,10 +204,10 @@ export default function SettingsClient({ user }: Props) {
         {tab === "profile" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div className="arca-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 20px" }}>Osobní údaje</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 20px" }}>{t("profile.personalDataTitle")}</h3>
               <div style={{ display: "grid", gap: 16 }}>
                 <div>
-                  <Label>Jméno</Label>
+                  <Label>{t("profile.nameLabel")}</Label>
                   <input
                     className="arca-input"
                     value={name}
@@ -213,7 +217,7 @@ export default function SettingsClient({ user }: Props) {
                   />
                 </div>
                 <div>
-                  <Label>E-mail</Label>
+                  <Label>{t("profile.emailLabel")}</Label>
                   <input
                     className="arca-input"
                     value={user.email}
@@ -221,23 +225,27 @@ export default function SettingsClient({ user }: Props) {
                     style={{ width: "100%", fontSize: 14, padding: "9px 12px", opacity: .5 }}
                   />
                   <p style={{ fontSize: 12, color: "var(--muted)", margin: "5px 0 0" }}>
-                    E-mail není možné změnit zde. Kontaktuj podporu.
+                    {t("profile.emailHint")}
                   </p>
+                </div>
+                <div>
+                  <Label>{t("profile.languageLabel")}</Label>
+                  <LanguageSwitcher />
                 </div>
               </div>
               <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 12 }}>
                 <button onClick={saveProfile} disabled={isPending} className="arca-btn arca-btn--primary">
-                  {isPending ? "Ukládám…" : "Uložit profil"}
+                  {isPending ? t("profile.saving") : t("profile.saveBtn")}
                 </button>
                 <Feedback msg={profileMsg} />
               </div>
             </div>
 
             <div className="arca-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 16px" }}>Přehled účtu</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 16px" }}>{t("profile.accountOverviewTitle")}</h3>
               {[
-                ["Poslední přihlášení", daysSinceActive === 0 ? "Dnes" : `Před ${daysSinceActive} dny`],
-                ["Tarif", user.isPremium ? "ARCA Pro" : "Základní"],
+                [t("profile.lastLoginLabel"), daysSinceActive === 0 ? t("profile.today") : t("profile.daysAgo", { days: daysSinceActive })],
+                [t("profile.planLabel"), user.isPremium ? t("profile.planPro") : t("profile.planBasic")],
               ].map(([label, value]) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--hairline)" }}>
                   <span style={{ fontSize: 13, color: "var(--muted)" }}>{label}</span>
@@ -252,22 +260,22 @@ export default function SettingsClient({ user }: Props) {
         {tab === "security" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div className="arca-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 20px" }}>Heslo</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 20px" }}>{t("security.passwordTitle")}</h3>
               <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 16px", lineHeight: 1.6 }}>
-                Po kliknutí ti zašleme e-mail s odkazem pro bezpečný reset hesla.
+                {t("security.passwordHint")}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <button onClick={sendReset} disabled={isPending} className="arca-btn arca-btn--outline">
-                  {isPending ? "Odesílám…" : "Odeslat odkaz pro reset hesla"}
+                  {isPending ? t("security.sending") : t("security.sendResetBtn")}
                 </button>
                 <Feedback msg={resetMsg} />
               </div>
             </div>
 
             <div className="arca-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Heartbeat webhook</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>{t("security.heartbeatTitle")}</h3>
               <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 16px", lineHeight: 1.6 }}>
-                Pošli POST request na tuto URL, aby si potvrdil aktivitu zvenčí — např. z terminálu, IoT zařízení nebo skriptu. Resetuje tvůj inaktivitní timer.
+                {t("security.heartbeatHint")}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{
@@ -284,7 +292,7 @@ export default function SettingsClient({ user }: Props) {
                   style={{ flexShrink: 0, gap: 5 }}
                 >
                   {copied ? <IcCheck /> : <IcCopy />}
-                  {copied ? "Zkopírováno" : "Kopírovat"}
+                  {copied ? t("security.copiedBtn") : t("security.copyBtn")}
                 </button>
               </div>
             </div>
@@ -313,15 +321,15 @@ export default function SettingsClient({ user }: Props) {
                       transition: "all .3s",
                     }} />
                     <span style={{ fontWeight: 600, fontSize: 15 }}>
-                      {switchEnabled ? "Mechanismus aktivní" : "Mechanismus neaktivní"}
+                      {switchEnabled ? t("switch.statusActive") : t("switch.statusInactive")}
                     </span>
                   </div>
                   <p style={{ fontSize: 13, color: "var(--muted)", margin: 0, lineHeight: 1.5 }}>
                     {switchEnabled
                       ? switchType === "INACTIVITY"
-                        ? `Schránky se odešlou po ${inactivityDays} dnech bez přihlášení. Aktuálně: ${daysSinceActive} dní.`
-                        : `Schránky se odešlou dne ${executeAt ? new Date(executeAt).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" }) : "—"}.`
-                      : "Zapni mechanismus a nastav podmínku automatického doručení."}
+                        ? t("switch.descInactivityDays", { days: inactivityDays, current: daysSinceActive })
+                        : t("switch.descDate", { date: executeAt ? new Date(executeAt).toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" }) : "—" })
+                      : t("switch.descOff")}
                   </p>
                 </div>
 
@@ -329,7 +337,7 @@ export default function SettingsClient({ user }: Props) {
                 <button
                   type="button"
                   onClick={() => setSwitchEnabled(v => !v)}
-                  aria-label={switchEnabled ? "Deaktivovat" : "Aktivovat"}
+                  aria-label={switchEnabled ? t("switch.deactivate") : t("switch.activate")}
                   style={{
                     width: 52, height: 28, borderRadius: 14, border: "none",
                     cursor: "pointer", flexShrink: 0, marginLeft: 20,
@@ -356,14 +364,14 @@ export default function SettingsClient({ user }: Props) {
               pointerEvents: switchEnabled ? "auto" : "none",
             }}>
               <p className="arca-mono" style={{ fontSize: 11, color: "var(--muted)", margin: "0 0 16px", letterSpacing: ".08em", textTransform: "uppercase" }}>
-                Podmínka spuštění
+                {t("switch.triggerConditionLabel")}
               </p>
 
               {/* Type picker */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
                 {([
-                  ["INACTIVITY",    "Nečinnost",        "Spustit pokud se nepřihlásím po dobu X dní."],
-                  ["SPECIFIC_DATE", "Konkrétní datum",  "Spustit v přesně stanovený den."],
+                  ["INACTIVITY",    t("switch.typeInactivity"), t("switch.typeInactivitySub")],
+                  ["SPECIFIC_DATE", t("switch.typeDate"),       t("switch.typeDateSub")],
                 ] as [string, string, string][]).map(([val, label, sub]) => (
                   <button
                     key={val}
@@ -387,20 +395,20 @@ export default function SettingsClient({ user }: Props) {
               {switchType === "INACTIVITY" && (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                   <div>
-                    <Label>Dní nečinnosti</Label>
+                    <Label>{t("switch.inactivityDaysLabel")}</Label>
                     <input type="number" className="arca-input" value={inactivityDays} min={7} max={3650}
                       onChange={e => setInactivityDays(Number(e.target.value))}
                       style={{ width: "100%", fontSize: 14, padding: "9px 12px" }}
                     />
-                    <p style={{ fontSize: 11.5, color: "var(--muted)", margin: "5px 0 0" }}>Minimum 7 dní.</p>
+                    <p style={{ fontSize: 11.5, color: "var(--muted)", margin: "5px 0 0" }}>{t("switch.inactivityDaysHint")}</p>
                   </div>
                   <div>
-                    <Label>Grace period (dní)</Label>
+                    <Label>{t("switch.gracePeriodLabel")}</Label>
                     <input type="number" className="arca-input" value={gracePeriodDays} min={0} max={365}
                       onChange={e => setGracePeriodDays(Number(e.target.value))}
                       style={{ width: "100%", fontSize: 14, padding: "9px 12px" }}
                     />
-                    <p style={{ fontSize: 11.5, color: "var(--muted)", margin: "5px 0 0" }}>Lhůta na zrušení po spuštění.</p>
+                    <p style={{ fontSize: 11.5, color: "var(--muted)", margin: "5px 0 0" }}>{t("switch.gracePeriodHintInactivity")}</p>
                   </div>
                 </div>
               )}
@@ -409,14 +417,14 @@ export default function SettingsClient({ user }: Props) {
               {switchType === "SPECIFIC_DATE" && (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                   <div>
-                    <Label>Datum doručení</Label>
+                    <Label>{t("switch.deliveryDateLabel")}</Label>
                     <input type="date" className="arca-input" value={executeAt}
                       onChange={e => setExecuteAt(e.target.value)}
                       style={{ width: "100%", fontSize: 14, padding: "9px 12px" }}
                     />
                   </div>
                   <div>
-                    <Label>Grace period (dní)</Label>
+                    <Label>{t("switch.gracePeriodLabel")}</Label>
                     <input type="number" className="arca-input" value={gracePeriodDays} min={0} max={365}
                       onChange={e => setGracePeriodDays(Number(e.target.value))}
                       style={{ width: "100%", fontSize: 14, padding: "9px 12px" }}
@@ -430,13 +438,13 @@ export default function SettingsClient({ user }: Props) {
             {switchEnabled && switchType === "INACTIVITY" && (
               <div className="arca-card" style={{ padding: 20 }}>
                 <p className="arca-mono" style={{ fontSize: 11, color: "var(--muted)", margin: "0 0 14px", letterSpacing: ".08em", textTransform: "uppercase" }}>
-                  Stav monitoru
+                  {t("switch.monitorTitle")}
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
                   {[
-                    ["Uplynulo", daysSinceActive, "dní"],
-                    ["Limit",    inactivityDays,  "dní"],
-                    ["Zbývá",   daysUntilTrigger ?? "—", daysUntilTrigger != null ? "dní" : ""],
+                    [t("switch.elapsed"), daysSinceActive, t("switch.days")],
+                    [t("switch.limit"),    inactivityDays,  t("switch.days")],
+                    [t("switch.remaining"), daysUntilTrigger ?? "—", daysUntilTrigger != null ? t("switch.days") : ""],
                   ].map(([label, value, unit]) => (
                     <div key={String(label)} style={{
                       textAlign: "center", padding: "14px 8px",
@@ -444,7 +452,7 @@ export default function SettingsClient({ user }: Props) {
                     }}>
                       <div style={{
                         fontSize: 30, fontWeight: 700, fontFamily: "var(--f-serif)",
-                        color: isUrgent && label === "Zbývá" ? "#e05454" : "var(--accent)",
+                        color: isUrgent && label === t("switch.remaining") ? "#e05454" : "var(--accent)",
                         marginBottom: 2,
                         lineHeight: 1,
                       }}>
@@ -468,7 +476,7 @@ export default function SettingsClient({ user }: Props) {
                 {isUrgent && (
                   <p style={{ fontSize: 12, color: "#e05454", margin: "10px 0 0", display: "flex", alignItems: "center", gap: 5 }}>
                     <IcZap />
-                    Mechanismus se spustí brzy. Přihlas se nebo odezva zrušíš timer.
+                    {t("switch.urgentHint")}
                   </p>
                 )}
               </div>
@@ -477,7 +485,7 @@ export default function SettingsClient({ user }: Props) {
             {/* Save */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <button onClick={saveSwitch} disabled={isPending} className="arca-btn arca-btn--primary">
-                {isPending ? "Ukládám…" : "Uložit nastavení"}
+                {isPending ? t("switch.saving") : t("switch.saveBtn")}
               </button>
               <Feedback msg={switchMsg} />
             </div>

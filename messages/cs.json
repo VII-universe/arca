@@ -595,6 +595,103 @@
     },
     "criticalBanner": "{count, plural, one {# urgentní položka vyžaduje} few {# urgentní položky vyžadují} other {# urgentní položek vyžaduje}} okamžitou pozornost"
   },
+  "Settings": {
+    "metaTitle": "Nastavení",
+    "kicker": "Nastavení",
+    "title": "Správa účtu a <em>mechanismů.</em>",
+    "tabs": {
+      "profile": "Profil",
+      "security": "Bezpečnost",
+      "switch": "Spouštěcí mechanismus"
+    },
+    "profile": {
+      "personalDataTitle": "Osobní údaje",
+      "nameLabel": "Jméno",
+      "emailLabel": "E-mail",
+      "emailHint": "E-mail není možné změnit zde. Kontaktuj podporu.",
+      "saving": "Ukládám…",
+      "saveBtn": "Uložit profil",
+      "savedMsg": "Profil uložen.",
+      "accountOverviewTitle": "Přehled účtu",
+      "lastLoginLabel": "Poslední přihlášení",
+      "today": "Dnes",
+      "daysAgo": "Před {days, plural, one {# dnem} other {# dny}}",
+      "planLabel": "Tarif",
+      "planPro": "ARCA Pro",
+      "planBasic": "Základní",
+      "languageLabel": "Jazyk appky"
+    },
+    "security": {
+      "passwordTitle": "Heslo",
+      "passwordHint": "Po kliknutí ti zašleme e-mail s odkazem pro bezpečný reset hesla.",
+      "sending": "Odesílám…",
+      "sendResetBtn": "Odeslat odkaz pro reset hesla",
+      "resetSentMsg": "Odkaz pro reset hesla byl odeslán na tvůj e-mail.",
+      "heartbeatTitle": "Heartbeat webhook",
+      "heartbeatHint": "Pošli POST request na tuto URL, aby sis potvrdil aktivitu zvenčí — např. z terminálu, IoT zařízení nebo skriptu. Resetuje tvůj inaktivitní timer.",
+      "copyBtn": "Kopírovat",
+      "copiedBtn": "Zkopírováno"
+    },
+    "switch": {
+      "statusActive": "Mechanismus aktivní",
+      "statusInactive": "Mechanismus neaktivní",
+      "descInactivityDays": "Schránky se odešlou po {days} dnech bez přihlášení. Aktuálně: {current} dní.",
+      "descDate": "Schránky se odešlou dne {date}.",
+      "descOff": "Zapni mechanismus a nastav podmínku automatického doručení.",
+      "deactivate": "Deaktivovat",
+      "activate": "Aktivovat",
+      "triggerConditionLabel": "Podmínka spuštění",
+      "typeInactivity": "Nečinnost",
+      "typeInactivitySub": "Spustit pokud se nepřihlásím po dobu X dní.",
+      "typeDate": "Konkrétní datum",
+      "typeDateSub": "Spustit v přesně stanovený den.",
+      "inactivityDaysLabel": "Dní nečinnosti",
+      "inactivityDaysHint": "Minimum 7 dní.",
+      "gracePeriodLabel": "Grace period (dní)",
+      "gracePeriodHintInactivity": "Lhůta na zrušení po spuštění.",
+      "deliveryDateLabel": "Datum doručení",
+      "monitorTitle": "Stav monitoru",
+      "elapsed": "Uplynulo",
+      "limit": "Limit",
+      "remaining": "Zbývá",
+      "days": "dní",
+      "urgentHint": "Mechanismus se spustí brzy. Přihlas se nebo odezvou zrušíš timer.",
+      "saving": "Ukládám…",
+      "saveBtn": "Uložit nastavení",
+      "savedMsg": "Nastavení uloženo."
+    }
+  },
+  "Appearance": {
+    "buttonLabel": "Vzhled",
+    "changeAppearance": "Změnit vzhled",
+    "mode": "Režim",
+    "modes": { "light": "Světlý", "dark": "Tmavý", "auto": "Auto" },
+    "accent": "Akcent",
+    "accents": {
+      "clay": "Terakota",
+      "sage": "Šalvěj",
+      "dusk": "Soumrak",
+      "sea": "Moře",
+      "ink": "Grafit"
+    },
+    "customColor": "Vlastní barva",
+    "glow": "Podsvícení",
+    "glowHint": "Jemná záře kolem karet v barvě akcentu.",
+    "glowOnTitle": "Vypnout podsvícení karet",
+    "glowOffTitle": "Zapnout podsvícení karet",
+    "background": "Pozadí",
+    "scenes": {
+      "nebula": "Výchozí",
+      "midnight": "Půlnoc",
+      "sunset": "Soumrak",
+      "ocean": "Oceán",
+      "forest": "Les",
+      "stars": "Hvězdy"
+    },
+    "customImageUrlPlaceholder": "URL vlastního obrázku…",
+    "uploadImageTitle": "Nahrát vlastní obrázek",
+    "footerNote": "Vzhled je tvůj. Tvoji blízcí uvidí ten svůj při doručení."
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Tvůj odkaz, uchovaný pro budoucnost.",

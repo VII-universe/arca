@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.13.0] - i18n: Nastavení + přepínač jazyka v appce
+### Přidáno
+- **Nastavení plně přeloženo** do češtiny a angličtiny (`app/dashboard/settings/page.tsx`, `SettingsClient.tsx`) — nový namespace `Settings`: záložky Profil/Bezpečnost/Spouštěcí mechanismus, osobní údaje, přehled účtu, reset hesla, Heartbeat webhook, celá konfigurace spouštěcího mechanismu (stav, podmínka, živý monitor).
+- **`AppearanceButton.tsx` plně přeloženo** (dřív vědomě odloženo z Dashboard PR #23) — nový namespace `Appearance`: režim/akcent/podsvícení/pozadí, včetně předvoleb scén a barevných akcentů.
+- **`LanguageSwitcher` přidán do Dashboard chrome** (`SidebarContent.tsx`, pod tlačítkem Vzhled) — druhé odložené položka z PR #23. Appka teď nabízí přepínání jazyka na třech místech: landing page, login a napříč celým dashboardem (sidebar), plus nově navíc přímo v Nastavení → Profil, kde je nejpřirozenější to hledat.
+- Formát data u spouštěcího mechanismu (v popisu "Schránky se odešlou dne…") respektuje aktivní jazyk (`cs-CZ`/`en-GB`) místo natvrdo `cs-CZ`.
+- „Poslední přihlášení" přes ICU plural (`Před 1 dnem` / `Před 2 dny`), oprava stejné třídy chyby jako u Strážců/Manuálu — původní kód nikdy nerozlišoval `1` od zbytku (`Před 1 dny` bylo gramaticky špatně).
+
+### Zbývá (další PR)
+- Texty z Fází 0–2 (výběr režimu, SELF/LEGACY tón v ArcaReveal, karta roční rituál mimo Dashboard).
+- Transakční e-maily (Resend šablony) + `/guardian/confirmed`.
+
+Tímhle je vyřešený i bod 1) ze zadání ohledně výběru/uložení jazyka — appka teď nabízí přepínač jazyka viditelně a dostupně z každé části appky, ne jen na landing/login stránce.
+
 ## [1.12.0] - i18n: Manuál k životu
 ### Přidáno
 - **Manuál k životu plně přeložen** do češtiny a angličtiny (`app/dashboard/blueprint/page.tsx`, `app/dashboard/blueprint/BlueprintClient.tsx`) — nový namespace `Blueprint` v `messages/cs.json`/`messages/en.json`: hlavička, statistické štítky, banner s kritickými položkami, čtyři kategorie (Předplatné/Dokumenty/Majetek/Instrukce) s popisky a placeholdery pro název i obsah, editační panel, karty položek, prázdný stav, ujišťovací blok.

@@ -595,6 +595,103 @@
     },
     "criticalBanner": "{count, plural, one {# urgent item needs} other {# urgent items need}} immediate attention"
   },
+  "Settings": {
+    "metaTitle": "Settings",
+    "kicker": "Settings",
+    "title": "Manage your account and <em>mechanisms.</em>",
+    "tabs": {
+      "profile": "Profile",
+      "security": "Security",
+      "switch": "Delivery switch"
+    },
+    "profile": {
+      "personalDataTitle": "Personal details",
+      "nameLabel": "Name",
+      "emailLabel": "Email",
+      "emailHint": "Email can't be changed here. Contact support.",
+      "saving": "Saving…",
+      "saveBtn": "Save profile",
+      "savedMsg": "Profile saved.",
+      "accountOverviewTitle": "Account overview",
+      "lastLoginLabel": "Last login",
+      "today": "Today",
+      "daysAgo": "{days, plural, one {# day ago} other {# days ago}}",
+      "planLabel": "Plan",
+      "planPro": "ARCA Pro",
+      "planBasic": "Basic",
+      "languageLabel": "App language"
+    },
+    "security": {
+      "passwordTitle": "Password",
+      "passwordHint": "We'll send you an email with a secure password reset link.",
+      "sending": "Sending…",
+      "sendResetBtn": "Send password reset link",
+      "resetSentMsg": "A password reset link was sent to your email.",
+      "heartbeatTitle": "Heartbeat webhook",
+      "heartbeatHint": "Send a POST request to this URL to confirm activity from outside the app — e.g. from a terminal, an IoT device, or a script. Resets your inactivity timer.",
+      "copyBtn": "Copy",
+      "copiedBtn": "Copied"
+    },
+    "switch": {
+      "statusActive": "Switch active",
+      "statusInactive": "Switch inactive",
+      "descInactivityDays": "Your vault will be sent after {days} days without a login. Currently: {current} days.",
+      "descDate": "Your vault will be sent on {date}.",
+      "descOff": "Turn on the switch and set a condition for automatic delivery.",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "triggerConditionLabel": "Trigger condition",
+      "typeInactivity": "Inactivity",
+      "typeInactivitySub": "Trigger if I don't log in for X days.",
+      "typeDate": "Specific date",
+      "typeDateSub": "Trigger on an exact day.",
+      "inactivityDaysLabel": "Days of inactivity",
+      "inactivityDaysHint": "Minimum 7 days.",
+      "gracePeriodLabel": "Grace period (days)",
+      "gracePeriodHintInactivity": "Window to cancel after triggering.",
+      "deliveryDateLabel": "Delivery date",
+      "monitorTitle": "Monitor status",
+      "elapsed": "Elapsed",
+      "limit": "Limit",
+      "remaining": "Remaining",
+      "days": "days",
+      "urgentHint": "The switch will trigger soon. Log in or respond to reset the timer.",
+      "saving": "Saving…",
+      "saveBtn": "Save settings",
+      "savedMsg": "Settings saved."
+    }
+  },
+  "Appearance": {
+    "buttonLabel": "Appearance",
+    "changeAppearance": "Change appearance",
+    "mode": "Mode",
+    "modes": { "light": "Light", "dark": "Dark", "auto": "Auto" },
+    "accent": "Accent",
+    "accents": {
+      "clay": "Terracotta",
+      "sage": "Sage",
+      "dusk": "Dusk",
+      "sea": "Sea",
+      "ink": "Graphite"
+    },
+    "customColor": "Custom color",
+    "glow": "Glow",
+    "glowHint": "A subtle glow around cards in the accent color.",
+    "glowOnTitle": "Turn off card glow",
+    "glowOffTitle": "Turn on card glow",
+    "background": "Background",
+    "scenes": {
+      "nebula": "Default",
+      "midnight": "Midnight",
+      "sunset": "Sunset",
+      "ocean": "Ocean",
+      "forest": "Forest",
+      "stars": "Stars"
+    },
+    "customImageUrlPlaceholder": "Custom image URL…",
+    "uploadImageTitle": "Upload a custom image",
+    "footerNote": "The look is yours. Your loved ones will see their own when it's delivered."
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Your legacy, secured for the future.",
