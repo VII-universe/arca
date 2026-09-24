@@ -1,11 +1,15 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { resolveUser, hasProAccess, FREE_LIMITS } from "@/lib/auth/user";
 import { getSignedAvatarUrl } from "@/app/actions/recipients";
 import ComposeWizard from "./ComposeWizard";
 
-export const metadata = { title: "Nová zpráva — ARCA" };
+export async function generateMetadata() {
+  const t = await getTranslations("Compose");
+  return { title: `${t("newMessage")} — ARCA` };
+}
 
 export default async function NewArcaPage({
   searchParams,
