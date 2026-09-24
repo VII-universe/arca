@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.14.0] - i18n: Nová zpráva (výběr režimu + celý ComposeWizard)
+### Přidáno
+- **Celý průvodce tvorbou zprávy plně přeložen** do češtiny a angličtiny (`app/dashboard/arca/new/ComposeWizard.tsx`, `app/dashboard/arca/new/page.tsx`) — nový namespace `Compose` v `messages/cs.json`/`messages/en.json`: úvodní obrazovka výběru režimu (Fáze 0 — „Sobě do budoucna“ vs. „Odkaz pro blízké“), všechny 4 kroky průvodce (Pro koho / Forma / Obsah / Kdy se otevře), nahrávání hlasu a videa, výběr fotek, náhled doručení, chybové hlášky.
+- Formát data (věkový milník, relativní doba, konkrétní datum) respektuje aktivní jazyk (`cs-CZ`/`en-GB`) místo natvrdo `cs-CZ`.
+- Počet fotek přes ICU plural, konzistentně se Schránkou/Manuálem.
+- Drobná oprava konzistence na `/arca/[livingLinkHash]` (ArcaReveal — SELF tón, Fáze 1.5/2): dvě poslední zbylé česky psané věty („Napsat odpověď“, „Odpověz sám sobě…“) přepsány na angličtinu, aby odpovídaly zbytku téhle stránky, která byla už od Fáze 1.5 vědomě celá anglicky (recipient-facing stránka, viz CHANGELOG [1.4.0]). Nejde o zavedení next-intl na tuhle stránku — jen sjednocení jazyka v rámci existujícího vzoru.
+
+### Vědomě mimo scope (další PR)
+- `components/arca/ArcaEditorNew.tsx` (610 řádků, ~41 řádků česky) — editor pro **úpravu** už existující zprávy (`/dashboard/arca/[id]/edit`), samostatná komponenta od `ComposeWizard.tsx`. Necháno na vlastní menší PR.
+- `components/arca/ArcaRichEditor.tsx` — samotný rich-text editor (toolbar „Motiv“, počítadlo znaků atd.) vložený do kroku 03 — viditelné na screenshotech jako poslední česky psaná část průvodce. Sdílený mezi `ComposeWizard` i `ArcaEditorNew`, dává smysl přeložit spolu s `ArcaEditorNew` v příští PR.
+- `app/dashboard/arca/new/NewArcaForm.tsx` — nalezeno, ale nikde v appce nepoužívané (mrtvý kód, stejně jako dřív `GuardianManager.tsx`). Nepřekládáno.
+- `/guardian/confirmed` a transakční e-maily zůstávají v poslední fázi beze změny.
+
+### Zbývá (další PR)
+- `ArcaEditorNew.tsx` + `ArcaRichEditor.tsx` (úprava existující zprávy).
+- Transakční e-maily (Resend šablony) + `/guardian/confirmed`.
+
 ## [1.13.0] - i18n: Nastavení + přepínač jazyka v appce
 ### Přidáno
 - **Nastavení plně přeloženo** do češtiny a angličtiny (`app/dashboard/settings/page.tsx`, `SettingsClient.tsx`) — nový namespace `Settings`: záložky Profil/Bezpečnost/Spouštěcí mechanismus, osobní údaje, přehled účtu, reset hesla, Heartbeat webhook, celá konfigurace spouštěcího mechanismu (stav, podmínka, živý monitor).
