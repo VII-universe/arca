@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { createBlueprintItem, updateBlueprintItem, deleteBlueprintItem } from "@/app/actions/blueprint";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -20,17 +21,9 @@ export interface BlueprintItem {
 
 // ── Category config ───────────────────────────────────────────────────────────
 
-export const CATEGORIES: {
-  id: Category;
-  label: string;
-  sub: string;
-  color: string;
-  icon: React.ReactNode;
-}[] = [
+const CATEGORY_META: { id: Category; color: string; icon: React.ReactNode }[] = [
   {
     id: "SUBSCRIPTION",
-    label: "Předplatné",
-    sub: "Netflix, Spotify, pojistky, nájmy…",
     color: "var(--sky-soft)",
     icon: (
       <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -41,8 +34,6 @@ export const CATEGORIES: {
   },
   {
     id: "DOCUMENT",
-    label: "Dokumenty",
-    sub: "Závěť, pojistky, smlouvy, kde leží…",
     color: "var(--accent-tint)",
     icon: (
       <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -53,8 +44,6 @@ export const CATEGORIES: {
   },
   {
     id: "PROPERTY",
-    label: "Majetek",
-    sub: "Nemovitosti, vozidla, účty, klíče…",
     color: "var(--sage-soft)",
     icon: (
       <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -66,8 +55,6 @@ export const CATEGORIES: {
   },
   {
     id: "INSTRUCTION",
-    label: "Instrukce",
-    sub: "Jak na co, co zařídit, kde co najít…",
     color: "var(--bg-tint)",
     icon: (
       <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -77,7 +64,17 @@ export const CATEGORIES: {
   },
 ];
 
-const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
+function useCategories() {
+  const t = useTranslations("Blueprint");
+  const categories = CATEGORY_META.map(c => ({
+    ...c,
+    label: t(`categories.${c.id}.label`),
+    sub: t(`categories.${c.id}.sub`),
+  }));
+  const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  return { categories, catMap };
+}
+type CategoryWithLabels = ReturnType<typeof useCategories>["categories"][number];
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -101,6 +98,8 @@ function Sheet({
   onCreated: (item: BlueprintItem) => void;
   onUpdated: (item: BlueprintItem) => void;
 }) {
+  const t = useTranslations("Blueprint");
+  const { categories, catMap } = useCategories();
   const [category, setCategory] = useState<Category>(preCategory ?? "SUBSCRIPTION");
   const [isCritical, setIsCritical] = useState(false);
   const [pending, startT] = useTransition();
@@ -146,19 +145,19 @@ function Sheet({
           isCritical,
           updatedAt: new Date(),
         });
-        toast.success("Položka upravena.");
+        toast.success(t("sheet.savedToast"));
       } else {
         const res = await createBlueprintItem(formData);
         if ("error" in res) { setError(res.error); return; }
         onCreated(res as BlueprintItem);
-        toast.success("Položka přidána do manuálu.");
+        toast.success(t("sheet.createdToast"));
       }
       onClose();
     });
   }
 
   if (!open) return null;
-  const cat = CAT_MAP[category];
+  const cat = catMap[category];
 
   return (
     <>
@@ -183,13 +182,13 @@ function Sheet({
         <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div className="arca-mono" style={{ fontSize: 10, color: "var(--muted)", marginBottom: 4 }}>
-              {editItem ? "Upravit položku" : "Nová položka"}
+              {editItem ? t("sheet.editTitle") : t("sheet.newTitle")}
             </div>
             <h2 style={{ margin: 0, fontFamily: "var(--f-serif)", fontSize: 20, fontWeight: 400 }}>
-              {cat?.label ?? "Položka"}
+              {cat?.label ?? t("sheet.itemFallback")}
             </h2>
           </div>
-          <button onClick={onClose} className="arca-btn arca-btn--ghost icon-btn" aria-label="Zavřít"><IcClose /></button>
+          <button onClick={onClose} className="arca-btn arca-btn--ghost icon-btn" aria-label={t("sheet.close")}><IcClose /></button>
         </div>
 
         <form action={handleSubmit} style={{ flex: 1, padding: "22px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
@@ -198,9 +197,9 @@ function Sheet({
           {/* Category selector (hidden when editing) */}
           {!editItem && (
             <div>
-              <label className="arca-mono" style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 8 }}>Kategorie</label>
+              <label className="arca-mono" style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 8 }}>{t("sheet.categoryLabel")}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {CATEGORIES.map(c => (
+                {categories.map(c => (
                   <button
                     key={c.id} type="button"
                     onClick={() => setCategory(c.id)}
@@ -223,13 +222,13 @@ function Sheet({
 
           {/* Title */}
           <div>
-            <label className="arca-mono" style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 6 }}>Název *</label>
+            <label className="arca-mono" style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 6 }}>{t("sheet.nameLabel")}</label>
             <input
               ref={titleRef}
               name="title"
               required
               defaultValue={editItem?.title ?? ""}
-              placeholder={category === "SUBSCRIPTION" ? "Netflix Premium" : category === "DOCUMENT" ? "Závěť u notáře" : category === "PROPERTY" ? "Chata Jeseníky" : "Popis instrukce"}
+              placeholder={t(`placeholders.title.${category}`)}
               className="arca-input"
               style={{ fontSize: 14 }}
             />
@@ -237,20 +236,12 @@ function Sheet({
 
           {/* Content */}
           <div style={{ flex: 1 }}>
-            <label className="arca-mono" style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 6 }}>Instrukce / popis *</label>
+            <label className="arca-mono" style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 6 }}>{t("sheet.contentLabel")}</label>
             <textarea
               name="content"
               required
               defaultValue={editItem?.content ?? ""}
-              placeholder={
-                category === "SUBSCRIPTION"
-                  ? "Platba každý měsíc, karta končí 12/27. Zrušit přes web netflix.com/cancel."
-                  : category === "DOCUMENT"
-                  ? "Uloženo v červené složce v horní zásuvce pracovního stolu. Kopie u notáře Jana Nováka."
-                  : category === "PROPERTY"
-                  ? "Klíče visí na háčku v předsíni. Pojistná smlouva v Google Drive, složka Pojistky."
-                  : "Krok za krokem — co udělat jako první, na koho se obrátit…"
-              }
+              placeholder={t(`placeholders.content.${category}`)}
               className="arca-input"
               rows={7}
               style={{ fontSize: 13.5, resize: "vertical", minHeight: 140 }}
@@ -274,14 +265,14 @@ function Sheet({
               }} />
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 550, color: isCritical ? "var(--danger-deep)" : "var(--ink)" }}>Kritické — řešit urgentně</div>
-              <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 1 }}>Zobrazí se s výrazným upozorněním</div>
+              <div style={{ fontSize: 13, fontWeight: 550, color: isCritical ? "var(--danger-deep)" : "var(--ink)" }}>{t("sheet.criticalLabel")}</div>
+              <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 1 }}>{t("sheet.criticalHint")}</div>
             </div>
           </label>
 
           <button type="submit" disabled={pending} className="arca-btn arca-btn--primary" style={{ marginTop: "auto" }}>
             {pending ? <IcSpin /> : <IcCheck />}
-            {editItem ? "Uložit změny" : "Přidat do manuálu"}
+            {editItem ? t("sheet.saveChangesBtn") : t("sheet.addBtn")}
           </button>
         </form>
       </div>
@@ -298,6 +289,8 @@ function ItemCard({
   onEdit: (item: BlueprintItem) => void;
   onDelete: (id: string) => void;
 }) {
+  const t = useTranslations("Blueprint");
+  const { catMap } = useCategories();
   const [confirming, setConfirming] = useState(false);
   const [expanded,   setExpanded]   = useState(false);
   const [deleting,   startDel]      = useTransition();
@@ -307,11 +300,11 @@ function ItemCard({
       const res = await deleteBlueprintItem(item.id);
       if ("error" in res) { toast.error(res.error); return; }
       onDelete(item.id);
-      toast.success("Položka smazána.");
+      toast.success(t("card.deletedToast"));
     });
   }
 
-  const cat = CAT_MAP[item.category as Category];
+  const cat = catMap[item.category as Category];
   const preview = item.content.length > 130 ? item.content.slice(0, 130) + "…" : item.content;
   const barColor = item.isCritical ? "var(--danger)" : (cat?.color ?? "var(--hairline)");
 
@@ -336,7 +329,7 @@ function ItemCard({
           </span>
           {item.isCritical && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 600, color: "var(--danger-deep)", background: "var(--danger-tint)", padding: "2px 8px", borderRadius: 20, fontFamily: "var(--f-mono)", marginLeft: "auto" }}>
-              <IcAlert /> Urgentní
+              <IcAlert /> {t("card.urgentBadge")}
             </span>
           )}
         </div>
@@ -353,26 +346,26 @@ function ItemCard({
               onClick={() => setExpanded(v => !v)}
               style={{ fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: "5px 0 0", fontFamily: "var(--f-sans)" }}
             >
-              {expanded ? "Méně ▲" : "Celý text ▼"}
+              {expanded ? t("card.less") : t("card.fullText")}
             </button>
           )}
         </div>
 
         {/* Actions — pinned to the bottom so cards of different text length still align */}
         <div style={{ display: "flex", gap: 4, marginTop: "auto", paddingTop: 4 }}>
-          <button type="button" onClick={() => onEdit(item)} className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "5px 9px" }} title="Upravit">
-            <IcEdit /> Upravit
+          <button type="button" onClick={() => onEdit(item)} className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "5px 9px" }} title={t("card.editTitle")}>
+            <IcEdit /> {t("card.editBtn")}
           </button>
           {confirming ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
-              <span style={{ fontSize: 11.5, color: "var(--muted)" }}>Smazat?</span>
+              <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{t("card.deleteConfirm")}</span>
               <button type="button" onClick={handleDelete} disabled={deleting} className="arca-btn sm" style={{ color: "var(--danger-deep)", borderColor: "var(--danger-soft)", background: "var(--danger-tint)", padding: "4px 10px" }}>
-                {deleting ? <IcSpin /> : "Ano"}
+                {deleting ? <IcSpin /> : t("card.yes")}
               </button>
-              <button type="button" onClick={() => setConfirming(false)} className="arca-btn sm arca-btn--ghost" style={{ padding: "4px 10px" }}>Ne</button>
+              <button type="button" onClick={() => setConfirming(false)} className="arca-btn sm arca-btn--ghost" style={{ padding: "4px 10px" }}>{t("card.no")}</button>
             </div>
           ) : (
-            <button type="button" onClick={() => setConfirming(true)} className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "5px 9px", marginLeft: "auto" }} title="Smazat">
+            <button type="button" onClick={() => setConfirming(true)} className="arca-btn sm arca-btn--ghost" style={{ color: "var(--muted)", padding: "5px 9px", marginLeft: "auto" }} title={t("card.deleteTitle")}>
               <IcTrash />
             </button>
           )}
@@ -387,12 +380,13 @@ function ItemCard({
 function CategorySection({
   category, items, onEdit, onDelete, onAdd,
 }: {
-  category: typeof CATEGORIES[0];
+  category: CategoryWithLabels;
   items: BlueprintItem[];
   onEdit: (item: BlueprintItem) => void;
   onDelete: (id: string) => void;
   onAdd: (cat: Category) => void;
 }) {
+  const t = useTranslations("Blueprint");
   if (items.length === 0) return null;
 
   return (
@@ -413,7 +407,7 @@ function CategorySection({
           onClick={() => onAdd(category.id)}
           style={{ fontSize: 11.5, color: "var(--muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--f-sans)", padding: "2px 6px" }}
         >
-          + přidat
+          {t("section.addBtn")}
         </button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
@@ -428,6 +422,8 @@ function CategorySection({
 // ── BlueprintClient (main) ────────────────────────────────────────────────────
 
 export default function BlueprintClient({ initialItems }: { initialItems: BlueprintItem[] }) {
+  const t = useTranslations("Blueprint");
+  const { categories } = useCategories();
   const [items, setItems] = useState<BlueprintItem[]>(initialItems);
   const [sheetOpen, setSheetOpen]       = useState(false);
   const [preCategory, setPreCategory]   = useState<Category | null>(null);
@@ -447,7 +443,7 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
   }
 
   const grouped = Object.fromEntries(
-    CATEGORIES.map(c => [c.id, items.filter(i => i.category === c.id)])
+    categories.map(c => [c.id, items.filter(i => i.category === c.id)])
   );
 
   function focusItem(id: string) {
@@ -473,7 +469,7 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
           </span>
           <div style={{ minWidth: 0 }}>
             <p style={{ margin: 0, fontSize: 13.5, color: "var(--danger-deep)", fontWeight: 600 }}>
-              {criticalItems.length} urgentní {criticalItems.length === 1 ? "položka vyžaduje" : "položky vyžadují"} okamžitou pozornost
+              {t("criticalBanner", { count: criticalItems.length })}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
               {criticalItems.map(i => (
@@ -498,7 +494,7 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
 
       {/* ── Quick-add cards ────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
-        {CATEGORIES.map(cat => (
+        {categories.map(cat => (
           <button
             key={cat.id}
             type="button"
@@ -531,15 +527,15 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
       {items.length === 0 ? (
         <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none", padding: "40px 28px", textAlign: "center" }}>
           <p className="arca-sub" style={{ fontSize: 13.5, marginBottom: 16 }}>
-            Manuál je zatím prázdný. Začni přidáním první položky výše.
+            {t("empty.text")}
           </p>
           <button type="button" onClick={() => openNew()} className="arca-btn arca-btn--primary" style={{ margin: "0 auto" }}>
-            Přidat první položku
+            {t("empty.addFirstBtn")}
           </button>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-          {CATEGORIES.map(cat => (
+          {categories.map(cat => (
             <CategorySection
               key={cat.id}
               category={cat}

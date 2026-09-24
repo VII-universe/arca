@@ -528,6 +528,73 @@
     },
     "createGroupLink": "Create a Guardian group"
   },
+  "Blueprint": {
+    "kicker": "Life Manual",
+    "title": "A guide to your world for those who <em>will need it.</em>",
+    "subtitle": "Save instructions, contracts, ongoing commitments, and anything else no one else would know. Your loved ones will find it when they need it — laid out clearly, step by step.",
+    "itemsCount": "{count, plural, one {# item} other {# items}}",
+    "urgentCount": "{count} urgent",
+    "reassurance": {
+      "titlePlain": "Only you see this information.",
+      "titleItalic": "Always.",
+      "body": "Neither Guardians nor recipients have access to the Life Manual. This data lives inside your locked profile."
+    },
+    "categories": {
+      "SUBSCRIPTION": { "label": "Subscriptions", "sub": "Netflix, Spotify, insurance, rent…" },
+      "DOCUMENT": { "label": "Documents", "sub": "Will, insurance, contracts, where they are…" },
+      "PROPERTY": { "label": "Property", "sub": "Real estate, vehicles, accounts, keys…" },
+      "INSTRUCTION": { "label": "Instructions", "sub": "How to handle what, who to contact, where to find things…" }
+    },
+    "placeholders": {
+      "title": {
+        "SUBSCRIPTION": "Netflix Premium",
+        "DOCUMENT": "Will at the notary",
+        "PROPERTY": "Lake house",
+        "INSTRUCTION": "Instruction description"
+      },
+      "content": {
+        "SUBSCRIPTION": "Billed monthly, card ends 12/27. Cancel via netflix.com/cancel.",
+        "DOCUMENT": "Stored in the red folder in the top desk drawer. Copy held by notary Jane Doe.",
+        "PROPERTY": "Keys hang on the hook in the hallway. Insurance policy in Google Drive, Insurance folder.",
+        "INSTRUCTION": "Step by step — what to do first, who to contact…"
+      }
+    },
+    "sheet": {
+      "editTitle": "Edit item",
+      "newTitle": "New item",
+      "itemFallback": "Item",
+      "close": "Close",
+      "categoryLabel": "Category",
+      "nameLabel": "Name *",
+      "contentLabel": "Instructions / description *",
+      "criticalLabel": "Critical — handle urgently",
+      "criticalHint": "Shown with a prominent warning",
+      "saveChangesBtn": "Save changes",
+      "addBtn": "Add to Life Manual",
+      "savedToast": "Item updated.",
+      "createdToast": "Item added to the Life Manual."
+    },
+    "card": {
+      "urgentBadge": "Urgent",
+      "less": "Less ▲",
+      "fullText": "Full text ▼",
+      "editBtn": "Edit",
+      "editTitle": "Edit",
+      "deleteTitle": "Delete",
+      "deleteConfirm": "Delete?",
+      "yes": "Yes",
+      "no": "No",
+      "deletedToast": "Item deleted."
+    },
+    "section": {
+      "addBtn": "+ add"
+    },
+    "empty": {
+      "text": "The Life Manual is empty for now. Start by adding your first item above.",
+      "addFirstBtn": "Add first item"
+    },
+    "criticalBanner": "{count, plural, one {# urgent item needs} other {# urgent items need}} immediate attention"
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Your legacy, secured for the future.",
