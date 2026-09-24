@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import type { CalEvent } from "@/app/api/arca/calendar-events/route";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -20,20 +21,6 @@ interface Props {
   initialEvents: Record<number, CalEvent[]>;
   initialUpcoming: UpcomingItem[];
 }
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const WEEKDAYS = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
-const MONTHS = [
-  "Leden","Únor","Březen","Duben","Květen","Červen",
-  "Červenec","Srpen","Září","Říjen","Listopad","Prosinec",
-];
-const MONTHS_GEN = [
-  "ledna","února","března","dubna","května","června",
-  "července","srpna","září","října","listopadu","prosince",
-];
-const MONTHS_SHORT = ["Led","Úno","Bře","Dub","Kvě","Čvn","Čvc","Srp","Zář","Říj","Lis","Pro"];
-const WEEKDAY_FULL = ["neděle","pondělí","úterý","středa","čtvrtek","pátek","sobota"];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -103,6 +90,8 @@ function MonthYearPicker({
   onSelect: (year: number, month: number) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("Calendar");
+  const MONTHS_SHORT = t.raw("monthsShort") as string[];
   const [pYear, setPYear] = useState(currentYear);
   const ref = useRef<HTMLDivElement>(null);
   const today = new Date();
@@ -143,7 +132,7 @@ function MonthYearPicker({
           type="button"
           className="arca-btn icon-btn arca-btn--ghost"
           onClick={() => setPYear(y => y - 1)}
-          title="Předchozí rok"
+          title={t("prevYear")}
         >
           <IcChev dir="left" />
         </button>
@@ -152,7 +141,7 @@ function MonthYearPicker({
           type="button"
           className="arca-btn icon-btn arca-btn--ghost"
           onClick={() => setPYear(y => y + 1)}
-          title="Další rok"
+          title={t("nextYear")}
         >
           <IcChev dir="right" />
         </button>
@@ -160,7 +149,7 @@ function MonthYearPicker({
 
       {/* Month 3×4 grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 5 }}>
-        {MONTHS.map((_, i) => {
+        {MONTHS_SHORT.map((_, i) => {
           const isSel  = pYear === currentYear && i === currentMonth;
           const isNow  = pYear === today.getFullYear() && i === today.getMonth();
           return (
@@ -201,7 +190,7 @@ function MonthYearPicker({
           onClick={() => { onSelect(today.getFullYear(), today.getMonth()); onClose(); }}
           style={{ fontSize: 11.5 }}
         >
-          Skočit na dnes
+          {t("jumpToToday")}
         </button>
       </div>
     </div>
@@ -217,6 +206,9 @@ function DayModal({
   events: CalEvent[];
   onClose: () => void;
 }) {
+  const t = useTranslations("Calendar");
+  const MONTHS_GEN = t.raw("monthsGenitive") as string[];
+  const WEEKDAY_FULL = t.raw("weekdaysFull") as string[];
   const weekday = WEEKDAY_FULL[new Date(year, month, day).getDay()];
   const dateStr = isoDate(year, month, day);
 
@@ -302,8 +294,8 @@ function DayModal({
                       {ev.label}
                     </div>
                     <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 1 }}>
-                      {ev.type === "birthday" ? "Narozeniny" : ev.type === "anniversary" ? "Výročí" : "Naplánovaná zpráva"}
-                      {ev.recurring && " · každý rok"}
+                      {ev.type === "birthday" ? t("eventType.birthday") : ev.type === "anniversary" ? t("eventType.anniversary") : t("eventType.scheduledMessage")}
+                      {ev.recurring && ` · ${t("everyYear")}`}
                     </div>
                   </div>
                   {ev.packId && (
@@ -313,7 +305,7 @@ function DayModal({
                       className="arca-btn sm arca-btn--ghost"
                       style={{ fontSize: 11, flexShrink: 0, color: toneText(ev.tone) }}
                     >
-                      Otevřít →
+                      {t("openBtn")} →
                     </Link>
                   )}
                 </div>
@@ -323,7 +315,7 @@ function DayModal({
 
           {events.length === 0 && (
             <p className="arca-sub" style={{ fontSize: 13, marginBottom: 18 }}>
-              Tento den je prázdný — zanech tu zprávu, která jednou přistane.
+              {t("emptyDay")}
             </p>
           )}
 
@@ -338,7 +330,7 @@ function DayModal({
               className="arca-btn arca-btn--primary"
               style={{ justifyContent: "center" }}
             >
-              <IcCal /> Nová zpráva pro tento den
+              <IcCal /> {t("newMessageForDay")}
             </Link>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -348,7 +340,7 @@ function DayModal({
                 className="arca-btn arca-btn--outline"
                 style={{ justifyContent: "center", fontSize: 12.5 }}
               >
-                🎂 Narozeninová
+                🎂 {t("birthdayMessageBtn")}
               </Link>
               <Link
                 href={`/dashboard/arca/new?date=${dateStr}&occasion=anniversary`}
@@ -356,13 +348,13 @@ function DayModal({
                 className="arca-btn arca-btn--outline"
                 style={{ justifyContent: "center", fontSize: 12.5 }}
               >
-                <IcRepeat /> Každý rok
+                <IcRepeat /> {t("everyYearBtn")}
               </Link>
             </div>
           </div>
 
           <p className="arca-sub" style={{ fontSize: 11, marginTop: 12, textAlign: "center" }}>
-            Zprávy navázané na datum se doručí ve stanovenou chvíli.
+            {t("dateBoundMessagesHint")}
           </p>
         </div>
       </div>
@@ -381,6 +373,8 @@ function CalendarGrid({
   slideDir: "left" | "right" | null;
   onDayClick: (day: number) => void;
 }) {
+  const t = useTranslations("Calendar");
+  const WEEKDAYS = t.raw("weekdaysShort") as string[];
   const cells = buildGrid(year, month);
   const [hovered, setHovered] = useState<number | null>(null);
 
@@ -476,8 +470,10 @@ function CalendarGrid({
 // ── Sidebar upcoming list ────────────────────────────────────────────────────
 
 function SidebarUpcoming({ items }: { items: UpcomingItem[] }) {
+  const t = useTranslations("Calendar");
+  const dateLocale = useLocale() === "cs" ? "cs-CZ" : "en-GB";
   if (items.length === 0) {
-    return <p className="arca-sub" style={{ fontSize: 13 }}>Žádné naplánované zprávy.</p>;
+    return <p className="arca-sub" style={{ fontSize: 13 }}>{t("noScheduledMessages")}</p>;
   }
   return (
     <div className="arca-stack-3">
@@ -488,7 +484,7 @@ function SidebarUpcoming({ items }: { items: UpcomingItem[] }) {
             <div className="arca-row" style={{ gap: 10 }}>
               <div style={{ width: 40, textAlign: "center", flexShrink: 0, borderRight: "1px solid var(--hairline)", paddingRight: 10 }}>
                 <div className="arca-mono" style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase" }}>
-                  {d.toLocaleDateString("cs-CZ", { month: "short" })}
+                  {d.toLocaleDateString(dateLocale, { month: "short" })}
                 </div>
                 <div style={{ fontFamily: "var(--f-serif)", fontSize: 20, lineHeight: 1.1 }}>{d.getDate()}</div>
               </div>
@@ -496,7 +492,7 @@ function SidebarUpcoming({ items }: { items: UpcomingItem[] }) {
                 <div style={{ fontWeight: 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {item.title}
                 </div>
-                <div className="arca-sub" style={{ fontSize: 12 }}>{item.recipientName ?? "—"}</div>
+                <div className="arca-sub" style={{ fontSize: 12 }}>{item.recipientName ?? t("noRecipient")}</div>
               </div>
             </div>
           </Link>
@@ -511,6 +507,9 @@ function SidebarUpcoming({ items }: { items: UpcomingItem[] }) {
 export default function CalendarClient({
   initialYear, initialMonth, initialEvents, initialUpcoming,
 }: Props) {
+  const t = useTranslations("Calendar");
+  const MONTHS = t.raw("months") as string[];
+  const MONTHS_GEN = t.raw("monthsGenitive") as string[];
   const today = new Date();
   const todayY = today.getFullYear();
   const todayM = today.getMonth();
@@ -587,7 +586,7 @@ export default function CalendarClient({
           type="button"
           className="arca-btn icon-btn arca-btn--outline"
           onClick={() => navigate("prev")}
-          title="Předchozí měsíc"
+          title={t("prevMonth")}
         >
           <IcChev dir="left" />
         </button>
@@ -631,7 +630,7 @@ export default function CalendarClient({
           type="button"
           className="arca-btn icon-btn arca-btn--outline"
           onClick={() => navigate("next")}
-          title="Další měsíc"
+          title={t("nextMonth")}
         >
           <IcChev dir="right" />
         </button>
@@ -642,7 +641,7 @@ export default function CalendarClient({
             className="arca-btn sm arca-btn--ghost"
             onClick={goToToday}
           >
-            Dnes
+            {t("today")}
           </button>
         )}
 
@@ -676,13 +675,13 @@ export default function CalendarClient({
             <div style={{ padding: "20px 22px" }}>
               <h3 className="arca-h3" style={{ marginBottom: 12 }}>
                 {isCurrentMonth
-                  ? `Dnes · ${todayD}. ${MONTHS_GEN[todayM]}`
-                  : `${MONTHS[month]} ${year}`
+                  ? t("todaySummary", { day: todayD, month: MONTHS_GEN[todayM] })
+                  : t("monthYearSummary", { month: MONTHS[month], year })
                 }
               </h3>
               {isCurrentMonth ? (
                 (events[todayD] ?? []).length === 0 ? (
-                  <p className="arca-sub" style={{ fontSize: 13 }}>Dnes žádné události.</p>
+                  <p className="arca-sub" style={{ fontSize: 13 }}>{t("noEventsToday")}</p>
                 ) : (
                   <div className="arca-stack-2">
                     {(events[todayD] ?? []).map(ev => (
@@ -704,8 +703,8 @@ export default function CalendarClient({
               ) : (
                 <p className="arca-sub" style={{ fontSize: 13 }}>
                   {totalEventsThisMonth === 0
-                    ? "Žádné události v tomto měsíci."
-                    : `${totalEventsThisMonth} ${totalEventsThisMonth === 1 ? "událost" : totalEventsThisMonth < 5 ? "události" : "událostí"} v tomto měsíci.`}
+                    ? t("noEventsThisMonth")
+                    : t("eventsThisMonth", { count: totalEventsThisMonth })}
                 </p>
               )}
             </div>
@@ -714,14 +713,14 @@ export default function CalendarClient({
           {/* Upcoming events */}
           <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none" }}>
             <div style={{ padding: "20px 22px" }}>
-              <h3 className="arca-h3" style={{ marginBottom: 14 }}>Nadcházející okamžiky</h3>
+              <h3 className="arca-h3" style={{ marginBottom: 14 }}>{t("upcomingMoments")}</h3>
               <SidebarUpcoming items={upcoming} />
               <Link
                 href="/dashboard/arca/new"
                 className="arca-btn arca-btn--clay"
                 style={{ marginTop: 16, width: "100%", justifyContent: "center" }}
               >
-                <IcPlus /> Naplánovat zprávu
+                <IcPlus /> {t("scheduleMessageBtn")}
               </Link>
             </div>
           </div>

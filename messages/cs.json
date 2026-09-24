@@ -374,6 +374,44 @@
       }
     }
   },
+  "Calendar": {
+    "kicker": "Kalendář",
+    "title": "Okamžiky, které <em>se vrátí.</em>",
+    "subtitle": "Narozeniny, výročí, dny, kdy chceš, aby tě někdo slyšel. Klikni na libovolný den a přidej zprávu, která tam jednou přistane.",
+    "newMessageBtn": "Nová zpráva",
+    "weekdaysShort": ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"],
+    "months": ["Leden", "Únor", "Březen", "Duben", "Květen", "Červen", "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec"],
+    "monthsGenitive": ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"],
+    "monthsShort": ["Led", "Úno", "Bře", "Dub", "Kvě", "Čvn", "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro"],
+    "weekdaysFull": ["neděle", "pondělí", "úterý", "středa", "čtvrtek", "pátek", "sobota"],
+    "prevYear": "Předchozí rok",
+    "nextYear": "Další rok",
+    "jumpToToday": "Skočit na dnes",
+    "prevMonth": "Předchozí měsíc",
+    "nextMonth": "Další měsíc",
+    "today": "Dnes",
+    "eventType": {
+      "birthday": "Narozeniny",
+      "anniversary": "Výročí",
+      "scheduledMessage": "Naplánovaná zpráva"
+    },
+    "everyYear": "každý rok",
+    "openBtn": "Otevřít",
+    "emptyDay": "Tento den je prázdný — zanech tu zprávu, která jednou přistane.",
+    "newMessageForDay": "Nová zpráva pro tento den",
+    "birthdayMessageBtn": "Narozeninová",
+    "everyYearBtn": "Každý rok",
+    "dateBoundMessagesHint": "Zprávy navázané na datum se doručí ve stanovenou chvíli.",
+    "noScheduledMessages": "Žádné naplánované zprávy.",
+    "todaySummary": "Dnes · {day}. {month}",
+    "monthYearSummary": "{month} {year}",
+    "noEventsToday": "Dnes žádné události.",
+    "noEventsThisMonth": "Žádné události v tomto měsíci.",
+    "eventsThisMonth": "{count, plural, one {# událost} few {# události} other {# událostí}} v tomto měsíci.",
+    "upcomingMoments": "Nadcházející okamžiky",
+    "scheduleMessageBtn": "Naplánovat zprávu",
+    "noRecipient": "—"
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Tvůj odkaz, uchovaný pro budoucnost.",

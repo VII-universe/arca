@@ -1,20 +1,24 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import CalendarClient from "@/components/arca/CalendarClient";
 import type { CalEvent } from "@/app/api/arca/calendar-events/route";
 
-export const metadata = { title: "Kalendář — ARCA" };
+export async function generateMetadata() {
+  const t = await getTranslations("Calendar");
+  return { title: `${t("kicker")} — ARCA` };
+}
 
-function Topbar() {
+function Topbar({ crumb }: { crumb: string }) {
   return (
     <div className="arca-topbar">
       <div className="arca-topbar__crumbs">
         <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M9 6l6 6-6 6"/></svg>
-          <span className="here">Kalendář</span>
+          <span className="here">{crumb}</span>
         </span>
       </div>
     </div>
@@ -22,6 +26,7 @@ function Topbar() {
 }
 
 export default async function CalendarPage() {
+  const t = await getTranslations("Calendar");
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
@@ -119,23 +124,23 @@ export default async function CalendarPage() {
 
   return (
     <>
-      <Topbar />
+      <Topbar crumb={t("kicker")} />
       <div className="arca-inner arca-fade-in">
         <div className="arca-row arca-between" style={{ marginBottom: 8 }}>
           <div>
-            <div className="arca-kicker">Kalendář</div>
+            <div className="arca-kicker">{t("kicker")}</div>
             <h1 className="arca-h1" style={{ marginTop: 8 }}>
-              Okamžiky, které <em>se vrátí.</em>
+              {t.rich("title", { em: (chunks) => <em>{chunks}</em> })}
             </h1>
           </div>
           <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary">
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            Nová zpráva
+            {t("newMessageBtn")}
           </Link>
         </div>
 
         <p className="arca-sub" style={{ maxWidth: 540, marginBottom: 28 }}>
-          Narozeniny, výročí, dny, kdy chceš, aby tě někdo slyšel. Klikni na libovolný den a přidej zprávu, která tam jednou přistane.
+          {t("subtitle")}
         </p>
 
         <CalendarClient
