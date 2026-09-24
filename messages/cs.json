@@ -237,6 +237,141 @@
     "empty": {
       "groupNoMembers": "Tato skupina zatím nemá žádné členy. Přiřaď lidi přes jejich kartu.",
       "noRecipients": "Zatím žádní příjemci. Přidej je přes editor zprávy."
+    },
+    "detail": {
+      "status": {
+        "draft": "Návrh",
+        "scheduled": "Naplánováno",
+        "delivered": "Doručeno",
+        "gracePeriod": "Lhůta",
+        "guardians": "Strážci",
+        "archived": "Archiv"
+      },
+      "messagesCount": "{count, plural, one {# zpráva} few {# zprávy} other {# zpráv}}",
+      "messagesForTitle": "Zprávy pro {name}",
+      "whatWillFind": "Co {name} jednou najde",
+      "noMessagesOfType": "Žádné zprávy tohoto typu.",
+      "addAnotherMessage": "Přidat další zprávu pro {name}",
+      "kind": {
+        "text": "Text",
+        "video": "Video",
+        "voice": "Hlas",
+        "photo": "Foto"
+      },
+      "filterAll": "Vše · {count}",
+      "openBtn": "Otevřít",
+      "trigger": {
+        "anytime": "kdykoli",
+        "afterDays": "po {days} dnech",
+        "onEvent": "při události"
+      },
+      "type": {
+        "emotional": "Emocionální",
+        "practical": "Praktická"
+      },
+      "aboutRecipient": "O příjemci",
+      "recipientFallback": "Příjemce",
+      "fields": {
+        "email": "E-mail",
+        "phone": "Telefon",
+        "relationship": "Vztah",
+        "messages": "Zpráv",
+        "birthday": "Narozeniny",
+        "anniversary": "Výročí"
+      },
+      "content": {
+        "title": "Obsah",
+        "texts": "Texty",
+        "videos": "Videa",
+        "voice": "Hlas",
+        "files": "Soubory"
+      },
+      "deliverySimulator": {
+        "title": "Simulovat doručení",
+        "testBadge": "TEST",
+        "packLabel": "Schránka",
+        "sanctuaryLinkLabel": "Odkaz na Svatyni",
+        "copyBtn": "Kopírovat",
+        "sendToLabel": "Odeslat na",
+        "noRecipientEmail": "Příjemce nemá e-mailovou adresu",
+        "sendingBtn": "Odesílám…",
+        "sendTestBtn": "Odeslat testovací e-mail",
+        "emailSentToast": "E-mail byl odeslán na {email}"
+      },
+      "suggestion": {
+        "label": "Návrh od ARCA",
+        "quote": "„Napiš {name}, co pro tebe znamená.\"",
+        "writeBtn": "Začít psát"
+      },
+      "relationships": {
+        "mom": "máma",
+        "dad": "táta",
+        "partnerM": "partner",
+        "partnerF": "partnerka",
+        "friendM": "kamarád",
+        "friendF": "kamarádka",
+        "colleagueM": "kolega",
+        "colleagueF": "kolegyně",
+        "child": "dítě",
+        "sibling": "sourozenec",
+        "grandma": "babička",
+        "grandpa": "děda",
+        "custom": "vlastní"
+      },
+      "editProfileBtn": "Upravit profil",
+      "profileSheet": {
+        "title": "Upravit profil",
+        "relationshipLabel": "Vztah",
+        "customRelationshipPlaceholder": "Vlastní popis vztahu…",
+        "birthdayLabel": "Narozeniny",
+        "anniversaryLabel": "Výročí (setkání, svatba…)",
+        "notesLabel": "Poznámky",
+        "notesPlaceholder": "Co o této osobě víš, co bys chtěl zachovat…",
+        "saving": "Ukládám…",
+        "saveBtn": "Uložit",
+        "cancelBtn": "Zrušit"
+      },
+      "profileSavedToast": "Profil uložen.",
+      "staleMilestoneToastOne": "Profil uložen — jedna zpráva s věkovým milníkem teď míří do minulosti. Uprav ji v Přehledu.",
+      "staleMilestoneToastMany": "Profil uložen — {count} zprávy s věkovým milníkem teď míří do minulosti. Uprav je v Přehledu.",
+      "memorySheet": {
+        "title": "Uložit okamžik",
+        "dropzoneHint": "Klikni nebo přetáhni fotku / audio",
+        "titleLabel": "Název (volitelný)",
+        "titlePlaceholder": "Název vzpomínky…",
+        "storyLabel": "Příběh",
+        "storyPlaceholder": "Co se stalo, proč to pro tebe znamená…",
+        "dateLabel": "Datum (kdy se to stalo)",
+        "saving": "Ukládám…",
+        "saveBtn": "Uložit okamžik",
+        "cancelBtn": "Zrušit"
+      },
+      "memorySavedToast": "Okamžik uložen.",
+      "memoryCard": {
+        "confirmDelete": "Opravdu?",
+        "deleting": "…",
+        "deleteBtn": "Smazat",
+        "noBtn": "Ne"
+      },
+      "memoryDeletedToast": "Okamžik odstraněn.",
+      "coverBtn": "Změnit úvodní fotku",
+      "coverUploading": "Nahrávám...",
+      "coverSavedToast": "Úvodní fotka uložena.",
+      "avatarChangeTitle": "Změnit foto",
+      "avatarSavedToast": "Foto uloženo.",
+      "milestones": {
+        "birthdayLabel": "Narozeniny",
+        "anniversaryLabel": "Výročí",
+        "inDays": "za {days, plural, one {# den} few {# dny} other {# dní}}",
+        "urgentHint": "Brzy — napiš zprávu teď",
+        "soonHint": "Máš čas připravit se",
+        "writeBtn": "Napsat zprávu"
+      },
+      "gallery": {
+        "title": "Galerie okamžiků",
+        "saveMomentBtn": "Uložit okamžik",
+        "empty": "Přetáhni sem fotku nebo klikni „Uložit okamžik\" — každý příběh si zaslouží místo."
+      }
     }
   },
   "Landing": {

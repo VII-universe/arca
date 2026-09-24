@@ -237,6 +237,141 @@
     "empty": {
       "groupNoMembers": "This group doesn't have any members yet. Assign people from their card.",
       "noRecipients": "No recipients yet. Add them through the message editor."
+    },
+    "detail": {
+      "status": {
+        "draft": "Draft",
+        "scheduled": "Scheduled",
+        "delivered": "Delivered",
+        "gracePeriod": "Grace period",
+        "guardians": "Guardians",
+        "archived": "Archived"
+      },
+      "messagesCount": "{count, plural, one {# message} other {# messages}}",
+      "messagesForTitle": "Messages for {name}",
+      "whatWillFind": "What {name} will one day find",
+      "noMessagesOfType": "No messages of this type.",
+      "addAnotherMessage": "Add another message for {name}",
+      "kind": {
+        "text": "Text",
+        "video": "Video",
+        "voice": "Voice",
+        "photo": "Photo"
+      },
+      "filterAll": "All · {count}",
+      "openBtn": "Open",
+      "trigger": {
+        "anytime": "anytime",
+        "afterDays": "after {days} days",
+        "onEvent": "on event"
+      },
+      "type": {
+        "emotional": "Emotional",
+        "practical": "Practical"
+      },
+      "aboutRecipient": "About the recipient",
+      "recipientFallback": "Recipient",
+      "fields": {
+        "email": "Email",
+        "phone": "Phone",
+        "relationship": "Relationship",
+        "messages": "Messages",
+        "birthday": "Birthday",
+        "anniversary": "Anniversary"
+      },
+      "content": {
+        "title": "Content",
+        "texts": "Texts",
+        "videos": "Videos",
+        "voice": "Voice",
+        "files": "Files"
+      },
+      "deliverySimulator": {
+        "title": "Simulate delivery",
+        "testBadge": "TEST",
+        "packLabel": "Vault",
+        "sanctuaryLinkLabel": "Sanctuary link",
+        "copyBtn": "Copy",
+        "sendToLabel": "Send to",
+        "noRecipientEmail": "Recipient has no email address",
+        "sendingBtn": "Sending…",
+        "sendTestBtn": "Send test email",
+        "emailSentToast": "Email was sent to {email}"
+      },
+      "suggestion": {
+        "label": "Suggestion from ARCA",
+        "quote": "\"Write to {name} what they mean to you.\"",
+        "writeBtn": "Start writing"
+      },
+      "relationships": {
+        "mom": "mom",
+        "dad": "dad",
+        "partnerM": "partner",
+        "partnerF": "partner",
+        "friendM": "friend",
+        "friendF": "friend",
+        "colleagueM": "colleague",
+        "colleagueF": "colleague",
+        "child": "child",
+        "sibling": "sibling",
+        "grandma": "grandma",
+        "grandpa": "grandpa",
+        "custom": "custom"
+      },
+      "editProfileBtn": "Edit profile",
+      "profileSheet": {
+        "title": "Edit profile",
+        "relationshipLabel": "Relationship",
+        "customRelationshipPlaceholder": "Custom relationship description…",
+        "birthdayLabel": "Birthday",
+        "anniversaryLabel": "Anniversary (met, married…)",
+        "notesLabel": "Notes",
+        "notesPlaceholder": "What you know about this person, what you'd like to keep…",
+        "saving": "Saving…",
+        "saveBtn": "Save",
+        "cancelBtn": "Cancel"
+      },
+      "profileSavedToast": "Profile saved.",
+      "staleMilestoneToastOne": "Profile saved — one age-milestone message is now pointing to the past. Edit it in the Overview.",
+      "staleMilestoneToastMany": "Profile saved — {count} age-milestone messages are now pointing to the past. Edit them in the Overview.",
+      "memorySheet": {
+        "title": "Save a moment",
+        "dropzoneHint": "Click or drop a photo / audio",
+        "titleLabel": "Title (optional)",
+        "titlePlaceholder": "Memory title…",
+        "storyLabel": "Story",
+        "storyPlaceholder": "What happened, why it matters to you…",
+        "dateLabel": "Date (when it happened)",
+        "saving": "Saving…",
+        "saveBtn": "Save moment",
+        "cancelBtn": "Cancel"
+      },
+      "memorySavedToast": "Moment saved.",
+      "memoryCard": {
+        "confirmDelete": "Are you sure?",
+        "deleting": "…",
+        "deleteBtn": "Delete",
+        "noBtn": "No"
+      },
+      "memoryDeletedToast": "Moment removed.",
+      "coverBtn": "Change cover photo",
+      "coverUploading": "Uploading...",
+      "coverSavedToast": "Cover photo saved.",
+      "avatarChangeTitle": "Change photo",
+      "avatarSavedToast": "Photo saved.",
+      "milestones": {
+        "birthdayLabel": "Birthday",
+        "anniversaryLabel": "Anniversary",
+        "inDays": "in {days, plural, one {# day} other {# days}}",
+        "urgentHint": "Soon — write the message now",
+        "soonHint": "You have time to prepare",
+        "writeBtn": "Write a message"
+      },
+      "gallery": {
+        "title": "Moment gallery",
+        "saveMomentBtn": "Save moment",
+        "empty": "Drop a photo here or click \"Save moment\" — every story deserves a place."
+      }
     }
   },
   "Landing": {
