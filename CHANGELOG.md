@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.8.0] - i18n: Schránka (přehled)
+### Přidáno
+- **Přehled Schránky přeložen** do češtiny a angličtiny (`app/dashboard/vault/page.tsx`, `components/arca/VaultClient.tsx`) — nový namespace `Vault` v `messages/cs.json`/`messages/en.json`: nadpis/podtitul, tip pro psaní, filtr skupin (vytvoření/úprava/smazání skupiny, přiřazení lidí), formulář pro přidání osoby (včetně rozbalovacích sekcí kontaktů/sociálních sítí/adresy/osobních údajů), karta osoby (počet zpráv, aktivní zprávy, doručeno-otevřít odkaz), prázdné stavy.
+- Datum nejbližší naplánované zprávy na kartě osoby se teď formátuje podle aktivního jazyka (`cs-CZ`/`en-GB`).
+- Pluralizace počtu zpráv přes ICU (`1 zpráva` / `2 zprávy` / `5 zpráv` vs. `1 message` / `2 messages`).
+- Barevné názvy skupin (Terra/Sage/Sky/Ink) záměrně ponechány beze změny — jde o vizuální/designové tokeny stejně jako v pricing pills na landing page, ne běžná prosa.
+
+### Vědomě mimo scope (další PR)
+- Detail příjemce `app/dashboard/vault/[personId]/page.tsx` a jeho podkomponenty (`RecipientTimeline.tsx`, `RecipientProfileEditor.tsx`, `DeliverySimulator.tsx`) — dohromady ~1360 řádků, výrazně větší než zbytek přehledu Schránky. Necháno na samostatnou PR, aby zůstala menší a snáz reviewovatelná (ověřeno ručně — stránka detailu zůstává plně česky, appka se nerozbije, jen zatím nereaguje na přepnutí jazyka).
+
+### Zbývá (další PR)
+- Detail příjemce ve Schránce (viz výše).
+- Kalendář, Strážci, Manuál k životu.
+- Texty z Fází 0–2 (výběr režimu, SELF/LEGACY tón v ArcaReveal, karta roční rituál mimo Dashboard).
+- Transakční e-maily (Resend šablony).
+- Settings stránka + `AppearanceButton.tsx` + přepínač jazyka v Dashboard chrome.
+
 ## [1.7.0] - i18n: Dashboard
 ### Přidáno
 - **Dashboard plně přeložen** do češtiny a angličtiny (`app/dashboard/page.tsx`, `components/dashboard/ModeFilterSection.tsx`) — dva nové namespaces v `messages/cs.json`/`messages/en.json`: `Dashboard` (uvítání, hero karta, upozornění na připravené/doručené zprávy, grace period, připomínky narozenin/výročí, statistiky, nejbližší okamžiky, karta Tichý strážce, karta Týdenní rituál, naposledy uložené) a `Nav` (postranní menu, spodní mobilní navigace).

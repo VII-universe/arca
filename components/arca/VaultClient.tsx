@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations, useLocale } from "next-intl";
 import { createGroup, deleteGroup, updateGroup, assignPersonGroup } from "@/app/actions/groups";
 import { useVibe } from "@/contexts/vibe-context";
 import { createContact } from "@/app/actions/contacts";
@@ -37,12 +38,12 @@ const COLOR_OPTIONS: { value: string; label: string; bg: string; text: string; b
   { value: "ink",   label: "Ink",     bg: "var(--bg-tint)",      text: "var(--ink-2)",       border: "var(--hairline-2)" },
 ];
 
-const GROUP_PRESETS = [
-  { name: "Rodina",    emoji: "👨‍👩‍👧", color: "clay" },
-  { name: "Přátelé",  emoji: "🤝",    color: "sage" },
-  { name: "Kolegové", emoji: "💼",    color: "sky" },
-  { name: "Partner",  emoji: "❤️",   color: "clay" },
-];
+const GROUP_PRESET_META = [
+  { key: "family",     emoji: "👨‍👩‍👧", color: "clay" },
+  { key: "friends",    emoji: "🤝",    color: "sage" },
+  { key: "colleagues", emoji: "💼",    color: "sky" },
+  { key: "partner",    emoji: "❤️",   color: "clay" },
+] as const;
 
 function colorFor(color: string) {
   return COLOR_OPTIONS.find(c => c.value === color) ?? COLOR_OPTIONS[0];
@@ -57,7 +58,6 @@ function toneFor(name: string): string {
 function initials(name: string): string {
   return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
 }
-const pluralPack = (n: number) => n === 1 ? "zpráva" : n < 5 ? "zprávy" : "zpráv";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -79,6 +79,7 @@ function GroupPicker({
   onAssign: (personId: string, groupId: string | null) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("Vault");
   const ref = useRef<HTMLDivElement>(null);
   const [pending, startTransition] = useTransition();
 
@@ -159,7 +160,7 @@ function GroupPicker({
           }}
         >
           <span style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, border: "1.5px dashed var(--muted-2)" }} />
-          <span style={{ fontSize: 13, fontFamily: "var(--f-sans)", color: "var(--muted)" }}>Bez skupiny</span>
+          <span style={{ fontSize: 13, fontFamily: "var(--f-sans)", color: "var(--muted)" }}>{t("groupPicker.noGroup")}</span>
           {currentGroupId === null && <span style={{ color: "var(--muted)" }}><IcCheck /></span>}
         </button>
       </div>
@@ -175,6 +176,8 @@ function CreateGroupPanel({
   onCreated: (group: VaultGroup) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("Vault");
+  const GROUP_PRESETS = GROUP_PRESET_META.map(p => ({ ...p, name: t(`createGroup.presets.${p.key}`) }));
   const [name, setName] = useState("");
   const [color, setColor] = useState("clay");
   const [emoji, setEmoji] = useState("");
@@ -189,7 +192,7 @@ function CreateGroupPanel({
       const res = await createGroup({ name, color, emoji: emoji || undefined });
       if ("error" in res) { toast.error(res.error); return; }
       onCreated(res);
-      toast.success(`Skupina „${res.name}" vytvořena.`);
+      toast.success(t("createGroup.createdToast", { name: res.name }));
       onClose();
     });
   }
@@ -213,7 +216,7 @@ function CreateGroupPanel({
     >
       {/* Presets */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-        <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, width: "100%", marginBottom: 2 }}>Rychlé skupiny</span>
+        <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, width: "100%", marginBottom: 2 }}>{t("createGroup.quickGroups")}</span>
         {GROUP_PRESETS.map(p => (
           <button
             key={p.name}
@@ -231,7 +234,7 @@ function CreateGroupPanel({
         <input
           ref={inputRef}
           className="arca-input"
-          placeholder="Název skupiny…"
+          placeholder={t("createGroup.namePlaceholder")}
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
@@ -248,7 +251,7 @@ function CreateGroupPanel({
 
       {/* Color picker */}
       <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
-        <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11 }}>Barva</span>
+        <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11 }}>{t("createGroup.colorLabel")}</span>
         {COLOR_OPTIONS.map(c => (
           <button
             key={c.value}
@@ -276,9 +279,9 @@ function CreateGroupPanel({
           disabled={pending || !name.trim()}
           className="arca-btn arca-btn--primary sm"
         >
-          {pending ? "Ukládám…" : <><IcPlus /> Vytvořit skupinu</>}
+          {pending ? t("createGroup.saving") : <><IcPlus /> {t("createGroup.createBtn")}</>}
         </button>
-        <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost sm">Zrušit</button>
+        <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost sm">{t("createGroup.cancelBtn")}</button>
       </div>
     </div>
   );
@@ -295,6 +298,7 @@ function GroupEditModal({
   onDelete: (id: string) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("Vault");
   const [name, setName]   = useState(group.name);
   const [emoji, setEmoji] = useState(group.emoji ?? "");
   const [color, setColor] = useState(group.color);
@@ -329,7 +333,7 @@ function GroupEditModal({
       ]);
 
       onSave({ id: group.id, name: name.trim(), emoji: emoji || null, color }, memberIds);
-      toast.success(`Skupina „${name.trim()}" uložena.`);
+      toast.success(t("editGroupModal.savedToast", { name: name.trim() }));
       onClose();
     });
   }
@@ -353,7 +357,7 @@ function GroupEditModal({
         {/* Header */}
         <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid var(--hairline)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-            <h2 style={{ margin: 0, fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 22, color: "var(--ink)" }}>Upravit skupinu</h2>
+            <h2 style={{ margin: 0, fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 22, color: "var(--ink)" }}>{t("editGroupModal.title")}</h2>
             <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--muted)", padding: 6, borderRadius: 8, display: "flex" }}>
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
@@ -363,7 +367,7 @@ function GroupEditModal({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 62px", gap: 10, marginBottom: 14 }}>
             <input
               className="arca-input"
-              placeholder="Název skupiny…"
+              placeholder={t("createGroup.namePlaceholder")}
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") save(); }}
@@ -382,7 +386,7 @@ function GroupEditModal({
 
           {/* Color picker */}
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".1em" }}>Barva</span>
+            <span style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".1em" }}>{t("editGroupModal.colorLabel")}</span>
             {COLOR_OPTIONS.map(opt => (
               <button
                 key={opt.value}
@@ -392,14 +396,14 @@ function GroupEditModal({
                 style={{ width: 24, height: 24, borderRadius: "50%", border: "2px solid", borderColor: color === opt.value ? opt.text : "transparent", background: opt.bg, cursor: "pointer", boxShadow: color === opt.value ? `0 0 0 3px ${opt.border}` : undefined, transition: "all .12s" }}
               />
             ))}
-            <span style={{ fontSize: 12, color: c.text, background: c.bg, padding: "2px 8px", borderRadius: "var(--r-pill)", border: `1px solid ${c.border}` }}>{emoji || ""} {name || "Skupina"}</span>
+            <span style={{ fontSize: 12, color: c.text, background: c.bg, padding: "2px 8px", borderRadius: "var(--r-pill)", border: `1px solid ${c.border}` }}>{emoji || ""} {name || t("editGroupModal.groupFallback")}</span>
           </div>
         </div>
 
         {/* Member list */}
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
           <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 12 }}>
-            Členové · {memberIds.size} z {people.length}
+            {t("editGroupModal.membersLabel")} · {t("editGroupModal.membersCount", { selected: memberIds.size, total: people.length })}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {people.map(p => {
@@ -423,7 +427,7 @@ function GroupEditModal({
               );
             })}
             {people.length === 0 && (
-              <p style={{ color: "var(--muted)", fontSize: 13, margin: 0, textAlign: "center", padding: "20px 0" }}>Zatím žádné kontakty ve schránce.</p>
+              <p style={{ color: "var(--muted)", fontSize: 13, margin: 0, textAlign: "center", padding: "20px 0" }}>{t("editGroupModal.noContacts")}</p>
             )}
           </div>
         </div>
@@ -435,12 +439,12 @@ function GroupEditModal({
             onClick={() => { onDelete(group.id); onClose(); }}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: "var(--r-md)", border: "none", background: "transparent", color: "#C0392B", cursor: "pointer", fontSize: 13, fontFamily: "var(--f-sans)" }}
           >
-            <IcTrash /> Smazat skupinu
+            <IcTrash /> {t("editGroupModal.deleteBtn")}
           </button>
           <div style={{ display: "flex", gap: 8 }}>
-            <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost sm">Zrušit</button>
+            <button type="button" onClick={onClose} className="arca-btn arca-btn--ghost sm">{t("editGroupModal.cancelBtn")}</button>
             <button type="button" onClick={save} disabled={pending || !name.trim()} className="arca-btn arca-btn--primary sm">
-              {pending ? "Ukládám…" : "Uložit změny"}
+              {pending ? t("createGroup.saving") : t("editGroupModal.saveBtn")}
             </button>
           </div>
         </div>
@@ -462,6 +466,7 @@ function FilterBar({
   onDeleteGroup: (id: string) => void;
   onUpdateGroup: (updated: VaultGroup, memberIds: Set<string>) => void;
 }) {
+  const t = useTranslations("Vault");
   const [manageId, setManageId]   = useState<string | null>(null);
   const [editGroup, setEditGroup] = useState<VaultGroup | null>(null);
   const [, startDelete] = useTransition();
@@ -470,7 +475,7 @@ function FilterBar({
     startDelete(async () => {
       const res = await deleteGroup(id);
       if ("error" in res) { toast.error(res.error); return; }
-      toast.success("Skupina smazána.");
+      toast.success(t("filterBar.groupDeletedToast"));
       onDeleteGroup(id);
       if (activeGroupId === id) onFilter(null);
     });
@@ -493,7 +498,7 @@ function FilterBar({
           transition: "all .14s",
         }}
       >
-        Všichni <span style={{ opacity: .6, marginLeft: 3 }}>{people.length}</span>
+        {t("filterBar.all")} <span style={{ opacity: .6, marginLeft: 3 }}>{people.length}</span>
       </button>
 
       {/* Group chips */}
@@ -534,7 +539,7 @@ function FilterBar({
                 alignItems: "center", justifyContent: "center", color: isSel ? c.text : "var(--muted-2)",
                 opacity: 0.7,
               }}
-              title="Možnosti skupiny"
+              title={t("filterBar.groupOptions")}
             >
               <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
             </button>
@@ -556,7 +561,7 @@ function FilterBar({
                   onClick={() => { setEditGroup(g); setManageId(null); }}
                   style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", color: "var(--ink)", fontSize: 13, fontFamily: "var(--f-sans)" }}
                 >
-                  <IcEdit /> Upravit skupinu
+                  <IcEdit /> {t("filterBar.editGroup")}
                 </button>
                 <div style={{ height: 1, background: "var(--hairline)", margin: "0 10px" }} />
                 <button
@@ -564,7 +569,7 @@ function FilterBar({
                   onClick={() => { handleDelete(g.id); setManageId(null); }}
                   style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", color: "#c00", fontSize: 13, fontFamily: "var(--f-sans)" }}
                 >
-                  <IcTrash /> Smazat skupinu
+                  <IcTrash /> {t("filterBar.deleteGroup")}
                 </button>
               </div>
             )}
@@ -579,7 +584,7 @@ function FilterBar({
         className="arca-btn sm arca-btn--ghost"
         style={{ gap: 5 }}
       >
-        <IcPlus /> Nová skupina
+        <IcPlus /> {t("filterBar.newGroup")}
       </button>
 
       {/* Group edit modal */}
@@ -604,39 +609,36 @@ function FilterBar({
 const PERSON_SECTIONS = [
   {
     key: "channels",
-    label: "Telefon & messenger",
     fields: [
-      { name: "phone",     label: "Telefon",   placeholder: "+420 600 000 000", type: "tel"  },
-      { name: "whatsapp",  label: "WhatsApp",  placeholder: "+420 600 000 000", type: "tel"  },
+      { name: "phone",     type: "tel"  },
+      { name: "whatsapp",  type: "tel"  },
     ],
   },
   {
     key: "social",
-    label: "Sociální sítě",
     fields: [
-      { name: "facebook",  label: "Facebook",  placeholder: "facebook.com/…",   type: "text" },
-      { name: "instagram", label: "Instagram", placeholder: "@uživatelskéjméno", type: "text" },
+      { name: "facebook",  type: "text" },
+      { name: "instagram", type: "text" },
     ],
   },
   {
     key: "address",
-    label: "Adresa",
     fields: [
-      { name: "address",   label: "Adresa",    placeholder: "Ulice, město, PSČ", type: "text" },
+      { name: "address",   type: "text" },
     ],
   },
   {
     key: "personal",
-    label: "Osobní info",
     fields: [
-      { name: "relationship", label: "Vztah",      placeholder: "máma, partner, kamarád…", type: "text" },
-      { name: "birthday",     label: "Narozeniny", placeholder: "",                         type: "date" },
-      { name: "anniversary",  label: "Výročí",     placeholder: "",                         type: "date" },
+      { name: "relationship", type: "text" },
+      { name: "birthday",     type: "date" },
+      { name: "anniversary",  type: "date" },
     ],
   },
-];
+] as const;
 
 function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
+  const t = useTranslations("Vault");
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [pending, startT] = useTransition();
@@ -663,7 +665,7 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
         groupId: null,
         group: null,
       });
-      toast.success(`${res.name} přidán/a.`);
+      toast.success(t("addPerson.addedToast", { name: res.name }));
       setOpen(false);
       setExpanded({});
     });
@@ -677,7 +679,7 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
         className="arca-recip"
         style={{ borderStyle: "dashed", justifyContent: "center", background: "transparent", color: "var(--muted)", gap: 8, cursor: "pointer", border: "1px dashed var(--hairline-2)" }}
       >
-        <IcPlus /> Přidat dalšího člověka
+        <IcPlus /> {t("addPerson.addAnother")}
       </button>
     );
   }
@@ -693,12 +695,12 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
       {/* Required fields */}
       <div className="arca-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>Celé jméno *</label>
-          <input ref={nameRef} name="name" required placeholder="Jan Novák" className="arca-input" style={{ fontSize: 13 }} />
+          <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>{t("addPerson.fullName")}</label>
+          <input ref={nameRef} name="name" required placeholder={t("addPerson.namePlaceholder")} className="arca-input" style={{ fontSize: 13 }} />
         </div>
         <div>
-          <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>E-mail</label>
-          <input name="email" type="email" placeholder="jan@example.com" className="arca-input" style={{ fontSize: 13 }} />
+          <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>{t("addPerson.email")}</label>
+          <input name="email" type="email" placeholder="name@example.com" className="arca-input" style={{ fontSize: 13 }} />
         </div>
       </div>
 
@@ -714,14 +716,14 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
               style={{ transition: "transform .15s", transform: expanded[section.key] ? "rotate(90deg)" : undefined }}>
               <path d="M9 6l6 6-6 6"/>
             </svg>
-            {section.label}
+            {t(`addPerson.sections.${section.key}.label`)}
           </button>
           {expanded[section.key] && (
             <div className="arca-form-grid" style={{ display: "grid", gridTemplateColumns: section.fields.length > 1 ? "1fr 1fr" : "1fr", gap: 10, marginTop: 8 }}>
               {section.fields.map(f => (
                 <div key={f.name}>
-                  <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>{f.label}</label>
-                  <input name={f.name} type={f.type} placeholder={f.placeholder} className="arca-input" style={{ fontSize: 13 }} />
+                  <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>{t(`addPerson.sections.${section.key}.${f.name}.label`)}</label>
+                  <input name={f.name} type={f.type} placeholder={f.type === "date" ? "" : t(`addPerson.sections.${section.key}.${f.name}.placeholder`)} className="arca-input" style={{ fontSize: 13 }} />
                 </div>
               ))}
             </div>
@@ -732,14 +734,14 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
       {/* Notes */}
       {expanded.notes ? (
         <div>
-          <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>Poznámky</label>
-          <textarea name="notes" rows={3} placeholder="Co o tomto člověku chceš pamatovat…" className="arca-input" style={{ fontSize: 13, resize: "vertical" }} />
+          <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 10, display: "block", marginBottom: 5 }}>{t("addPerson.notes")}</label>
+          <textarea name="notes" rows={3} placeholder={t("addPerson.notesPlaceholder")} className="arca-input" style={{ fontSize: 13, resize: "vertical" }} />
         </div>
       ) : (
         <button type="button" onClick={() => setExpanded(e => ({ ...e, notes: true }))}
           style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 12.5, fontFamily: "var(--f-sans)", padding: "2px 0", textAlign: "left" }}>
           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M9 6l6 6-6 6"/></svg>
-          Poznámky
+          {t("addPerson.notes")}
         </button>
       )}
 
@@ -751,23 +753,23 @@ function AddPersonForm({ onAdded }: { onAdded: (p: VaultPerson) => void }) {
             style={{ transition: "transform .15s", transform: expanded.challenge ? "rotate(90deg)" : undefined }}>
             <path d="M9 6l6 6-6 6"/>
           </svg>
-          Bezpečnostní otázka
+          {t("addPerson.securityQuestion")}
         </button>
         {expanded.challenge && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
-            <p className="arca-sub" style={{ fontSize: 12, margin: 0 }}>Příjemce musí znát odpověď, aby zprávu otevřel.</p>
-            <input name="challengeQuestion" placeholder="Jak se jmenoval náš první pes?" className="arca-input" style={{ fontSize: 13 }} />
-            <input name="challengeAnswer" placeholder="Odpověď" className="arca-input" style={{ fontSize: 13 }} />
+            <p className="arca-sub" style={{ fontSize: 12, margin: 0 }}>{t("addPerson.securityHint")}</p>
+            <input name="challengeQuestion" placeholder={t("addPerson.challengeQuestionPlaceholder")} className="arca-input" style={{ fontSize: 13 }} />
+            <input name="challengeAnswer" placeholder={t("addPerson.challengeAnswerPlaceholder")} className="arca-input" style={{ fontSize: 13 }} />
           </div>
         )}
       </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
         <button type="submit" disabled={pending} className="arca-btn arca-btn--primary sm">
-          {pending ? "Ukládám…" : <><IcPlus /> Přidat osobu</>}
+          {pending ? t("addPerson.saving") : <><IcPlus /> {t("addPerson.addBtn")}</>}
         </button>
         <button type="button" onClick={() => { setOpen(false); setError(null); setExpanded({}); }} className="arca-btn arca-btn--ghost sm">
-          Zrušit
+          {t("addPerson.cancelBtn")}
         </button>
       </div>
     </form>
@@ -785,6 +787,8 @@ function PersonCard({
   myEmail: string | null;
   appUrl: string;
 }) {
+  const t = useTranslations("Vault");
+  const dateLocale = useLocale() === "cs" ? "cs-CZ" : "en-GB";
   const [pickerOpen, setPickerOpen] = useState(false);
   const tone = toneFor(person.name);
   const init = initials(person.name);
@@ -820,12 +824,12 @@ function PersonCard({
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 550, fontSize: 14.5 }}>{person.name}</div>
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-              {person.email ?? "Bez e-mailu"}
-              {nextDate && ` · ${nextDate.toLocaleDateString("cs-CZ", { day: "numeric", month: "short" })}`}
+              {person.email ?? t("personCard.noEmail")}
+              {nextDate && ` · ${nextDate.toLocaleDateString(dateLocale, { day: "numeric", month: "short" })}`}
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
-              <span className="arca-tag">{person.packs.length} {pluralPack(person.packs.length)}</span>
-              {activePacks > 0 && <span className="arca-tag clay">{activePacks} aktivní</span>}
+              <span className="arca-tag">{t("personCard.packsTag", { count: person.packs.length })}</span>
+              {activePacks > 0 && <span className="arca-tag clay">{t("personCard.activeTag", { count: activePacks })}</span>}
               {deliveredPack && (
                 // A plain <button>, not a nested <a> — this card is already
                 // wrapped in a <Link>, and an anchor-in-anchor is invalid
@@ -839,7 +843,7 @@ function PersonCard({
                   className="arca-tag sage"
                   style={{ border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "var(--f-sans)" }}
                 >
-                  Doručeno · Otevřít
+                  {t("personCard.deliveredOpen")}
                 </button>
               )}
 
@@ -857,10 +861,10 @@ function PersonCard({
                   fontFamily: "var(--f-sans)", transition: "all .12s",
                   lineHeight: 1,
                 }}
-                title="Změnit skupinu"
+                title={t("personCard.changeGroupTitle")}
               >
                 {group?.emoji && <span style={{ fontSize: 12 }}>{group.emoji}</span>}
-                <span>{group?.name ?? "Skupina"}</span>
+                <span>{group?.name ?? t("personCard.groupFallback")}</span>
                 <IcChev />
               </button>
             </div>
@@ -868,7 +872,7 @@ function PersonCard({
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0, marginTop: 2 }}>
             <span style={{ fontFamily: "var(--f-serif)", fontSize: 24, lineHeight: 1 }}>{person.packs.length}</span>
-            <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11 }}>zpráv</span>
+            <span className="arca-mono" style={{ color: "var(--muted)", fontSize: 11 }}>{t("personCard.packsMono")}</span>
           </div>
 
           <IcRight />
@@ -903,6 +907,7 @@ interface Props {
 }
 
 export default function VaultClient({ initialPeople, initialGroups, initialGroupId, myEmail, appUrl }: Props) {
+  const t = useTranslations("Vault");
   const [people, setPeople] = useState<VaultPerson[]>(initialPeople);
   const [groups, setGroups] = useState<VaultGroup[]>(initialGroups);
   const [activeGroup, setActiveGroup] = useState<string | null>(initialGroupId ?? null);
@@ -928,8 +933,8 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
   const handleGroupAssign = useCallback((personId: string, groupId: string | null) => {
     const g = groupId ? groups.find(x => x.id === groupId) ?? null : null;
     setPeople(prev => prev.map(p => p.id === personId ? { ...p, groupId, group: g } : p));
-    toast.success(g ? `Přiřazeno do skupiny „${g.name}".` : "Skupina odebrána.");
-  }, [groups]);
+    toast.success(g ? t("personCard.assignedToast", { name: g.name }) : t("personCard.unassignedToast"));
+  }, [groups, t]);
 
   return (
     <div data-arca-theme="">
@@ -971,12 +976,12 @@ export default function VaultClient({ initialPeople, initialGroups, initialGroup
         <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none", padding: "36px 28px", textAlign: "center" }}>
           <p className="arca-sub" style={{ fontSize: 13 }}>
             {activeGroup
-              ? "Tato skupina zatím nemá žádné členy. Přiřaď lidi přes jejich kartu."
-              : "Zatím žádní příjemci. Přidej je přes editor zprávy."}
+              ? t("empty.groupNoMembers")
+              : t("empty.noRecipients")}
           </p>
           {!activeGroup && (
             <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary" style={{ marginTop: 14, display: "inline-flex" }}>
-              <IcPlus /> Nová zpráva
+              <IcPlus /> {t("newMessageBtn")}
             </Link>
           )}
         </div>
