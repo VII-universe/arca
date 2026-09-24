@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.10.0] - i18n: Kalendář
+### Přidáno
+- **Kalendář plně přeložen** do češtiny a angličtiny (`app/dashboard/calendar/page.tsx`, `components/arca/CalendarClient.tsx`) — nový namespace `Calendar` v `messages/cs.json`/`messages/en.json`: nadpis/podtitul, měsíční mřížka, výběr měsíce/roku, denní modal (existující události, přidání narozeninové/výroční/jednorázové zprávy), postranní panel (souhrn dne/měsíce, nadcházející zprávy).
+- Názvy dnů a měsíců (krátké i celé, včetně české genitivní podoby pro data typu „24. září") jsou teď součástí překladových souborů místo natvrdo napsaných polí v komponentě — `t.raw(...)` stejně jako u polí na landing page z PR #22.
+- Formát „Dnes · den. měsíc" respektuje slovosled podle jazyka (čeština: den před měsícem s tečkou; angličtina: měsíc před dnem, bez tečky) — vyřešeno tím, že celý vzorec žije v překladovém řetězci, ne jako pevná konkatenace v kódu.
+- Počet událostí v měsíci přes ICU plural (`1 událost` / `2 události` / `5 událostí` vs. `1 event` / `5 events`).
+- Datum u nadcházejících zpráv v postranním panelu se teď formátuje podle aktivního jazyka (`cs-CZ`/`en-GB`) místo natvrdo `cs-CZ`.
+
+### Zbývá (další PR)
+- Strážci, Manuál k životu.
+- Texty z Fází 0–2 (výběr režimu, SELF/LEGACY tón v ArcaReveal, karta roční rituál mimo Dashboard).
+- Transakční e-maily (Resend šablony).
+- Settings stránka + `AppearanceButton.tsx` + přepínač jazyka v Dashboard chrome.
+
 ## [1.9.0] - i18n: Schránka (detail příjemce)
 ### Přidáno
 - **Detail příjemce plně přeložen** do češtiny a angličtiny (`app/dashboard/vault/[personId]/page.tsx`, `RecipientTimeline.tsx`, `RecipientProfileEditor.tsx`, `DeliverySimulator.tsx`) — rozšíření `Vault.detail` v `messages/cs.json`/`messages/en.json`: hlavička s počtem zpráv, stavové štítky (Návrh/Naplánováno/Doručeno/Lhůta/Strážci/Archiv), časová osa zpráv s filtrem podle typu obsahu, panel „O příjemci", přehled obsahu, simulátor doručení, návrh od ARCA, editor profilu (vztah, narozeniny, výročí, poznámky), milníky, galerie okamžiků a přidávání vzpomínek.

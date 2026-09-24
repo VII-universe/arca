@@ -374,6 +374,44 @@
       }
     }
   },
+  "Calendar": {
+    "kicker": "Calendar",
+    "title": "Moments that <em>come back around.</em>",
+    "subtitle": "Birthdays, anniversaries, days you want someone to hear from you. Click any day and add a message that will land there one day.",
+    "newMessageBtn": "New message",
+    "weekdaysShort": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "monthsGenitive": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "weekdaysFull": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "prevYear": "Previous year",
+    "nextYear": "Next year",
+    "jumpToToday": "Jump to today",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "eventType": {
+      "birthday": "Birthday",
+      "anniversary": "Anniversary",
+      "scheduledMessage": "Scheduled message"
+    },
+    "everyYear": "every year",
+    "openBtn": "Open",
+    "emptyDay": "This day is empty — leave a message that will land here one day.",
+    "newMessageForDay": "New message for this day",
+    "birthdayMessageBtn": "Birthday",
+    "everyYearBtn": "Every year",
+    "dateBoundMessagesHint": "Messages tied to a date are delivered at the set time.",
+    "noScheduledMessages": "No scheduled messages.",
+    "todaySummary": "Today · {month} {day}",
+    "monthYearSummary": "{month} {year}",
+    "noEventsToday": "No events today.",
+    "noEventsThisMonth": "No events this month.",
+    "eventsThisMonth": "{count, plural, one {# event} other {# events}} this month.",
+    "upcomingMoments": "Upcoming moments",
+    "scheduleMessageBtn": "Schedule a message",
+    "noRecipient": "—"
+  },
   "Landing": {
     "meta": {
       "title": "ARCA — Your legacy, secured for the future.",
