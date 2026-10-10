@@ -3,9 +3,15 @@ name: PR → Telegram
 on:
   pull_request:
     types: [opened, closed, reopened]
+  # GitHub evaluates this workflow file against every push regardless of
+  # the `on:` filter above and reports "No jobs were run" as a failed
+  # check when nothing matches. Declaring `push` explicitly and skipping
+  # the job via `if:` turns that into a real (skipped) run instead.
+  push:
 
 jobs:
   notify:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Send Telegram notification
