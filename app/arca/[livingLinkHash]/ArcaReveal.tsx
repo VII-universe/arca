@@ -230,10 +230,10 @@ export default function ArcaReveal({
               href={`/dashboard/arca/new?replyTo=${packId}`}
               className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium text-white bg-gradient-to-br from-rose-500 to-rose-700 hover:opacity-90 transition-opacity"
             >
-              Napsat odpověď
+              Write a reply
             </a>
             <p className="text-xs text-muted-foreground/50 text-center max-w-xs">
-              Odpověz sám sobě — appka založí novou zprávu, propojenou s touhle.
+              Reply to yourself — this creates a new message, linked to this one.
             </p>
           </div>
         )}

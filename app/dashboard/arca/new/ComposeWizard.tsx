@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations, useLocale } from "next-intl";
 import { createPackFull, addMediaContent } from "@/app/actions/arca";
 import { createClient } from "@/lib/supabase/client";
 import ArcaRichEditor, { type ArcaRichEditorHandle } from "@/components/arca/ArcaRichEditor";
@@ -51,8 +52,8 @@ function parseISODate(iso: string): Date {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
-function formatCzDate(d: Date): string {
-  return d.toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" });
+function formatCzDate(d: Date, dateLocale: string): string {
+  return d.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" });
 }
 
 interface Props {
@@ -72,28 +73,16 @@ interface Props {
   replyRecipient?: { id: string; name: string; email: string | null } | null;
 }
 
-const MODES: { id: MessageMode; title: string; desc: string; Ic: React.ComponentType; pills: string[] }[] = [
-  {
-    id: "SELF",
-    title: "Sobě do budoucna",
-    desc: "Napiš něco, co si jednou přečteš ty nebo někdo blízký — otevře se přesně v den, který zvolíš. Bez čekání na cokoliv jiného.",
-    Ic: IcHourglass,
-    pills: ["datum", "bez strážců"],
-  },
-  {
-    id: "LEGACY",
-    title: "Odkaz pro blízké",
-    desc: "Zpráva, kterou tví blízcí dostanou, až tu nebudeš moct být — ověřeno Tichými strážci, ne jen časem.",
-    Ic: IcShield,
-    pills: ["Tichý strážce"],
-  },
+const MODE_META: { id: MessageMode; Ic: React.ComponentType }[] = [
+  { id: "SELF", Ic: IcHourglass },
+  { id: "LEGACY", Ic: IcShield },
 ];
 
-const KINDS: { id: Kind; label: string; sub: string; Ic: React.ComponentType }[] = [
-  { id: "text",  label: "Text",  sub: "Dopis, vzpomínka, věta.", Ic: IcText },
-  { id: "voice", label: "Hlas",  sub: "Tvůj hlas nahraný k poslechu.", Ic: IcVoice },
-  { id: "video", label: "Video", sub: "Krátký film z tvojí strany kamery.", Ic: IcVideo },
-  { id: "photo", label: "Fotky", sub: "Album s popiskem ke každé.", Ic: IcPhoto },
+const KIND_META: { id: Kind; Ic: React.ComponentType }[] = [
+  { id: "text",  Ic: IcText },
+  { id: "voice", Ic: IcVoice },
+  { id: "video", Ic: IcVideo },
+  { id: "photo", Ic: IcPhoto },
 ];
 
 const TONE_GRADS: Record<string, string> = {
@@ -140,8 +129,9 @@ function bestVideoMime(): string {
 }
 
 function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Blob | null) => void }) {
+  const t = useTranslations("Compose.voiceRecorder");
   const [recording, setRecording] = useState(false);
-  const [t, setT] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -150,7 +140,7 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
 
   useEffect(() => {
     if (!recording) return;
-    const id = setInterval(() => setT((s) => s + 1), 1000);
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [recording]);
 
@@ -189,10 +179,10 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
         onChange(b);
       };
       recorder.start(250);
-      setT(0);
+      setElapsed(0);
       setRecording(true);
     } catch {
-      setError("Nepodařilo se získat přístup k mikrofonu.");
+      setError(t("micError"));
     }
   }
   function stop() {
@@ -200,23 +190,23 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
     setRecording(false);
   }
   function discard() {
-    setT(0);
+    setElapsed(0);
     onChange(null);
   }
 
-  const mm = String(Math.floor(t / 60)).padStart(2, "0");
-  const ss = String(t % 60).padStart(2, "0");
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+  const ss = String(elapsed % 60).padStart(2, "0");
 
   if (blob && previewSrc) {
     return (
       <div className="arca-card" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: "var(--accent)" }}><IcCheck /></span>
-          <span style={{ fontSize: 13, fontWeight: 500 }}>Nahrávka připravena — přehraj si ji</span>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>{t("ready")}</span>
         </div>
         <audio controls src={previewSrc} style={{ width: "100%" }} />
         <button type="button" onClick={discard} className="arca-btn sm arca-btn--ghost" style={{ alignSelf: "flex-start" }}>
-          <IcX /> Nahrát znovu
+          <IcX /> {t("recordAgain")}
         </button>
       </div>
     );
@@ -243,12 +233,12 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
       <div style={{ flex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
           <span style={{ fontFamily: "var(--f-serif)", fontSize: 22 }}>{mm}:{ss}</span>
-          <span className="arca-mono" style={{ color: "var(--muted)" }}>{recording ? "● Nahrávám" : "Připraveno"}</span>
+          <span className="arca-mono" style={{ color: "var(--muted)" }}>{recording ? t("recording") : t("readyStatus")}</span>
         </div>
         <div style={{ display: "flex", gap: 2, alignItems: "center", height: 36 }}>
           {Array.from({ length: 56 }).map((_, i) => {
             const h = 6 + Math.abs(Math.sin(i * 0.6) * 22) + (i % 5) * 2;
-            const active = recording && i < (t * 0.9) % 56;
+            const active = recording && i < (elapsed * 0.9) % 56;
             return <div key={i} style={{ width: 3, height: h, background: active ? "var(--accent)" : "var(--hairline-2)", borderRadius: 2 }} />;
           })}
         </div>
@@ -261,6 +251,7 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
 // ── Video recorder — real webcam capture, or pick an existing file ─────────────
 
 function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Blob | null) => void }) {
+  const t = useTranslations("Compose.videoRecorder");
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -308,7 +299,7 @@ function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
       recorder.start(250);
       setRecording(true);
     } catch {
-      setError("Nepodařilo se získat přístup ke kameře.");
+      setError(t("camError"));
     }
   }
   function stop() {
@@ -319,7 +310,7 @@ function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
     onChange(null);
   }
   function handleFile(f: File) {
-    if (!f.type.startsWith("video/")) { setError("Vyber prosím video soubor."); return; }
+    if (!f.type.startsWith("video/")) { setError(t("pickVideoError")); return; }
     setError(null);
     setResult(f);
   }
@@ -330,7 +321,7 @@ function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
         <video controls src={previewSrc} style={{ width: "100%", aspectRatio: "16/9", background: "#111", display: "block" }} />
         <div style={{ padding: 14, display: "flex", justifyContent: "center" }}>
           <button type="button" onClick={discard} className="arca-btn sm arca-btn--ghost">
-            <IcX /> Nahrát znovu / vybrat jiné
+            <IcX /> {t("recordAgainOrPick")}
           </button>
         </div>
       </div>
@@ -345,20 +336,20 @@ function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
         ) : (
           <div style={{ color: "rgba(255,255,255,0.4)", textAlign: "center" }}>
             <IcVideo />
-            <div style={{ marginTop: 12, fontSize: 13 }}>Nahrát z webkamery / vybrat soubor</div>
+            <div style={{ marginTop: 12, fontSize: 13 }}>{t("webcamHint")}</div>
           </div>
         )}
         <span className="arca-mono" style={{ position: "absolute", top: 12, left: 12, color: "rgba(255,255,255,0.5)", fontSize: 11 }}>
-          {recording ? "● NAHRÁVÁM" : "● PŘIPRAVENO"}
+          {recording ? t("recording") : t("ready")}
         </span>
       </div>
       <div style={{ padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
         <div style={{ display: "flex", gap: 10 }}>
           <button type="button" onClick={recording ? stop : start} className="arca-btn arca-btn--clay">
-            {recording ? <>■ Zastavit</> : <>● Nahrát</>}
+            {recording ? <>■ {t("stop")}</> : <>● {t("record")}</>}
           </button>
           <button type="button" onClick={() => fileRef.current?.click()} className="arca-btn arca-btn--outline" disabled={recording}>
-            Vybrat soubor
+            {t("pickFile")}
           </button>
           <input ref={fileRef} type="file" accept="video/*" style={{ display: "none" }}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
@@ -372,6 +363,7 @@ function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
 // ── Photo picker — real multi-file picker with thumbnails ──────────────────────
 
 function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: File[]) => void }) {
+  const t = useTranslations("Compose.photoPicker");
   const fileRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
   const [urls, setUrls] = useState<string[]>([]);
@@ -408,14 +400,14 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
             key={i}
             type="button"
             onClick={() => setOpenIndex(i)}
-            title="Zobrazit / nahradit"
+            title={t("viewReplace")}
             style={{ position: "relative", aspectRatio: "1", padding: 0, border: "none", cursor: "pointer", borderRadius: 10, overflow: "hidden" }}
           >
             <img src={urls[i]} alt={f.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             <span
               onClick={(e) => { e.stopPropagation(); removeAt(i); }}
               role="button"
-              title="Odebrat"
+              title={t("remove")}
               style={{
                 position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%",
                 background: "rgba(0,0,0,0.55)", color: "#fff",
@@ -431,14 +423,14 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
           onClick={() => fileRef.current?.click()}
           style={{ aspectRatio: "1", borderRadius: 10, border: "1.5px dashed var(--hairline-2)", background: "transparent", color: "var(--muted)", display: "grid", placeItems: "center", cursor: "pointer" }}
         >
-          + přidat
+          {t("add")}
         </button>
         <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }}
           onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
       </div>
       <hr className="arca-divider" />
       <span className="arca-sub" style={{ fontSize: 12 }}>
-        {photos.length} {photos.length === 1 ? "fotka" : photos.length < 5 ? "fotky" : "fotek"} · klikni na fotku pro náhled nebo nahrazení
+        {t("count", { count: photos.length })}
       </span>
 
       {/* Lightbox — view full size, replace or remove */}
@@ -459,7 +451,7 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
             />
             <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
               <button type="button" onClick={() => replaceRef.current?.click()} className="arca-btn sm arca-btn--outline" style={{ background: "var(--surface)" }}>
-                Nahradit
+                {t("replace")}
               </button>
               <button
                 type="button"
@@ -467,10 +459,10 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
                 className="arca-btn sm"
                 style={{ color: "var(--danger-deep, #B8452F)", borderColor: "var(--danger-soft, #E6C4B6)", background: "var(--surface)" }}
               >
-                Odebrat
+                {t("remove")}
               </button>
               <button type="button" onClick={() => setOpenIndex(null)} className="arca-btn sm arca-btn--ghost" style={{ background: "var(--surface)" }}>
-                Zavřít
+                {t("close")}
               </button>
             </div>
             <input
@@ -512,6 +504,15 @@ function TriggerCard({ active, onClick, Ic: IconComp, title, sub }: {
 // ── Mode select — the very first screen, before any other step ────────────────
 
 function ModeSelect({ onChoose, onBack }: { onChoose: (m: MessageMode) => void; onBack: () => void }) {
+  const t = useTranslations("Compose");
+  const MODES = MODE_META.map(m => ({
+    ...m,
+    title: t(`modeSelect.${m.id === "SELF" ? "self" : "legacy"}.title`),
+    desc: t(`modeSelect.${m.id === "SELF" ? "self" : "legacy"}.desc`),
+    pills: m.id === "SELF"
+      ? [t("modeSelect.self.pillDate"), t("modeSelect.self.pillNoGuardians")]
+      : [t("modeSelect.legacy.pillGuardian")],
+  }));
   return (
     <div data-arca-theme="" style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
       <div className="arca-topbar">
@@ -520,20 +521,20 @@ function ModeSelect({ onChoose, onBack }: { onChoose: (m: MessageMode) => void; 
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <IcChevron />
             <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 13, fontFamily: "var(--f-sans)" }}>
-              Dashboard
+              {t("dashboard")}
             </button>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <IcChevron />
-            <span className="here">Nová zpráva</span>
+            <span className="here">{t("newMessage")}</span>
           </span>
         </div>
       </div>
 
       <div className="arca-inner" style={{ maxWidth: 760 }}>
         <div style={{ marginBottom: 32 }}>
-          <div className="arca-kicker">Nová zpráva</div>
-          <h1 className="arca-h1" style={{ marginTop: 8 }}>Co dnes <em>vytvoříš?</em></h1>
+          <div className="arca-kicker">{t("modeSelect.kicker")}</div>
+          <h1 className="arca-h1" style={{ marginTop: 8 }}>{t.rich("modeSelect.title", { em: (chunks) => <em>{chunks}</em> })}</h1>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
@@ -586,6 +587,9 @@ const OCCASION_TRIGGER_MAP: Record<string, Trigger> = {
 };
 
 export default function ComposeWizard({ recipients, contactGroups, isPro, currentUser, prefilledRecipientId, prefilledOccasion, prefilledDate, replyToMessageId, replyRecipient }: Props) {
+  const t = useTranslations("Compose");
+  const dateLocale = useLocale() === "cs" ? "cs-CZ" : "en-GB";
+  const KINDS = KIND_META.map(k => ({ ...k, label: t(`kinds.${k.id}.label`), sub: t(`kinds.${k.id}.sub`) }));
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   // A reply only ever happens in SELF mode — skip ModeSelect entirely rather
@@ -645,7 +649,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
   const selectedRecipients = recipients.filter(r => selectedIds.has(r.id));
   const allSelected = [...selectedRecipients, ...newPeople];
-  const displayName = allSelected[0]?.name ?? "příjemce";
+  const displayName = allSelected[0]?.name ?? t("recipientFallback");
 
   // The implicit target for an age-milestone trigger is always the first
   // selected recipient (matches the read-only "Komu bude" display) — there's
@@ -716,14 +720,14 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error("Přihlášení vypršelo — média se nenahrála."); return; }
+      if (!user) { toast.error(t("errors.sessionExpired")); return; }
 
       const uploadOne = async (blob: Blob, name: string, contentType: "AUDIO" | "VIDEO" | "FILE") => {
         const path = `${user.id}/compose/${packId}/${name}`;
         const { error } = await supabase.storage
           .from("arca-media")
           .upload(path, blob, { contentType: blob.type || undefined, upsert: false });
-        if (error) { toast.error(`Nahrání se nepodařilo: ${error.message}`); return; }
+        if (error) { toast.error(t("errors.uploadFailed", { message: error.message })); return; }
         const res = await addMediaContent(packId, path, contentType);
         if ("error" in res) toast.error(res.error);
       };
@@ -752,18 +756,18 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
     // Creation-time validation for milestone triggers — block save immediately
     // rather than silently creating a trigger whose date is already past.
     if (!isDraft && trigger === "age") {
-      if (!primaryBirthdayIso) { setSaveError("Nejdřív zadej datum narození příjemce."); return; }
+      if (!primaryBirthdayIso) { setSaveError(t("errors.needBirthdayFirst")); return; }
       if (!ageComputedDate || !isFutureDate(ageComputedDate)) {
-        setSaveError(`Tenhle věk už ${displayName} má za sebou — zadej vyšší cílový věk.`);
+        setSaveError(t("errors.ageAlreadyPast", { name: displayName }));
         return;
       }
     }
     if (!isDraft && trigger === "relative") {
-      if (relativeYears === 0 && relativeMonths === 0) { setSaveError("Zadej alespoň jeden měsíc do budoucna."); return; }
-      if (!isFutureDate(relativeComputedDate)) { setSaveError("Zadaná doba musí vést do budoucnosti."); return; }
+      if (relativeYears === 0 && relativeMonths === 0) { setSaveError(t("errors.needFutureMonthSave")); return; }
+      if (!isFutureDate(relativeComputedDate)) { setSaveError(t("errors.mustBeFuture")); return; }
     }
 
-    const title = `${displayName} — ${kind === "text" ? "Text" : kind === "voice" ? "Hlas" : kind === "video" ? "Video" : "Fotky"}`;
+    const title = `${displayName} — ${t(`titleKindLabels.${kind}`)}`;
     const formData = new FormData();
     formData.set("type", packType);
     formData.set("title", title);
@@ -839,35 +843,33 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <IcChevron />
             <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 13, fontFamily: "var(--f-sans)" }}>
-              Dashboard
+              {t("dashboard")}
             </button>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <IcChevron />
             <button onClick={() => setMessageMode(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 13, fontFamily: "var(--f-sans)" }}>
-              Nová zpráva
+              {t("newMessage")}
             </button>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <IcChevron />
-            <span className="here">{messageMode === "SELF" ? "Sobě do budoucna" : "Odkaz pro blízké"}</span>
+            <span className="here">{messageMode === "SELF" ? t("topbar.self") : t("topbar.legacy")}</span>
           </span>
         </div>
         <div className="arca-grow" />
         {/* Pack type toggle — subtle, right side */}
         <div className="arca-seg" style={{ marginRight: 8 }}>
-          <button className={packType === "EMOTIONAL" ? "active" : ""} onClick={() => setPackType("EMOTIONAL")}>✦ Emocionální</button>
-          <button className={packType === "PRACTICAL" ? "active" : ""} onClick={() => setPackType("PRACTICAL")}>⬡ Praktická</button>
+          <button className={packType === "EMOTIONAL" ? "active" : ""} onClick={() => setPackType("EMOTIONAL")}>{t("packType.emotional")}</button>
+          <button className={packType === "PRACTICAL" ? "active" : ""} onClick={() => setPackType("PRACTICAL")}>{t("packType.practical")}</button>
         </div>
       </div>
 
       <div className="arca-inner">
         <div style={{ marginBottom: 24 }}>
-          <div className="arca-kicker">{messageMode === "SELF" ? "Sobě do budoucna" : "Odkaz pro blízké"}</div>
+          <div className="arca-kicker">{messageMode === "SELF" ? t("topbar.self") : t("topbar.legacy")}</div>
           <h1 className="arca-h1" style={{ marginTop: 8 }}>
-            {messageMode === "SELF"
-              ? <>Co bys chtěl, aby sis jednou <em>přečetl?</em></>
-              : <>Něco, co jednou <em>najdou.</em></>}
+            {t.rich(messageMode === "SELF" ? "heading.self" : "heading.legacy", { em: (chunks) => <em>{chunks}</em> })}
           </h1>
         </div>
 
@@ -877,7 +879,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
             {/* Step 01 — recipient */}
             <div>
-              <Step n="01" label="Pro koho" />
+              <Step n="01" label={t("steps.recipient")} />
 
               {messageMode === "SELF" && (
                 <button
@@ -887,7 +889,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                   className="arca-btn sm arca-btn--outline"
                   style={{ marginBottom: 12, opacity: meAlreadyAdded ? 0.5 : 1 }}
                 >
-                  {meAlreadyAdded ? <><IcCheck /> Ty sama jsi v seznamu</> : <><IcPlus /> Přidat sebe jako příjemce</>}
+                  {meAlreadyAdded ? <><IcCheck /> {t("recipient.alreadyAdded")}</> : <><IcPlus /> {t("recipient.addMyself")}</>}
                 </button>
               )}
 
@@ -914,7 +916,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
               {/* Groups */}
               {contactGroups.length > 0 && (
                 <div style={{ marginBottom: 10 }}>
-                  <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 6 }}>Skupiny</div>
+                  <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 6 }}>{t("recipient.groupsLabel")}</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {contactGroups.map(g => {
                       const members = recipients.filter(r => r.groupId === g.id);
@@ -972,15 +974,15 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
               {/* New person inline */}
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                <input className="arca-input" style={{ width: 150, padding: "7px 10px", fontSize: 13 }} placeholder="Jméno *" value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && addNewPerson()} />
-                <input className="arca-input" style={{ width: 180, padding: "7px 10px", fontSize: 13 }} placeholder="E-mail" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && addNewPerson()} />
-                <button type="button" onClick={addNewPerson} disabled={!newName.trim()} className="arca-btn arca-btn--ghost sm" style={{ whiteSpace: "nowrap" }}><IcPlus /> Přidat</button>
+                <input className="arca-input" style={{ width: 150, padding: "7px 10px", fontSize: 13 }} placeholder={t("recipient.namePlaceholder")} value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && addNewPerson()} />
+                <input className="arca-input" style={{ width: 180, padding: "7px 10px", fontSize: 13 }} placeholder={t("recipient.emailPlaceholder")} type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && addNewPerson()} />
+                <button type="button" onClick={addNewPerson} disabled={!newName.trim()} className="arca-btn arca-btn--ghost sm" style={{ whiteSpace: "nowrap" }}><IcPlus /> {t("recipient.addBtn")}</button>
               </div>
             </div>
 
             {/* Step 02 — kind */}
             <div>
-              <Step n="02" label="Forma" />
+              <Step n="02" label={t("steps.kind")} />
               <div className="arca-kind-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
                 {KINDS.map((k) => {
                   const active = kind === k.id;
@@ -1011,13 +1013,13 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
             {/* Step 03 — content */}
             <div>
-              <Step n="03" label="Obsah" />
+              <Step n="03" label={t("steps.content")} />
               {kind === "text" && (
                 <ArcaRichEditor
                   ref={richEditorRef}
                   content={text}
                   onChange={setText}
-                  placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
+                  placeholder={t("editorPlaceholder", { name: displayName })}
                   minHeight={260}
                   recipientName={displayName}
                   backgroundColor={bgColor}
@@ -1032,24 +1034,24 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
             {/* Step 04 — trigger */}
             <div>
-              <Step n="04" label="Kdy se otevře" />
+              <Step n="04" label={t("steps.trigger")} />
               {/* "Sobě do budoucna" only ever offers a fixed date — no Guardian-
                   verified triggers exist in this mode, so those cards are left
                   out entirely rather than shown disabled/struck-through. A
                   single relevant option should read as clean and deliberate,
                   not like a trimmed-down version of the other flow. */}
               <div className="arca-trigger-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-                <TriggerCard active={trigger === "date"}   onClick={() => setTrigger("date")}   Ic={IcCalPlus} title="V daný den"    sub="Konkrétní datum a čas." />
+                <TriggerCard active={trigger === "date"}   onClick={() => setTrigger("date")}   Ic={IcCalPlus} title={t("trigger.date.title")}    sub={t("trigger.date.sub")} />
                 {messageMode === "SELF" && (
                   <>
-                    <TriggerCard active={trigger === "age"}      onClick={() => setTrigger("age")}      Ic={IcHeart}      title="Až mu/jí bude X let" sub="Podle narozenin příjemce." />
-                    <TriggerCard active={trigger === "relative"} onClick={() => setTrigger("relative")} Ic={IcHourglass}  title="Za X let / měsíců"   sub="Od dnešního dne." />
+                    <TriggerCard active={trigger === "age"}      onClick={() => setTrigger("age")}      Ic={IcHeart}      title={t("trigger.age.title")} sub={t("trigger.age.sub")} />
+                    <TriggerCard active={trigger === "relative"} onClick={() => setTrigger("relative")} Ic={IcHourglass}  title={t("trigger.relative.title")}   sub={t("trigger.relative.sub")} />
                   </>
                 )}
                 {messageMode === "LEGACY" && (
                   <>
-                    <TriggerCard active={trigger === "event"}  onClick={() => setTrigger("event")}  Ic={IcHeart}   title="Při události" sub="Když nadejde okamžik." />
-                    <TriggerCard active={trigger === "sealed"} onClick={() => setTrigger("sealed")} Ic={IcLock}    title="Zapečetit"   sub="Doručit, až tu nebudu." />
+                    <TriggerCard active={trigger === "event"}  onClick={() => setTrigger("event")}  Ic={IcHeart}   title={t("trigger.event.title")} sub={t("trigger.event.sub")} />
+                    <TriggerCard active={trigger === "sealed"} onClick={() => setTrigger("sealed")} Ic={IcLock}    title={t("trigger.sealed.title")}   sub={t("trigger.sealed.sub")} />
                   </>
                 )}
               </div>
@@ -1057,18 +1059,18 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
               {trigger === "date" && (
                 <div className="arca-card arca-date-grid" style={{ padding: 18, marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                   <div>
-                    <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Datum</label>
+                    <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.dateLabel")}</label>
                     <input type="date" className="arca-input" value={dateVal} onChange={(e) => setDateVal(e.target.value)} />
                   </div>
                   <div>
-                    <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Čas</label>
+                    <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.timeLabel")}</label>
                     <input type="time" className="arca-input" value={timeVal} onChange={(e) => setTimeVal(e.target.value)} />
                   </div>
                   <div>
-                    <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Opakování</label>
+                    <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.repeatLabel")}</label>
                     <select className="arca-input">
-                      <option value="once">Jednorázově</option>
-                      <option value="year">Každý rok</option>
+                      <option value="once">{t("trigger.repeatOnce")}</option>
+                      <option value="year">{t("trigger.repeatYearly")}</option>
                     </select>
                   </div>
                 </div>
@@ -1076,15 +1078,15 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
               {trigger === "event" && (
                 <div className="arca-card" style={{ padding: 18, marginTop: 12 }}>
-                  <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Spouštěč</label>
+                  <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.eventTriggerLabel")}</label>
                   <select className="arca-input">
-                    <option>Při dosažení 18 let</option>
-                    <option>Na svatební den</option>
-                    <option>Při narození prvního dítěte</option>
-                    <option>Na vlastní výběr</option>
+                    <option>{t("trigger.eventOption18")}</option>
+                    <option>{t("trigger.eventOptionWedding")}</option>
+                    <option>{t("trigger.eventOptionFirstChild")}</option>
+                    <option>{t("trigger.eventOptionCustom")}</option>
                   </select>
                   <p className="arca-sub" style={{ fontSize: 12.5, marginTop: 10 }}>
-                    Strážci potvrdí, že okamžik nastal. ARCA pak zprávu doručí.
+                    {t("trigger.eventHint")}
                   </p>
                 </div>
               )}
@@ -1093,10 +1095,10 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                 <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none", padding: 18, marginTop: 12 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <span style={{ color: "var(--accent)" }}><IcLock /></span>
-                    <span style={{ fontSize: 13, fontWeight: 550 }}>Zapečetěno</span>
+                    <span style={{ fontSize: 13, fontWeight: 550 }}>{t("trigger.sealedTitle")}</span>
                   </div>
                   <p className="arca-sub" style={{ fontSize: 12.5, margin: "6px 0 0" }}>
-                    Otevře se až poté, co tři strážci nezávisle potvrdí. Předtím nikdo — ani my — neuvidí obsah.
+                    {t("trigger.sealedHint")}
                   </p>
                 </div>
               )}
@@ -1105,19 +1107,19 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                 <div className="arca-card" style={{ padding: 20, marginTop: 12 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
                     <div>
-                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Komu bude</label>
+                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.whoLabel")}</label>
                       {primaryTarget ? (
                         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 10, border: "1px solid var(--hairline-2)", background: "var(--surface)", fontSize: 13.5 }}>
                           <span className="arca-avatar sm" style={{ background: TONE_GRADS[toneFor(primaryTarget.name)], color: "#fff", fontSize: 9 }}>{initials(primaryTarget.name)}</span>
                           {primaryTarget.name}
-                          {primaryBirthdayIso && <span style={{ color: "var(--muted)" }}>· nar. {formatCzDate(parseISODate(primaryBirthdayIso))}</span>}
+                          {primaryBirthdayIso && <span style={{ color: "var(--muted)" }}>· {t("trigger.bornOn", { date: formatCzDate(parseISODate(primaryBirthdayIso), dateLocale) })}</span>}
                         </div>
                       ) : (
-                        <div className="arca-sub" style={{ fontSize: 12.5, padding: "9px 0" }}>Nejdřív vyber příjemce v kroku 01.</div>
+                        <div className="arca-sub" style={{ fontSize: 12.5, padding: "9px 0" }}>{t("trigger.selectRecipientFirst")}</div>
                       )}
                     </div>
                     <div>
-                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Věk</label>
+                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.ageLabel")}</label>
                       <input type="number" min={1} max={120} className="arca-input" value={targetAge}
                         onChange={(e) => setTargetAge(Math.max(1, Math.min(120, Number(e.target.value) || 1)))} />
                     </div>
@@ -1129,14 +1131,14 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                         <Ic size={16}><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></Ic>
                       </span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-deep)", marginBottom: 3 }}>{primaryTarget.name} nemá vyplněné narozeniny</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-deep)", marginBottom: 3 }}>{t("trigger.noBirthdayTitle", { name: primaryTarget.name })}</div>
                         <div className="arca-sub" style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
-                          Bez data narození appka neví, kdy mu/jí bude {targetAge} — doplň ho rovnou tady, není potřeba nikam odcházet.
+                          {t("trigger.noBirthdayHint", { age: targetAge })}
                         </div>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <input type="date" className="arca-input" style={{ maxWidth: 170 }} value={birthdayDraft} onChange={(e) => setBirthdayDraft(e.target.value)} />
                           <button type="button" className="arca-btn sm arca-btn--primary" disabled={!birthdayDraft} onClick={commitBirthdayDraft}>
-                            Uložit a spočítat
+                            {t("trigger.saveAndCompute")}
                           </button>
                         </div>
                       </div>
@@ -1147,11 +1149,11 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                     isFutureDate(ageComputedDate) ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, padding: "12px 16px", borderRadius: "var(--r-lg)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft, var(--hairline-2))", fontSize: 13, color: "var(--accent-deep)" }}>
                         <IcCheck />
-                        Otevře se <b>{formatCzDate(ageComputedDate)}</b> — v den, kdy bude {displayName} {targetAge} let.
+                        {t.rich("trigger.opensOn", { b: (chunks) => <b>{chunks}</b>, date: formatCzDate(ageComputedDate, dateLocale), name: displayName, age: targetAge })}
                       </div>
                     ) : (
                       <p style={{ fontSize: 12.5, color: "var(--danger-deep, #B8452F)", marginTop: 14, marginBottom: 0 }}>
-                        Tenhle věk už {displayName} má za sebou ({formatCzDate(ageComputedDate)}) — zadej vyšší cílový věk.
+                        {t("trigger.ageInPast", { name: displayName, date: formatCzDate(ageComputedDate, dateLocale) })}
                       </p>
                     )
                   )}
@@ -1162,12 +1164,12 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                 <div className="arca-card" style={{ padding: 20, marginTop: 12 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
-                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Roky</label>
+                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.yearsLabel")}</label>
                       <input type="number" min={0} max={99} className="arca-input" value={relativeYears}
                         onChange={(e) => setRelativeYears(Math.max(0, Math.min(99, Number(e.target.value) || 0)))} />
                     </div>
                     <div>
-                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Měsíce</label>
+                      <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.monthsLabel")}</label>
                       <input type="number" min={0} max={11} className="arca-input" value={relativeMonths}
                         onChange={(e) => setRelativeMonths(Math.max(0, Math.min(11, Number(e.target.value) || 0)))} />
                     </div>
@@ -1175,12 +1177,12 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
                   {relativeYears === 0 && relativeMonths === 0 ? (
                     <p style={{ fontSize: 12.5, color: "var(--danger-deep, #B8452F)", marginTop: 14, marginBottom: 0 }}>
-                      Zadej alespoň jeden měsíc do budoucna.
+                      {t("trigger.needFutureMonth")}
                     </p>
                   ) : (
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, padding: "12px 16px", borderRadius: "var(--r-lg)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft, var(--hairline-2))", fontSize: 13, color: "var(--accent-deep)" }}>
                       <IcCheck />
-                      Otevře se <b>{formatCzDate(relativeComputedDate)}</b>.
+                      {t.rich("trigger.opensOnSimple", { b: (chunks) => <b>{chunks}</b>, date: formatCzDate(relativeComputedDate, dateLocale) })}
                     </div>
                   )}
                 </div>
@@ -1192,7 +1194,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
           <div className="arca-compose-preview" style={{ position: "sticky", top: 90, alignSelf: "start" }}>
             <div className="arca-card elev" style={{ overflow: "hidden" }}>
               <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--hairline)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span className="arca-kicker">Náhled doručení</span>
+                <span className="arca-kicker">{t("preview.title")}</span>
                 <button type="button" className="arca-btn sm arca-btn--ghost"><IcEye /></button>
               </div>
 
@@ -1200,17 +1202,17 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                   <Avatar src={previewRecipient && "avatarUrl" in previewRecipient ? previewRecipient.avatarUrl : null} initials={init} tone={tone} size="lg" />
                   <div>
-                    <div style={{ fontWeight: 550, fontSize: 13.5 }}>Pro {displayName}</div>
+                    <div style={{ fontWeight: 550, fontSize: 13.5 }}>{t("preview.for", { name: displayName })}</div>
                     <div className="arca-sub" style={{ fontSize: 11.5 }}>
                       {trigger === "date" && dateVal
-                        ? formatCzDate(new Date(dateVal))
+                        ? formatCzDate(new Date(dateVal), dateLocale)
                         : trigger === "age" && primaryBirthdayIso && ageComputedDate
-                        ? `${formatCzDate(ageComputedDate)} (${targetAge} let)`
+                        ? `${formatCzDate(ageComputedDate, dateLocale)} (${t("preview.ageSuffix", { age: targetAge })})`
                         : trigger === "age"
-                        ? "Doplň datum narození"
+                        ? t("preview.fillBirthday")
                         : trigger === "relative"
-                        ? formatCzDate(relativeComputedDate)
-                        : trigger === "sealed" ? "Až přijde čas" : "Při události"}
+                        ? formatCzDate(relativeComputedDate, dateLocale)
+                        : trigger === "sealed" ? t("preview.whenTimeComes") : t("preview.atEvent")}
                     </div>
                   </div>
                 </div>
@@ -1227,23 +1229,23 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                 ) : (
                   <p className="arca-sub" style={{ fontSize: 13, margin: 0, fontStyle: "italic" }}>
                     {kind === "voice"
-                      ? (audioBlob ? "Hlasová nahrávka připravena k odeslání" : "Zatím žádná nahrávka")
+                      ? (audioBlob ? t("preview.voiceReady") : t("preview.noRecordingYet"))
                       : kind === "video"
-                      ? (videoBlob ? "Video připraveno k odeslání" : "Zatím žádné video")
+                      ? (videoBlob ? t("preview.videoReady") : t("preview.noVideoYet"))
                       : kind === "photo"
-                      ? (photos.length > 0 ? `${photos.length} ${photos.length === 1 ? "fotka" : photos.length < 5 ? "fotky" : "fotek"} připraveno` : "Zatím žádné fotky")
-                      : "Začni psát…"}
+                      ? (photos.length > 0 ? t("preview.photosReady", { count: photos.length }) : t("preview.noPhotosYet"))
+                      : t("preview.startWriting")}
                   </p>
                 )}
               </div>
 
               <div style={{ padding: "14px 18px" }}>
                 {[
-                  ["Forma", kind === "text" ? "Text" : kind === "voice" ? "Hlas" : kind === "video" ? "Video" : "Fotky"],
-                  ["Typ", packType === "EMOTIONAL" ? "Emocionální" : "Praktická"],
-                  ["Spouštěč", trigger === "date" ? "Konkrétní datum" : trigger === "age" ? "Věkový milník" : trigger === "relative" ? "Relativní doba" : trigger === "event" ? "Při události" : "Zapečetěno"],
-                  ...(trigger === "age" ? [["Vypočtené datum", primaryBirthdayIso && ageComputedDate ? formatCzDate(ageComputedDate) : "—"]] : []),
-                  ...(trigger === "relative" ? [["Vypočtené datum", formatCzDate(relativeComputedDate)]] : []),
+                  [t("preview.formLabel"), t(`titleKindLabels.${kind}`)],
+                  [t("preview.typeLabel"), packType === "EMOTIONAL" ? t("packType.emotionalPlain") : t("packType.practicalPlain")],
+                  [t("preview.triggerLabel"), trigger === "date" ? t("preview.triggerDate") : trigger === "age" ? t("preview.triggerAge") : trigger === "relative" ? t("preview.triggerRelative") : trigger === "event" ? t("preview.triggerEvent") : t("preview.triggerSealed")],
+                  ...(trigger === "age" ? [[t("preview.computedDateLabel"), primaryBirthdayIso && ageComputedDate ? formatCzDate(ageComputedDate, dateLocale) : "—"]] : []),
+                  ...(trigger === "relative" ? [[t("preview.computedDateLabel"), formatCzDate(relativeComputedDate, dateLocale)]] : []),
                 ].map(([label, value]) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                     <span style={{ fontSize: 12, color: "var(--muted)" }}>{label}</span>
@@ -1251,8 +1253,8 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                   </div>
                 ))}
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 12, color: "var(--muted)" }}>Stav</span>
-                  <span className="arca-chip clay"><span className="dot" /> Návrh</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{t("preview.statusLabel")}</span>
+                  <span className="arca-chip clay"><span className="dot" /> {t("preview.statusDraft")}</span>
                 </div>
 
                 <hr className="arca-divider" />
@@ -1264,7 +1266,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                   className="arca-btn arca-btn--primary lg"
                   style={{ width: "100%", justifyContent: "center" }}
                 >
-                  {uploadingMedia ? "Nahrávám média…" : isPending ? "Ukládám…" : "Zapečetit a uložit"}
+                  {uploadingMedia ? t("preview.uploadingMedia") : isPending ? t("preview.saving") : t("preview.sealAndSave")}
                   {!isPending && !uploadingMedia && <IcArrow />}
                 </button>
                 <button
@@ -1274,7 +1276,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                   className="arca-btn arca-btn--ghost"
                   style={{ width: "100%", justifyContent: "center", marginTop: 6 }}
                 >
-                  Uložit jako koncept
+                  {t("preview.saveDraft")}
                 </button>
                 {saveError && (
                   <p style={{ fontSize: 12, color: "var(--destructive, #e05454)", margin: "8px 0 0", textAlign: "center" }}>
@@ -1292,8 +1294,8 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
               >
                 <span className="arca-ai-cta__icon"><IcSparkle /></span>
                 <span className="arca-ai-cta__body">
-                  <span className="arca-ai-cta__title">Nevíš, jak začít?</span>
-                  <span className="arca-ai-cta__sub">Popiš pár myšlenek a AI z nich napíše návrh dopisu.</span>
+                  <span className="arca-ai-cta__title">{t("preview.aiTitle")}</span>
+                  <span className="arca-ai-cta__sub">{t("preview.aiSub")}</span>
                 </span>
                 <span className="arca-ai-cta__arrow"><IcArrow /></span>
               </button>
@@ -1301,7 +1303,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
             <p className="arca-sub" style={{ fontSize: 12, textAlign: "center", marginTop: 14, padding: "0 8px" }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <IcLock /> Šifrováno end-to-end. Klíč drží jen ti, kterým je zpráva určená.
+                <IcLock /> {t("preview.encryptedHint")}
               </span>
             </p>
           </div>
