@@ -61,6 +61,19 @@ export default function LoginForm() {
     }
   }
 
+  async function handleGoogle() {
+    setStatus(null);
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+    });
+    if (error) {
+      setStatus({ type: "error", message: error.message });
+      setLoading(false);
+    }
+  }
+
   const inputStyle: React.CSSProperties = {
     width: "100%",
     background: "var(--surface-2)",
@@ -108,6 +121,34 @@ export default function LoginForm() {
             {m === "login" ? t("form.tabLogin") : t("form.tabSignup")}
           </button>
         ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={handleGoogle}
+        disabled={loading}
+        style={{
+          width: "100%",
+          background: "var(--surface-2)",
+          color: "var(--ink)",
+          border: "1px solid var(--hairline-2)",
+          borderRadius: "var(--r-pill)",
+          padding: "11px 0",
+          fontSize: 14,
+          fontWeight: 500,
+          fontFamily: "var(--f-sans)",
+          cursor: loading ? "not-allowed" : "pointer",
+          opacity: loading ? 0.6 : 1,
+          transition: "opacity 0.15s",
+        }}
+      >
+        {t("form.google")}
+      </button>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0", color: "var(--muted-2)", fontSize: 12 }}>
+        <div style={{ flex: 1, height: 1, background: "var(--hairline-2)" }} />
+        {t("form.or")}
+        <div style={{ flex: 1, height: 1, background: "var(--hairline-2)" }} />
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>

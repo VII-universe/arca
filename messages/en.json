@@ -983,6 +983,8 @@
       "submitLoading": "One moment…",
       "submitLogin": "Sign in →",
       "submitSignup": "Create account →",
+      "google": "Continue with Google",
+      "or": "or",
       "legalPrefix": "By continuing, you agree to the",
       "terms": "terms of use",
       "and": "and",
