@@ -9,7 +9,7 @@
 - `npx @sentry/wizard` se v tomto neinteraktivním prostředí opakovaně tiše zasekával na promptu "routovat přes server?" (clack prompt bez TTY → tichý `process.exit(0)` bez zápisu souborů) — zjištěno ze zdrojového kódu wizardu v npx cache. Soubory napsány ručně podle stejných šablon, které wizard generuje.
 
 ### Zbývá
-- **`SENTRY_AUTH_TOKEN`** není nikde nastavený (ani lokálně, ani na Vercelu) — bez něj se při produkčním buildu neuploadují source maps, takže stack traces v Sentry budou minifikované/nečitelné. Build i bez něj proběhne v pořádku (`silent: !process.env.CI`, chyba se nevyhazuje). Uživatel má token doplnit: Sentry → Settings → Auth Tokens → scope `project:releases`, a nastavit jako `SENTRY_AUTH_TOKEN` ve Vercel env (Production + Preview).
+- ~~`SENTRY_AUTH_TOKEN` není nikde nastavený~~ — doplněno (Vercel env Production+Preview i `.env.local`), ověřeno lokálně s `CI=true npm run build`: `Successfully uploaded source maps to Sentry`.
 - Hardening roadmapa #2 (Sentry + rate limiting) je tímto hotová celá.
 
 ## [1.16.0] - Rate limiting (hardening #2, část 1)
