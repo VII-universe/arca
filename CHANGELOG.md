@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.20.0] - SEO základy: favicon, OG obrázek, robots.txt, sitemap.xml (hardening #5, část 1)
+### Přidáno
+- `app/icon.tsx` / `app/apple-icon.tsx` / `app/opengraph-image.tsx` — vygenerované přes `next/og` (`ImageResponse`), žádný externí asset soubor (appka dosud neměla `public/` adresář vůbec). Jednoduché "A" / "Arca" wordmark na tmavém pozadí v barvě brandu (`--clay` accent).
+- `app/robots.ts` + `app/sitemap.ts` — povoluje indexaci jen veřejných marketingových stránek (`/`, `/login`), explicitně zakazuje `/dashboard`, `/api`, `/arca`, `/s`, `/guardian` (auth-gated nebo privátní per-token odkazy, co nemají co dělat ve výsledcích vyhledávání).
+- `lib/site-url.ts` — sdílený `SITE_URL` fallback (`NEXT_PUBLIC_SITE_URL` → `NEXT_PUBLIC_APP_URL` → `localhost:3000`), použitý v robots/sitemap/metadataBase. **Použito `||`, ne `??`** — narazil jsem na to, že `NEXT_PUBLIC_APP_URL` je v tomhle prostředí nastavená na prázdný string (ne `undefined`, viz incident v [1.16.0]), takže `??` ji vzala jako platnou hodnotu a `new URL("")` spadl hned při buildu. Stejný vzorec (`??` misto `||`) je i v `app/actions/settings.ts:117` pro reset-password redirect — nedotčeno (mimo scope týhle PR), ale stejná potenciální chyba by se tam projevila za stejných podmínek.
+- `app/layout.tsx` — přidán `metadataBase`, potřeba pro resolvování relativních URL v generovaných OG/ikonách.
+- `/icon`, `/apple-icon`, `/opengraph-image`, `/robots.txt`, `/sitemap.xml` doplněny do `PUBLIC_PREFIXES` v `proxy.ts` (stejný důvod jako `/monitoring` dřív) — crawlerům/scraperům se tak nezbytečně nevolá Supabase auth lookup.
+- Ověřeno lokálně (`npm run build` + `npm run start`, curl na všech 5 nových routách) — 200, správné `content-type`, obrázky vizuálně zkontrolované.
+
+### Zbývá (hardening #5, část 2)
+- Migrace 8 míst s `<img>` na `next/image` zatím neudělaná — vyžaduje case-by-case rozhodnutí (blob: object URL náhledy před uploadem next/image fundamentálně nepodporuje, zůstanou jako `<img>`; zbytek potřebuje `remotePatterns` pro Supabase storage doménu a případně GIF picker API). Odloženo jako samostatný krok, ať se neriskuje vizuální regrese bez možnosti to tady vizuálně ověřit proti reálným datům.
+
 ## [1.19.0] - AI-assist respektuje jazyk appky (hardening #4)
 ### Opraveno
 - `app/api/arca/ai-assist/route.ts` měl natvrdo česky psaný prompt ("Píšeš výhradně v češtině") i chybové hlášky bez ohledu na to, v jakém jazyce uživatel appku používá — anglicky mluvící uživatel tak dostával česky napsané AI návrhy zprávy.
@@ -29,7 +41,7 @@
 - Ověřeno lokálně: `npm ci --dry-run` (lockfile v pořádku) + build se stejnými dummy proměnnými, jaké použije CI.
 
 ### Opraveno
-- `app/actions/settings.ts:117` — stejný `??` vs. prázdný string bug jako v [1.17.0] SEO PR (`SITE_URL`), tentokrát v reset-password redirect URL. Opraveno na `||`.
+- `app/actions/settings.ts:117` — stejný `??` vs. prázdný string bug jako v [1.20.0] SEO PR (`SITE_URL`), tentokrát v reset-password redirect URL. Opraveno na `||`.
 
 ### Vědomě mimo scope
 - Lint krok vynechán — appka nemá vůbec nakonfigurovaný ESLint/lint script (samostatné zjištění z auditu, netýká se zadání tohohle kroku).
