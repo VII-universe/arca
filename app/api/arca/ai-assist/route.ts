@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createRateLimiter } from "@/lib/rate-limit";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// Each call costs real money (Anthropic API usage) — cap it per user rather
+// than leaving it open to an accidental retry loop or deliberate abuse.
+const aiAssistLimiter = createRateLimiter("ai-assist", 10, "1 h");
 
 export async function POST(req: NextRequest) {
   // Auth check — only logged-in users
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const rate = await aiAssistLimiter.check(user.id);
+  if (!rate.success) {
+    return NextResponse.json(
+      { error: "Příliš mnoho požadavků na AI asistenta. Zkus to prosím za chvíli." },
+      { status: 429, headers: { "Retry-After": String(Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))) } }
+    );
+  }
 
   const body = await req.json() as {
     recipientName?: string;

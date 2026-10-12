@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.16.0] - Rate limiting (hardening #2, část 1)
+### Přidáno
+- `lib/rate-limit.ts` — sdílený rate limiter nad Upstash Redis (`@upstash/redis` + `@upstash/ratelimit`, sliding window). **Fail-open design**: když Redis není nakonfigurovaný nebo kontrola selže, požadavek se propustí (nechráněný provoz je lepší než plný výpadek celé appky).
+- Nasazeno na tři endpointy:
+  - `POST /api/arca/ai-assist` — 10 požadavků / hodinu, klíčováno podle `user.id` (reálné peníze za Anthropic API, hrozba je nechtěná smyčka nebo zneužití přihlášeným uživatelem).
+  - `POST/GET /api/heartbeat/[webhookSecret]` — 30 požadavků / minutu, klíčováno podle IP (hrozba je brute-force hádání `webhookSecret`, kde každý pokus je jiný klíč — limit podle IP, ne podle hádané hodnoty).
+  - `GET /api/guardians/action` — 20 požadavků / minutu, klíčováno podle IP (stejná logika — brute-force `token`).
+- `lib/rate-limit.test.ts` — integrační test proti reálnému Upstash store (ne mock): ověřuje, že se po N požadavcích skutečně zablokuje a že různé identifikátory se sledují nezávisle.
+- `vitest.config.mts` teď načítá `.env.local` (Vitest na rozdíl od Next.js nedělá automaticky) — potřeba, aby `lib/rate-limit.test.ts` viděl reálné `KV_REST_API_URL`/`KV_REST_API_TOKEN`.
+
+### Incident při instalaci Upstash integrace (zapsáno do pamětí, bez dopadu na produkci)
+- `vercel integration add upstash/upstash-kv` bez `--no-env-pull` automaticky spustil `vercel env pull` pro Development prostředí, které přepsalo funkční lokální `.env.local` a vymazalo `DATABASE_URL`, `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `NEXT_PUBLIC_APP_URL`. Pokus o obnovu přes `vercel env pull --environment=production` vrátil jen prázdné hodnoty — tyto proměnné jsou na Vercelu typu "Sensitive" (write-only, nelze je zpětně přečíst přes CLI ani UI).
+- Produkce samotná nebyla zasažena (jen lokální soubor). Lokální e2e testy z PR #31, které potřebují DB/Supabase/Resend, teď nemůžou běžně běžet, dokud uživatel tyto hodnoty manuálně nedoplní (ze Supabase dashboardu, Resend dashboardu, nebo vygeneruje nový `CRON_SECRET`). Rozhodnuto: další ověřování se dělá přes reálné Vercel nasazení, ne lokální build.
+
+### Zbývá (hardening #2, část 2)
+- Sentry error monitoring — čeká se, až uživatel založí účet a dodá DSN.
+
 ## [1.15.0] - Testy na kritickou cestu (začátek hardeningu)
 ### Přidáno
 - **Vitest** pro čisté funkce — `lib/triggers/milestone.test.ts` (15 testů): výpočet věkového milníku a relativního posunu data, přechodné roky, hranice "future date", `nextValidTargetAge`. Žádná DB/env proměnná potřeba, běží okamžitě.
