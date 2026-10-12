@@ -114,7 +114,9 @@ export async function requestPasswordReset(): Promise<{ ok: true } | { error: st
   if (!user?.email) return { error: "Nepodařilo se najít e-mail účtu." };
 
   const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/reset`,
+    // `||`, not `??` — these vars can be set to an empty string (not just
+    // unset); `??` treats "" as defined and would send a broken reset link.
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset`,
   });
 
   if (error) return { error: error.message };
