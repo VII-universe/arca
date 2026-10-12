@@ -8,3 +8,8 @@ tsconfig.tsbuildinfo
 .env.local
 .vercel
 *.zip
+
+# Playwright e2e artifacts
+/playwright-report/
+/test-results/
+/blob-report/
