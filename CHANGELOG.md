@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.17.0] - Sentry error monitoring (hardening #2, část 2 — dokončeno)
+## [1.18.0] - Sentry error monitoring (hardening #2, část 2 — dokončeno)
 ### Přidáno
 - `@sentry/nextjs` (v11) nainstalován a zapojen přes `instrumentation.ts` (server + edge runtime), `instrumentation-client.ts` (browser) a `sentry.server.config.ts`/`sentry.edge.config.ts`. `next.config.ts` obalen přes `withSentryConfig` (z `@sentry/nextjs/config`, aktuální subpath pro SDK v11+).
 - DSN projektu `vii-universe/javascript-nextjs` natvrdo v configu (DSN nejsou tajné — jsou veřejná, bezpečně viditelná i v browser bundlu).
@@ -11,6 +11,19 @@
 ### Zbývá
 - ~~`SENTRY_AUTH_TOKEN` není nikde nastavený~~ — doplněno (Vercel env Production+Preview i `.env.local`), ověřeno lokálně s `CI=true npm run build`: `Successfully uploaded source maps to Sentry`.
 - Hardening roadmapa #2 (Sentry + rate limiting) je tímto hotová celá.
+
+## [1.17.0] - CI gate (hardening #6 — poslední bod roadmapy)
+### Přidáno
+- `.github/workflows/ci.yml` — na každý PR (a push do `main`) spustí `npx tsc --noEmit`, `npm run build` a `npm test`. Dřív běžel na PR jen Telegram notifikátor (`pr-notify.yml`), žádná skutečná kontrola.
+- Build krok běží s dummy `DATABASE_URL`/Supabase proměnnými — appka se k DB za buildu nepřipojuje (všechny routy jsou `ƒ` dynamic, Prisma codegen taky nepotřebuje živé spojení), takže nejsou potřeba žádné reálné secrets v GitHub Actions.
+- `npm test` (Vitest) v CI běží bez `KV_REST_API_URL`/`TOKEN` — živé Upstash testy v `lib/rate-limit.test.ts` se díky `describe.skipIf` samy přeskočí, nespadnou.
+- Ověřeno lokálně: `npm ci --dry-run` (lockfile v pořádku) + build se stejnými dummy proměnnými, jaké použije CI.
+
+### Opraveno
+- `app/actions/settings.ts:117` — stejný `??` vs. prázdný string bug jako v [1.17.0] SEO PR (`SITE_URL`), tentokrát v reset-password redirect URL. Opraveno na `||`.
+
+### Vědomě mimo scope
+- Lint krok vynechán — appka nemá vůbec nakonfigurovaný ESLint/lint script (samostatné zjištění z auditu, netýká se zadání tohohle kroku).
 
 ## [1.16.0] - Rate limiting (hardening #2, část 1)
 ### Přidáno
