@@ -12,6 +12,7 @@ import type {
 interface Props {
   ownerName: string;
   packType: "EMOTIONAL" | "PRACTICAL";
+  isSelf: boolean;
   createdAt: string;
   contents: SanctuaryContent[];
   memories: SanctuaryMemory[];
@@ -42,10 +43,10 @@ function useReveal() {
 // ── Category labels ───────────────────────────────────────────────────────────
 
 const CAT_LABELS: Record<string, string> = {
-  SUBSCRIPTION: "Předplatné & Smlouvy",
-  DOCUMENT:     "Dokumenty",
-  PROPERTY:     "Majetek",
-  INSTRUCTION:  "Instrukce",
+  SUBSCRIPTION: "Subscriptions & Contracts",
+  DOCUMENT:     "Documents",
+  PROPERTY:     "Property",
+  INSTRUCTION:  "Instructions",
 };
 
 // ── Section divider tag ───────────────────────────────────────────────────────
@@ -142,7 +143,7 @@ function MediaItem({ item }: { item: SanctuaryContent }) {
 
 function MemoryPhoto({ memory }: { memory: SanctuaryMemory }) {
   const date = memory.happenedAt
-    ? new Date(memory.happenedAt).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" })
+    ? new Date(memory.happenedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
     : null;
 
   return (
@@ -150,7 +151,7 @@ function MemoryPhoto({ memory }: { memory: SanctuaryMemory }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={memory.signedUrl!}
-        alt={memory.title ?? "Vzpomínka"}
+        alt={memory.title ?? "Memory"}
         loading="lazy"
         style={{
           width: "100%",
@@ -192,7 +193,7 @@ function MemoryAV({ memory }: { memory: SanctuaryMemory }) {
         : /* eslint-disable-next-line jsx-a11y/media-has-caption */
           <div style={{ padding: "20px 24px" }}>
             <p style={{ fontSize: 12, color: "#a1a1aa", fontFamily: "var(--font-inter), sans-serif", margin: "0 0 12px" }}>
-              ♪ {memory.title ?? "Nahrávka"}
+              ♪ {memory.title ?? "Recording"}
             </p>
             <audio controls src={memory.signedUrl!} style={{ width: "100%" }} />
           </div>
@@ -210,7 +211,7 @@ function MemoryAV({ memory }: { memory: SanctuaryMemory }) {
 
 function MemoryTextCard({ memory }: { memory: SanctuaryMemory }) {
   const date = memory.happenedAt
-    ? new Date(memory.happenedAt).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" })
+    ? new Date(memory.happenedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
     : null;
   return (
     <div style={{ padding: "20px 24px", border: "1px solid rgba(245,240,223,0.07)", borderRadius: 8, marginBottom: 12 }}>
@@ -306,7 +307,7 @@ function BlueprintCard({
                 letterSpacing: "0.05em",
                 fontWeight: 600,
               }}>
-                urgentní
+                urgent
               </span>
             )}
           </div>
@@ -345,7 +346,7 @@ function BlueprintCard({
                     letterSpacing: "0.05em",
                   }}
                 >
-                  {expanded ? "Skrýt" : "Zobrazit vše"}
+                  {expanded ? "Hide" : "Show more"}
                 </button>
               )}
             </div>
@@ -361,6 +362,7 @@ function BlueprintCard({
 export default function SanctuaryClient({
   ownerName,
   packType,
+  isSelf,
   createdAt,
   contents,
   memories,
@@ -386,7 +388,7 @@ export default function SanctuaryClient({
   const doneCount  = handled.size;
   const totalCount = blueprintItems.length;
 
-  const formattedDate = new Date(createdAt).toLocaleDateString("cs-CZ", {
+  const formattedDate = new Date(createdAt).toLocaleDateString("en-GB", {
     day: "numeric", month: "long", year: "numeric",
   });
 
@@ -431,7 +433,7 @@ export default function SanctuaryClient({
           fontFamily: "var(--font-inter), sans-serif",
           marginBottom: 40,
         }}>
-          Tato zpráva čeká právě na tebe
+          {isSelf ? "A letter from your past self is ready" : "This message is waiting for you"}
         </p>
 
         <h1 style={{
@@ -455,7 +457,7 @@ export default function SanctuaryClient({
           margin: 0,
           letterSpacing: "0.04em",
         }}>
-          Napsáno {formattedDate}
+          Written {formattedDate}
         </p>
 
         {/* Scroll arrow */}
@@ -475,13 +477,13 @@ export default function SanctuaryClient({
       {/* ── Content ───────────────────────────────────────────────── */}
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 28px" }}>
 
-        {/* ── I. Zpráva ─────────────────────────────────────────────── */}
+        {/* ── I. Message ────────────────────────────────────────────── */}
         {(textContent?.textBody || mediaContents.length > 0) && (
           <section
             className="sanc-reveal"
             style={{ paddingTop: 80, paddingBottom: 80, borderTop: "1px solid rgba(245,240,223,0.07)" }}
           >
-            <SectionTag roman="I" label="Zpráva" />
+            <SectionTag roman="I" label="Message" />
 
             {textContent?.textBody && (
               textContent.backgroundColor ? (
@@ -526,7 +528,7 @@ export default function SanctuaryClient({
           </section>
         )}
 
-        {/* ── II. Galerie okamžiků ───────────────────────────────────── */}
+        {/* ── II. Gallery of Moments ───────────────────────────────────── */}
         {hasMemories && (
           <section
             className="sanc-reveal"
@@ -537,7 +539,7 @@ export default function SanctuaryClient({
               transitionDelay: "0.15s",
             }}
           >
-            <SectionTag roman="II" label="Galerie okamžiků" />
+            <SectionTag roman="II" label="Gallery of Moments" />
 
             {/* Photo grid */}
             {photoMemories.length > 0 && (
@@ -563,7 +565,7 @@ export default function SanctuaryClient({
           </section>
         )}
 
-        {/* ── III. Manuál k životu ───────────────────────────────────── */}
+        {/* ── III. Manual for Life ───────────────────────────────────── */}
         {blueprintItems.length > 0 && (
           <section
             className="sanc-reveal"
@@ -574,7 +576,7 @@ export default function SanctuaryClient({
               transitionDelay: "0.3s",
             }}
           >
-            <SectionTag roman="III" label="Manuál k životu" />
+            <SectionTag roman="III" label="Manual for Life" />
 
             <p style={{
               fontSize: 14,
@@ -583,7 +585,7 @@ export default function SanctuaryClient({
               lineHeight: 1.65,
               margin: "0 0 36px",
             }}>
-              Záležitosti, o které je třeba se postarat. Kliknutím na položku ji odškrtni jako vyřízenou.
+              Matters that need taking care of. Click an item to check it off as handled.
             </p>
 
             {/* Progress bar */}
@@ -598,7 +600,7 @@ export default function SanctuaryClient({
                 }} />
               </div>
               <span style={{ fontSize: 12, color: "#a1a1aa", fontFamily: "var(--font-inter), sans-serif", whiteSpace: "nowrap" }}>
-                {doneCount} / {totalCount} vyřízeno
+                {doneCount} / {totalCount} handled
               </span>
             </div>
 
@@ -655,7 +657,7 @@ export default function SanctuaryClient({
             margin: 0,
             textAlign: "center",
           }}>
-            Doručeno bezpečně prostřednictvím ARCA
+            Delivered securely by ARCA
           </p>
         </div>
 
