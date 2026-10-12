@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.19.0] - AI-assist respektuje jazyk appky (hardening #4)
+### Opraveno
+- `app/api/arca/ai-assist/route.ts` měl natvrdo česky psaný prompt ("Píšeš výhradně v češtině") i chybové hlášky bez ohledu na to, v jakém jazyce uživatel appku používá — anglicky mluvící uživatel tak dostával česky napsané AI návrhy zprávy.
+- Endpoint teď zjišťuje aktivní jazyk stejně jako `i18n/request.ts` (pořadí: uložená `User.locale` → `arca_locale` cookie → výchozí `cs`) a podle toho vybere prompt, výchozí hodnoty (`recipientName`/`occasion`) i chybové hlášky z malého `COPY` slovníku (cs/en).
+- `Unauthorized` (401) zůstává beze změny — stejná anglická konvence jako ve všech ostatních API routách v appce, nejde o uživatelsky čitelnou hlášku.
+
+### Vědomě mimo scope
+- Model id `claude-sonnet-4-6` v témže souboru zůstává nezměněný — samostatné zjištění z auditu (neodpovídá žádnému současnému modelu), netýká se lokalizace.
+
 ## [1.18.0] - Sentry error monitoring (hardening #2, část 2 — dokončeno)
 ### Přidáno
 - `@sentry/nextjs` (v11) nainstalován a zapojen přes `instrumentation.ts` (server + edge runtime), `instrumentation-client.ts` (browser) a `sentry.server.config.ts`/`sentry.edge.config.ts`. `next.config.ts` obalen přes `withSentryConfig` (z `@sentry/nextjs/config`, aktuální subpath pro SDK v11+).
