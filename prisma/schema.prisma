@@ -57,7 +57,7 @@ enum ContentType {
 enum TriggerType {
   SPECIFIC_DATE      // executeAtDate is set
   INACTIVITY         // inactivityDaysLimit is set; cron compares against User.lastActiveAt
-  MANUAL_EMERGENCY   // an Executor initiates delivery manually
+  MANUAL_EMERGENCY   // "sealed" trigger — released manually, independent of any Executor/keymaster role
 }
 
 // How a SPECIFIC_DATE trigger's executeAtDate was derived. Doesn't change
@@ -75,12 +75,6 @@ enum TriggerStatus {
   PENDING
   IN_GRACE_PERIOD
   EXECUTED
-}
-
-enum ExecutorStatus {
-  PENDING_INVITE
-  ACCEPTED
-  REJECTED
 }
 
 enum ActivitySource {
@@ -129,11 +123,6 @@ model User {
   contactGroups  ContactGroup[]
   blueprintItems BlueprintItem[]
   settings       UserSettings?
-
-  // Executor rows where this user is the pack owner
-  ownedExecutors    Executor[] @relation("ExecutorOwner")
-  // Executor rows where this user acts as the trusted keymaster
-  assignedExecutors Executor[] @relation("ExecutorKeymaster")
 
   @@index([lastActiveAt]) // primary target for the inactivity cron job
   @@index([webhookSecret]) // heartbeat route looks up by this
@@ -433,40 +422,6 @@ model TriggerCondition {
   @@index([ageBasisRecipientId])
 }
 
-// ---------------------------------------------------------------------------
-// Executor  (Klíčník / Keymaster)
-// ---------------------------------------------------------------------------
-//
-// A trusted third-party who can:
-//   a) confirm the owner's death or incapacitation, OR
-//   b) trigger a MANUAL_EMERGENCY delivery.
-//
-// Both owner and executor are Users; executor may be null until the invite
-// is accepted and the invitee creates an account.
-// ---------------------------------------------------------------------------
-
-model Executor {
-  id     String         @id @default(cuid())
-  status ExecutorStatus @default(PENDING_INVITE)
-
-  // Email used to send the invite (may differ from executor.email before
-  // account creation — allows inviting people who aren't yet on the platform)
-  inviteEmail String
-
-  invitedAt   DateTime  @default(now())
-  respondedAt DateTime?
-
-  // The user who created this trust relationship
-  owner   User   @relation("ExecutorOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId String
-
-  // The user acting as keymaster (null until they accept and register)
-  executor   User?   @relation("ExecutorKeymaster", fields: [executorId], references: [id], onDelete: SetNull)
-  executorId String?
-
-  @@index([ownerId])
-  @@index([executorId])
-}
 
 // ---------------------------------------------------------------------------
 // ActivityLog

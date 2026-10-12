@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0] - Odstraněn nepoužívaný model Executor (hardening #3)
+### Odstraněno
+- Prisma model `Executor` + enum `ExecutorStatus` + relace `User.ownedExecutors`/`User.assignedExecutors` — z auditu vyšlo, že na tento model nikde v `app`/`components`/`lib` neexistuje jediná reference (jen v automaticky generovaném Prisma klientovi). Odstranění nic funkčně neubírá.
+- Migrace `prisma/migrations/20261012131835_remove_executor_model/` (`DROP TABLE "Executor"` + `DROP TYPE "ExecutorStatus"`) — napsaná ručně, ne vygenerovaná přes `prisma migrate dev`, protože `DATABASE_URL` je od incidentu s `vercel env pull` (viz [1.16.0]/[1.17.0] Sentry) lokálně nefunkční. **Je potřeba pustit `npx prisma migrate deploy` proti produkční DB po mergnutí, migrace se nikde automaticky nespouští** (build skript dělá jen `prisma generate`).
+- README upraveno — netvrdí už "password vaults" jako samostatnou funkci. Reálně existující ekvivalent je `PackType.PRACTICAL` (praktické/pozůstalostní informace jako součást běžného message packu), beze zvláštního přístupového modelu — to zůstává nezměněné, jen popis teď odpovídá realitě.
+- `TriggerType.MANUAL_EMERGENCY` (funkce "sealed" spouštěče) a `PackType.PRACTICAL` zůstávají nedotčené — jsou reálně používané, nezávisí na Executor modelu, jen komentář u `MANUAL_EMERGENCY` upraven, aby neodkazoval na neexistující Executor roli.
+
 ## [1.16.0] - Rate limiting (hardening #2, část 1)
 ### Přidáno
 - `lib/rate-limit.ts` — sdílený rate limiter nad Upstash Redis (`@upstash/redis` + `@upstash/ratelimit`, sliding window). **Fail-open design**: když Redis není nakonfigurovaný nebo kontrola selže, požadavek se propustí (nechráněný provoz je lepší než plný výpadek celé appky).
