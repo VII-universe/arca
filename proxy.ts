@@ -26,7 +26,12 @@ function applyLocaleCookie(request: NextRequest, response: NextResponse) {
 const PROTECTED_PATHS = ["/dashboard"];
 const AUTH_PATHS = ["/login"];
 // These paths are fully public — no auth check, no Supabase client needed.
-const PUBLIC_PREFIXES = ["/arca/", "/api/auth/", "/api/cron/", "/api/health", "/api/heartbeat/", "/api/guardians/action", "/api/stripe/webhook", "/guardian/"];
+const PUBLIC_PREFIXES = [
+  "/arca/", "/api/auth/", "/api/cron/", "/api/health", "/api/heartbeat/", "/api/guardians/action", "/api/stripe/webhook", "/guardian/", "/monitoring",
+  // Next.js-generated SEO/metadata routes — fetched by crawlers and social
+  // media scrapers, never by a logged-in user, so skip the Supabase lookup.
+  "/icon", "/apple-icon", "/opengraph-image", "/robots.txt", "/sitemap.xml",
+];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

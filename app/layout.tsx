@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { VibeProvider } from "@/contexts/vibe-context";
 import { VibeBackground } from "@/components/VibeBackground";
 import { UpgradeModalProvider } from "@/components/billing/UpgradeModal";
+import { SITE_URL } from "@/lib/site-url";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,6 +32,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "ARCA — Your words, preserved with care.",
   description:
     "A secure vault for time capsules and legacy messages — delivered precisely when they're needed most.",
