@@ -1,7 +1,6 @@
-import type { Metadata } from "next";
 import { Inter, Playfair_Display, Instrument_Serif } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { VibeProvider } from "@/contexts/vibe-context";
@@ -31,12 +30,14 @@ const instrumentSerif = Instrument_Serif({
   weight: "400",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: "ARCA — Your words, preserved with care.",
-  description:
-    "A secure vault for time capsules and legacy messages — delivered precisely when they're needed most.",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("App.meta");
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export default async function RootLayout({
   children,

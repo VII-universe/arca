@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.25.0] - i18n: dokončen celý zbývající rozsah (e-maily + metadata layoutu)
+### Opraveno
+- `emails/SanctuaryInvitation.tsx` — jediná ze 4 transakčních e-mailových šablon, která byla celá hardcoded česky (`lang="cs"`), zatímco zbylé 3 (`ArcaDeliveryEmail`/`GracePeriodWarningEmail`/`GuardianAlertEmail`) už byly plně anglicky (recipient-facing, stejná konvence jako `/arca/[hash]`). Navíc tenhle e-mail vede přímo na `/(sanctuary)/s/[token]`, kterou PR #39 právě přeložil na angličtinu — česky psaný e-mail vedoucí na anglickou stránku by byl nová nekonzistence. Přeloženo (`lang="en"`), stejně tak e-mailový `subject` v `app/actions/delivery.ts`.
+- `app/layout.tsx` — `metadata` (statický `export const`) nahrazeno `generateMetadata()`, které čte nový namespace `App.meta` (next-intl, server-side). Předtím byl titulek/popisek v záložce prohlížeče natvrdo anglicky na každé stránce, co nemá vlastní `generateMetadata` override (většina dashboardu, `/guardian/confirmed`, …) — `/` (Landing) a `/login` (Auth) už svůj vlastní override měly, ty beze změny.
+
+### Zkontrolováno beze změny
+- `ArcaDeliveryEmail.tsx`, `GracePeriodWarningEmail.tsx`, `GuardianAlertEmail.tsx` — všechny tři už byly plně anglicky, žádný zásah potřeba.
+
+**Tímto je dokončený celý "remaining i18n scope" seznam ze zbytku auditu: `/guardian/confirmed` + `/(sanctuary)/s/[token]` (PR #39), `ArcaEditorNew`/`ArcaRichEditor` (PR #40), transakční e-maily a metadata layoutu (tato PR).**
+
 ## [1.24.0] - i18n: ArcaEditorNew + sdílený ArcaRichEditor
 ### Přidáno
 - `components/arca/ArcaRichEditor.tsx` — celý toolbar, AI Pomoc panel, crop overlay a resize úchyty přeloženy přes nový sdílený namespace `RichEditor` (next-intl). Protože je komponenta sdílená mezi `ComposeWizard` (nová zpráva) a `ArcaEditorNew` (editace existující zprávy), oprava se projeví na obou místech najednou — žádné prop-drillování, komponenta si bere `useTranslations("RichEditor")` sama.
