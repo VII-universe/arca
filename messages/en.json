@@ -999,5 +999,136 @@
     "status": {
       "signupSuccess": "Check your email — we sent you a confirmation link."
     }
+  },
+  "RichEditor": {
+    "placeholder": "Start writing…",
+    "toolbar": {
+      "bold": "Bold (Ctrl+B)",
+      "italic": "Italic (Ctrl+I)",
+      "quote": "Quote",
+      "insertImageFile": "Insert image from file",
+      "insertImageUrl": "Insert image from URL",
+      "insertImageUrlPrompt": "Image URL:",
+      "fontFamily": "Change font",
+      "fontSize": "Font size",
+      "fontSizeNormal": "Norm.",
+      "charCount": "{count} characters"
+    },
+    "theme": {
+      "label": "Theme",
+      "default": "Default",
+      "parchment": "Parchment"
+    },
+    "imageMenu": {
+      "alignLeft": "Left",
+      "alignCenter": "Center",
+      "alignRight": "Right",
+      "crop": "Crop image",
+      "cropLabel": "CROP"
+    },
+    "resize": {
+      "corner": "Drag to resize",
+      "edge": "Drag to change width"
+    },
+    "cropOverlay": {
+      "instruction": "Drag to select the crop area",
+      "applying": "Saving…",
+      "apply": "Apply crop",
+      "cancel": "Cancel"
+    },
+    "aiPanel": {
+      "title": "AI Assist",
+      "subtitle": "A few words, and AI will write you a first draft.",
+      "close": "Close",
+      "occasionLabel": "Occasion",
+      "notesLabel": "Key thoughts",
+      "notesPlaceholder": "Write a few words about what you want to express… e.g. I want to thank her for always being there for me",
+      "generating": "Generating…",
+      "generate": "Generate suggestions",
+      "useThisText": "Use this text",
+      "genericError": "Error.",
+      "connectionError": "Couldn't connect to the AI.",
+      "privacyDisclaimer": "Text from this field is processed anonymously by an AI model to generate inspiration and isn't stored on our servers.",
+      "occasions": {
+        "birthday": "Birthday",
+        "thanks": "Thank you",
+        "apology": "Apology",
+        "farewell": "Farewell",
+        "encouragement": "Encouragement",
+        "anniversary": "Anniversary",
+        "personal": "Personal message"
+      }
+    }
+  },
+  "ArcaEditorNew": {
+    "breadcrumbVault": "Vault",
+    "defaultRecipientName": "recipient",
+    "untitled": "Message",
+    "kicker": "Editing message",
+    "headingPlain": "Edit what ",
+    "headingEmphasis": "they'll one day find.",
+    "titleStep": "Message title",
+    "titlePlaceholder": "Message title…",
+    "step1": "For whom",
+    "hidePicker": "Hide picker",
+    "addRecipient": "Add recipient",
+    "groups": "Groups",
+    "contacts": "Contacts",
+    "newPerson": "New person",
+    "fullNamePlaceholder": "Full name *",
+    "emailPlaceholder": "Email",
+    "add": "Add",
+    "step2": "Form",
+    "kind": {
+      "text": { "label": "Text", "sub": "A letter, a sentence." },
+      "voice": { "label": "Voice", "sub": "A recorded voice." },
+      "video": { "label": "Video", "sub": "A short video." },
+      "photo": { "label": "Photos", "sub": "An album." }
+    },
+    "step3": "Content",
+    "contentPlaceholder": "Dear {name},\n\nif you're reading this…",
+    "step4": "When it opens",
+    "trigger": {
+      "date": { "title": "On a given day", "sub": "A specific date." },
+      "inactivity": { "title": "Inactivity", "sub": "After X days." },
+      "sealed": { "title": "Seal it", "sub": "Manual confirmation." },
+      "dateLabel": "Date",
+      "timeLabel": "Time",
+      "inactivityDaysLabel": "Days of inactivity",
+      "inactivityHint": "This message opens if ARCA hasn't seen you for {days} days in a row.",
+      "sealedHint": "This message only opens once a guardian manually confirms it. No one sees the content before that."
+    },
+    "preview": {
+      "kicker": "Delivery preview",
+      "emotional": "✦ Emotional",
+      "practical": "⬡ Practical",
+      "for": "For {name}",
+      "noRecipient": "No recipient",
+      "placeholder": "Start writing…",
+      "onInactivity": "After {days} days of inactivity",
+      "onGuardianConfirm": "On guardian confirmation",
+      "noTrigger": "No trigger"
+    },
+    "status": "Status",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "saveChanges": "Save changes",
+    "sealAndActivate": "Seal and activate",
+    "cancelDelivery": "Cancel delivery",
+    "backToVault": "Back to vault",
+    "aiCta": {
+      "title": "Not sure how to start?",
+      "sub": "Describe a few thoughts and AI will draft a letter from them."
+    },
+    "encrypted": "End-to-end encrypted.",
+    "statusChip": {
+      "DRAFT": "Draft",
+      "ACTIVE": "Active",
+      "TRIGGERED": "Sent",
+      "DELIVERED": "Delivered",
+      "GRACE_PERIOD": "Grace period",
+      "PENDING_GUARDIAN_APPROVAL": "Guardians",
+      "ARCHIVED": "Archived"
+    }
   }
 }

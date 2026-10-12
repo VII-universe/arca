@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0] - i18n: ArcaEditorNew + sdílený ArcaRichEditor
+### Přidáno
+- `components/arca/ArcaRichEditor.tsx` — celý toolbar, AI Pomoc panel, crop overlay a resize úchyty přeloženy přes nový sdílený namespace `RichEditor` (next-intl). Protože je komponenta sdílená mezi `ComposeWizard` (nová zpráva) a `ArcaEditorNew` (editace existující zprávy), oprava se projeví na obou místech najednou — žádné prop-drillování, komponenta si bere `useTranslations("RichEditor")` sama.
+  - AI Pomoc: nabídka příležitostí (narozeniny/poděkování/omluva/…) se teď generuje z překladů, takže hodnota posílaná do `/api/arca/ai-assist` promptu je ve správném jazyce (ten endpoint sám sleduje aktivní locale od PR #34).
+  - Barevná témata (Motiv): štítky "Výchozí"/"Pergamen" přeloženy, zbytek (Midnight/Slate/Forest/Wine) zůstal jako vlastní jména beze změny.
+- `components/arca/ArcaEditorNew.tsx` (editace existující zprávy — poslední netknutá velká plocha z i18n rozsahu) — plně přeloženo přes nový namespace `ArcaEditorNew`: breadcrumb, kroky 01–04 (příjemci/forma/obsah/spouštěč), náhled doručení, akce (uložit/aktivovat/zrušit), stavové chipy (`PackStatus` enum), AI CTA panel. Formátování data v náhledu teď sleduje aktivní locale (`cs-CZ`/`en-GB`) stejným vzorem jako `ComposeWizard.tsx`, místo natvrdo `cs-CZ`.
+
 ## [1.22.0] - npm audit: 97 → 47 zranitelností
 ### Opraveno
 - Celá rodina `@tiptap/*` (31 balíčků) povýšena z `^3.23.6` na `^3.31.4` — opravuje **high-severity ReDoS** v parsování Markdown atributů a **moderate XSS/prototype-pollution** v `mergeAttributes()` (vlastní `__proto__` klíč se dal proměnit ve vykonatelné DOM atributy). Tiptap je živě používaný rich-text editor appky (`ArcaRichEditor`/`ArcaEditorNew`/`ComposeWizard`), takže šlo o reálně dosažitelnou zranitelnost z uživatelského vstupu, ne jen dev-tooling.

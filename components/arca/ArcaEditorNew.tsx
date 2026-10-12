@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { upsertContent, updatePackTitle } from "@/app/actions/arca";
 import ArcaRichEditor, { type ArcaRichEditorHandle } from "./ArcaRichEditor";
@@ -89,14 +90,14 @@ function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
 }
 
-const STATUS_CHIP: Record<string, { label: string; chip: string }> = {
-  DRAFT:    { label: "Návrh",       chip: "" },
-  ACTIVE:   { label: "Aktivní",     chip: "clay" },
-  TRIGGERED:{ label: "Odesláno",    chip: "sage" },
-  DELIVERED:{ label: "Doručeno",    chip: "sage" },
-  GRACE_PERIOD:{ label: "Lhůta",   chip: "" },
-  PENDING_GUARDIAN_APPROVAL:{ label: "Strážci", chip: "" },
-  ARCHIVED: { label: "Archiv",      chip: "" },
+const STATUS_CHIP_STYLE: Record<string, string> = {
+  DRAFT: "",
+  ACTIVE: "clay",
+  TRIGGERED: "sage",
+  DELIVERED: "sage",
+  GRACE_PERIOD: "",
+  PENDING_GUARDIAN_APPROVAL: "",
+  ARCHIVED: "",
 };
 
 export default function ArcaEditorNew({
@@ -106,6 +107,8 @@ export default function ArcaEditorNew({
   initialRecipients, initialTrigger,
   allContacts = [], contactGroups = [],
 }: ArcaEditorNewProps) {
+  const t = useTranslations("ArcaEditorNew");
+  const dateLocale = useLocale() === "cs" ? "cs-CZ" : "en-GB";
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
@@ -282,8 +285,12 @@ export default function ArcaEditorNew({
     });
   };
 
-  const st = STATUS_CHIP[status] ?? STATUS_CHIP.DRAFT;
-  const displayName = recipients[0]?.name ?? "příjemce";
+  const statusKey = (status in STATUS_CHIP_STYLE ? status : "DRAFT") as keyof typeof STATUS_CHIP_STYLE;
+  const st = {
+    label: t(`statusChip.${statusKey}`),
+    chip: STATUS_CHIP_STYLE[statusKey],
+  };
+  const displayName = recipients[0]?.name ?? t("defaultRecipientName");
 
   return (
     <div data-arca-theme="" style={{ position: "fixed", inset: 0, zIndex: 50, overflowY: "auto", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
@@ -293,11 +300,11 @@ export default function ArcaEditorNew({
           <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M9 6l6 6-6 6"/></svg>
-            <Link href="/dashboard/vault" style={{ color: "var(--muted)", textDecoration: "none" }}>Schránka</Link>
+            <Link href="/dashboard/vault" style={{ color: "var(--muted)", textDecoration: "none" }}>{t("breadcrumbVault")}</Link>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M9 6l6 6-6 6"/></svg>
-            <span style={{ color: "var(--ink)" }}>{title || "Zpráva"}</span>
+            <span style={{ color: "var(--ink)" }}>{title || t("untitled")}</span>
           </span>
         </div>
         <div style={{ flex: 1 }} />
@@ -308,9 +315,9 @@ export default function ArcaEditorNew({
       <div className="arca-inner">
         {/* Page title */}
         <div style={{ marginBottom: 24 }}>
-          <div className="arca-kicker">Editace zprávy</div>
+          <div className="arca-kicker">{t("kicker")}</div>
           <h1 className="arca-h1" style={{ marginTop: 8 }}>
-            Uprav, co <em>jednou najdou.</em>
+            {t("headingPlain")}<em>{t("headingEmphasis")}</em>
           </h1>
         </div>
 
@@ -320,19 +327,19 @@ export default function ArcaEditorNew({
 
             {/* Title */}
             <div>
-              <Step n="✦" label="Název zprávy" />
+              <Step n="✦" label={t("titleStep")} />
               <input
                 value={title}
                 onChange={e => handleTitleChange(e.target.value)}
                 className="arca-input"
                 style={{ fontSize: 15, fontWeight: 500 }}
-                placeholder="Název zprávy…"
+                placeholder={t("titlePlaceholder")}
               />
             </div>
 
             {/* Step 01 – Recipients */}
             <div>
-              <Step n="01" label="Pro koho" />
+              <Step n="01" label={t("step1")} />
 
               {/* Already-added chips */}
               {recipients.length > 0 && (
@@ -353,7 +360,7 @@ export default function ArcaEditorNew({
               {/* Picker toggle */}
               <button type="button" onClick={() => setShowPicker(v => !v)} className="arca-card"
                 style={{ padding: "10px 14px", borderStyle: showPicker ? "solid" : "dashed", background: showPicker ? "var(--bg-tint)" : "transparent", color: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 13, width: "100%" }}>
-                <IcPlus /> {showPicker ? "Skrýt výběr" : "Přidat příjemce"}
+                <IcPlus /> {showPicker ? t("hidePicker") : t("addRecipient")}
               </button>
 
               {showPicker && (
@@ -362,7 +369,7 @@ export default function ArcaEditorNew({
                   {/* Groups */}
                   {contactGroups.length > 0 && (
                     <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--hairline)" }}>
-                      <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 8 }}>Skupiny</div>
+                      <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 8 }}>{t("groups")}</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {contactGroups.map(g => {
                           const members = allContacts.filter(c => c.groupId === g.id);
@@ -383,7 +390,7 @@ export default function ArcaEditorNew({
                   {/* Existing contacts */}
                   {allContacts.length > 0 && (
                     <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--hairline)" }}>
-                      <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 8 }}>Kontakty</div>
+                      <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 8 }}>{t("contacts")}</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {allContacts.map(c => {
                           const added = isAdded(c);
@@ -402,13 +409,13 @@ export default function ArcaEditorNew({
 
                   {/* New person form */}
                   <div style={{ padding: "12px 14px" }}>
-                    <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 8 }}>Nová osoba</div>
+                    <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)", marginBottom: 8 }}>{t("newPerson")}</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-                      <input className="arca-input" placeholder="Celé jméno *" value={newName} onChange={e => setNewName(e.target.value)} style={{ fontSize: 13 }} />
-                      <input className="arca-input" placeholder="E-mail" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} style={{ fontSize: 13 }} />
+                      <input className="arca-input" placeholder={t("fullNamePlaceholder")} value={newName} onChange={e => setNewName(e.target.value)} style={{ fontSize: 13 }} />
+                      <input className="arca-input" placeholder={t("emailPlaceholder")} type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} style={{ fontSize: 13 }} />
                     </div>
                     <button type="button" onClick={handleAddNew} disabled={recipientPending || !newName.trim()} className="arca-btn arca-btn--primary sm">
-                      <IcPlus /> Přidat
+                      <IcPlus /> {t("add")}
                     </button>
                   </div>
                 </div>
@@ -417,13 +424,13 @@ export default function ArcaEditorNew({
 
             {/* Step 02 – Kind */}
             <div>
-              <Step n="02" label="Forma" />
+              <Step n="02" label={t("step2")} />
               <div className="arca-kind-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
                 {([
-                  { id: "text" as Kind, label: "Text",  sub: "Dopis, věta.", Ic: IcText },
-                  { id: "voice" as Kind, label: "Hlas", sub: "Nahraný hlas.", Ic: IcVoice },
-                  { id: "video" as Kind, label: "Video", sub: "Krátké video.", Ic: IcVideo },
-                  { id: "photo" as Kind, label: "Fotky", sub: "Album.", Ic: IcPhoto },
+                  { id: "text" as Kind, label: t("kind.text.label"),  sub: t("kind.text.sub"), Ic: IcText },
+                  { id: "voice" as Kind, label: t("kind.voice.label"), sub: t("kind.voice.sub"), Ic: IcVoice },
+                  { id: "video" as Kind, label: t("kind.video.label"), sub: t("kind.video.sub"), Ic: IcVideo },
+                  { id: "photo" as Kind, label: t("kind.photo.label"), sub: t("kind.photo.sub"), Ic: IcPhoto },
                 ]).map(k => (
                   <div key={k.id} className={`arca-compose-tile ${kind === k.id ? "active" : ""}`} style={{ padding: 14, minHeight: 100 }}>
                     <div style={{ width: 32, height: 32, borderRadius: 9, background: kind === k.id ? "rgba(255,255,255,0.08)" : "var(--bg-tint)", display: "grid", placeItems: "center", color: kind === k.id ? "var(--accent)" : "var(--ink-2)" }}>
@@ -438,12 +445,12 @@ export default function ArcaEditorNew({
 
             {/* Step 03 – Content */}
             <div>
-              <Step n="03" label="Obsah" />
+              <Step n="03" label={t("step3")} />
               <ArcaRichEditor
                 ref={richEditorRef}
                 content={text}
                 onChange={setText}
-                placeholder={`Milý ${displayName},\n\nkdyž si tohle čteš…`}
+                placeholder={t("contentPlaceholder", { name: displayName })}
                 packId={packId}
                 minHeight={280}
                 recipientName={displayName}
@@ -455,21 +462,21 @@ export default function ArcaEditorNew({
 
             {/* Step 04 – Trigger */}
             <div>
-              <Step n="04" label="Kdy se otevře" />
+              <Step n="04" label={t("step4")} />
               <div className="arca-trigger-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-                <TriggerCard active={triggerKind === "date"}       onClick={() => setTriggerKind("date")}       Ic={IcCalPlus} title="V daný den"     sub="Konkrétní datum." />
-                <TriggerCard active={triggerKind === "inactivity"} onClick={() => setTriggerKind("inactivity")} Ic={IcLock}    title="Nečinnost"      sub="Po X dnech." />
-                <TriggerCard active={triggerKind === "sealed"}     onClick={() => setTriggerKind("sealed")}     Ic={IcLock}    title="Zapečetit"      sub="Manuální potvrzení." />
+                <TriggerCard active={triggerKind === "date"}       onClick={() => setTriggerKind("date")}       Ic={IcCalPlus} title={t("trigger.date.title")}     sub={t("trigger.date.sub")} />
+                <TriggerCard active={triggerKind === "inactivity"} onClick={() => setTriggerKind("inactivity")} Ic={IcLock}    title={t("trigger.inactivity.title")}      sub={t("trigger.inactivity.sub")} />
+                <TriggerCard active={triggerKind === "sealed"}     onClick={() => setTriggerKind("sealed")}     Ic={IcLock}    title={t("trigger.sealed.title")}      sub={t("trigger.sealed.sub")} />
               </div>
 
               {triggerKind === "date" && (
                 <div className="arca-card arca-date-grid" style={{ padding: 18, marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
-                    <label style={{ display: "block", fontFamily: "var(--f-mono)", color: "var(--muted)", fontSize: 11, marginBottom: 6 }}>Datum</label>
+                    <label style={{ display: "block", fontFamily: "var(--f-mono)", color: "var(--muted)", fontSize: 11, marginBottom: 6 }}>{t("trigger.dateLabel")}</label>
                     <input type="date" className="arca-input" value={dateVal} onChange={e => setDateVal(e.target.value)} />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontFamily: "var(--f-mono)", color: "var(--muted)", fontSize: 11, marginBottom: 6 }}>Čas</label>
+                    <label style={{ display: "block", fontFamily: "var(--f-mono)", color: "var(--muted)", fontSize: 11, marginBottom: 6 }}>{t("trigger.timeLabel")}</label>
                     <input type="time" className="arca-input" value={timeVal} onChange={e => setTimeVal(e.target.value)} />
                   </div>
                 </div>
@@ -477,16 +484,16 @@ export default function ArcaEditorNew({
 
               {triggerKind === "inactivity" && (
                 <div className="arca-card" style={{ padding: 18, marginTop: 12 }}>
-                  <label style={{ display: "block", fontFamily: "var(--f-mono)", color: "var(--muted)", fontSize: 11, marginBottom: 6 }}>Počet dní nečinnosti</label>
+                  <label style={{ display: "block", fontFamily: "var(--f-mono)", color: "var(--muted)", fontSize: 11, marginBottom: 6 }}>{t("trigger.inactivityDaysLabel")}</label>
                   <input type="number" className="arca-input" min={7} max={730} value={inactivityDays} onChange={e => setInactivityDays(Number(e.target.value))} style={{ maxWidth: 140 }} />
-                  <p className="arca-sub" style={{ fontSize: 12.5, marginTop: 8 }}>Zpráva se otevře, pokud tě ARCA neuvidí {inactivityDays} dní v řadě.</p>
+                  <p className="arca-sub" style={{ fontSize: 12.5, marginTop: 8 }}>{t("trigger.inactivityHint", { days: inactivityDays })}</p>
                 </div>
               )}
 
               {triggerKind === "sealed" && (
                 <div className="arca-card flat" style={{ background: "var(--bg-tint)", border: "none", padding: 18, marginTop: 12 }}>
                   <p className="arca-sub" style={{ fontSize: 12.5, margin: 0 }}>
-                    Zpráva se otevře až po manuálním potvrzení strážci. Předtím nikdo obsah neuvidí.
+                    {t("trigger.sealedHint")}
                   </p>
                 </div>
               )}
@@ -498,9 +505,9 @@ export default function ArcaEditorNew({
             <div className="arca-card elev" style={{ overflow: "hidden" }}>
               {/* Preview header */}
               <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--hairline)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span className="arca-kicker">Náhled doručení</span>
+                <span className="arca-kicker">{t("preview.kicker")}</span>
                 <span className={`arca-chip ${packType === "EMOTIONAL" ? "clay" : "sky"}`} style={{ fontSize: 10 }}>
-                  {packType === "EMOTIONAL" ? "✦ Emocionální" : "⬡ Praktická"}
+                  {packType === "EMOTIONAL" ? t("preview.emotional") : t("preview.practical")}
                 </span>
               </div>
 
@@ -511,18 +518,18 @@ export default function ArcaEditorNew({
                     <>
                       <span className={`arca-avatar sm ${toneFor(recipients[0].name)}`}>{initials(recipients[0].name)}</span>
                       <div>
-                        <div style={{ fontWeight: 550, fontSize: 13 }}>Pro {recipients[0].name}</div>
+                        <div style={{ fontWeight: 550, fontSize: 13 }}>{t("preview.for", { name: recipients[0].name })}</div>
                         <div style={{ fontSize: 11, color: "var(--muted)" }}>
                           {triggerKind === "date" && dateVal
-                            ? new Date(dateVal).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" })
-                            : triggerKind === "inactivity" ? `Po ${inactivityDays} dnech nečinnosti`
-                            : triggerKind === "sealed" ? "Při potvrzení strážci"
-                            : "Bez spouštěče"}
+                            ? new Date(dateVal).toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" })
+                            : triggerKind === "inactivity" ? t("preview.onInactivity", { days: inactivityDays })
+                            : triggerKind === "sealed" ? t("preview.onGuardianConfirm")
+                            : t("preview.noTrigger")}
                         </div>
                       </div>
                     </>
                   )}
-                  {recipients.length === 0 && <span className="arca-sub" style={{ fontSize: 12 }}>Žádný příjemce</span>}
+                  {recipients.length === 0 && <span className="arca-sub" style={{ fontSize: 12 }}>{t("preview.noRecipient")}</span>}
                 </div>
                 {text ? (
                   <div
@@ -535,7 +542,7 @@ export default function ArcaEditorNew({
                     }}
                   />
                 ) : (
-                  <p style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", fontSize: 14, color: "var(--muted-2)", margin: 0 }}>Začni psát…</p>
+                  <p style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", fontSize: 14, color: "var(--muted-2)", margin: 0 }}>{t("preview.placeholder")}</p>
                 )}
               </div>
 
@@ -543,7 +550,7 @@ export default function ArcaEditorNew({
               <div style={{ padding: "14px 18px" }}>
                 {/* Status summary */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, padding: "8px 0", borderBottom: "1px solid var(--hairline)" }}>
-                  <span style={{ fontSize: 12, color: "var(--muted)" }}>Stav</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{t("status")}</span>
                   <span className={`arca-chip ${st.chip}`}>{st.label}</span>
                 </div>
 
@@ -558,7 +565,7 @@ export default function ArcaEditorNew({
                 <button type="button" onClick={handleSave} disabled={isPending}
                   className="arca-btn arca-btn--primary lg"
                   style={{ width: "100%", justifyContent: "center", marginBottom: 8 }}>
-                  {isPending ? "Ukládám…" : saved ? <><IcCheck /> Uloženo</> : <>Uložit změny <IcArrow /></>}
+                  {isPending ? t("saving") : saved ? <><IcCheck /> {t("saved")}</> : <>{t("saveChanges")} <IcArrow /></>}
                 </button>
 
                 {/* Activate / Deactivate */}
@@ -566,20 +573,20 @@ export default function ArcaEditorNew({
                   <button type="button" onClick={handleActivate} disabled={isPending}
                     className="arca-btn arca-btn--clay"
                     style={{ width: "100%", justifyContent: "center", marginBottom: 6 }}>
-                    Zapečetit a aktivovat <IcArrow />
+                    {t("sealAndActivate")} <IcArrow />
                   </button>
                 )}
                 {(status === "ACTIVE" || status === "GRACE_PERIOD") && (
                   <button type="button" onClick={handleDeactivate} disabled={isPending}
                     className="arca-btn arca-btn--ghost"
                     style={{ width: "100%", justifyContent: "center", marginBottom: 6, fontSize: 12 }}>
-                    Zrušit doručení
+                    {t("cancelDelivery")}
                   </button>
                 )}
 
                 <Link href="/dashboard/vault" className="arca-btn arca-btn--ghost"
                   style={{ width: "100%", justifyContent: "center", fontSize: 12, color: "var(--muted)" }}>
-                  <IcChevL /> Zpět do schránky
+                  <IcChevL /> {t("backToVault")}
                 </Link>
               </div>
             </div>
@@ -592,15 +599,15 @@ export default function ArcaEditorNew({
               >
                 <span className="arca-ai-cta__icon"><IcSparkle /></span>
                 <span className="arca-ai-cta__body">
-                  <span className="arca-ai-cta__title">Nevíš, jak začít?</span>
-                  <span className="arca-ai-cta__sub">Popiš pár myšlenek a AI z nich napíše návrh dopisu.</span>
+                  <span className="arca-ai-cta__title">{t("aiCta.title")}</span>
+                  <span className="arca-ai-cta__sub">{t("aiCta.sub")}</span>
                 </span>
                 <span className="arca-ai-cta__arrow"><IcArrow /></span>
               </button>
             )}
 
             <p style={{ fontSize: 11.5, textAlign: "center", marginTop: 14, color: "var(--muted-2)" }}>
-              <IcLock /> Šifrováno end-to-end.
+              <IcLock /> {t("encrypted")}
             </p>
           </div>
         </div>
