@@ -5,8 +5,19 @@ import { PackStatus, TriggerStatus } from "@/lib/prisma/generated";
 import { render } from "@react-email/render";
 import { resend, FROM_EMAIL } from "@/lib/resend";
 import { ArcaDeliveryEmail } from "@/emails/ArcaDeliveryEmail";
+import { createRateLimiter, clientIp } from "@/lib/rate-limit";
+
+// Keyed by IP — a legitimate guardian clicks this once from an email link,
+// so this really only needs to stop rapid automated guessing of `token`
+// values, not throttle a real human.
+const guardianActionLimiter = createRateLimiter("guardian-action", 20, "1 m");
 
 export async function GET(request: NextRequest) {
+  const rate = await guardianActionLimiter.check(clientIp(request));
+  if (!rate.success) {
+    return NextResponse.redirect(`${APP_URL}/guardian/confirmed?status=invalid`);
+  }
+
   const token = request.nextUrl.searchParams.get("token");
   if (!token) {
     return NextResponse.redirect(`${APP_URL}/guardian/confirmed?status=invalid`);
