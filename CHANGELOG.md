@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.17.0] - AI-assist respektuje jazyk appky (hardening #4)
+### Opraveno
+- `app/api/arca/ai-assist/route.ts` měl natvrdo česky psaný prompt ("Píšeš výhradně v češtině") i chybové hlášky bez ohledu na to, v jakém jazyce uživatel appku používá — anglicky mluvící uživatel tak dostával česky napsané AI návrhy zprávy.
+- Endpoint teď zjišťuje aktivní jazyk stejně jako `i18n/request.ts` (pořadí: uložená `User.locale` → `arca_locale` cookie → výchozí `cs`) a podle toho vybere prompt, výchozí hodnoty (`recipientName`/`occasion`) i chybové hlášky z malého `COPY` slovníku (cs/en).
+- `Unauthorized` (401) zůstává beze změny — stejná anglická konvence jako ve všech ostatních API routách v appce, nejde o uživatelsky čitelnou hlášku.
+
+### Vědomě mimo scope
+- Model id `claude-sonnet-4-6` v témže souboru zůstává nezměněný — samostatné zjištění z auditu (neodpovídá žádnému současnému modelu), netýká se lokalizace.
+
 ## [1.16.0] - Rate limiting (hardening #2, část 1)
 ### Přidáno
 - `lib/rate-limit.ts` — sdílený rate limiter nad Upstash Redis (`@upstash/redis` + `@upstash/ratelimit`, sliding window). **Fail-open design**: když Redis není nakonfigurovaný nebo kontrola selže, požadavek se propustí (nechráněný provoz je lepší než plný výpadek celé appky).
