@@ -999,5 +999,27 @@
     "status": {
       "signupSuccess": "Check your email — we sent you a confirmation link."
     }
+  },
+  "GuardianConfirmed": {
+    "confirmed_alive": {
+      "title": "All clear.",
+      "body": "You've confirmed that the owner is well. Their Arca remains sealed and the inactivity timer has been reset. Thank you for being a trusted voice."
+    },
+    "released": {
+      "title": "Arca released.",
+      "body": "You've authorised delivery. The recipients will receive their Arca shortly. Thank you for honouring this trust."
+    },
+    "already_used": {
+      "title": "Already used.",
+      "body": "This link has already been used. No further action is needed."
+    },
+    "expired": {
+      "title": "Link expired.",
+      "body": "This guardian link has expired. If action is still needed, please contact the Arca owner directly."
+    },
+    "invalid": {
+      "title": "Invalid link.",
+      "body": "This link is not valid. It may have been copied incorrectly or already removed."
+    }
   }
 }

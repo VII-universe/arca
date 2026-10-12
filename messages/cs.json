@@ -999,5 +999,27 @@
     "status": {
       "signupSuccess": "Zkontroluj svůj e-mail — poslali jsme ti potvrzovací odkaz."
     }
+  },
+  "GuardianConfirmed": {
+    "confirmed_alive": {
+      "title": "Vše v pořádku.",
+      "body": "Potvrdil jsi, že je majitel v pořádku. Jeho Archa zůstává zapečetěná a časovač neaktivity byl resetován. Děkujeme, že jsi důvěryhodným hlasem."
+    },
+    "released": {
+      "title": "Archa uvolněna.",
+      "body": "Autorizoval jsi doručení. Příjemci svou Archu brzy obdrží. Děkujeme, že jsi ctil tuto důvěru."
+    },
+    "already_used": {
+      "title": "Již použito.",
+      "body": "Tento odkaz už byl použit. Není potřeba nic dalšího dělat."
+    },
+    "expired": {
+      "title": "Odkaz vypršel.",
+      "body": "Platnost tohoto strážcovského odkazu vypršela. Pokud je stále potřeba jednat, kontaktuj prosím přímo majitele Archy."
+    },
+    "invalid": {
+      "title": "Neplatný odkaz.",
+      "body": "Tento odkaz není platný. Mohl být nesprávně zkopírován nebo už byl odstraněn."
+    }
   }
 }

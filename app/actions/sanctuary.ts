@@ -46,6 +46,7 @@ export type SanctuaryResult =
       ownerName: string;
       packTitle: string;
       packType: "EMOTIONAL" | "PRACTICAL";
+      isSelf: boolean;
       createdAt: string;
       contents: SanctuaryContent[];
       memories: SanctuaryMemory[];
@@ -62,6 +63,7 @@ export async function getSanctuaryContent(token: string): Promise<SanctuaryResul
       title: true,
       type: true,
       status: true,
+      messageMode: true,
       createdAt: true,
       owner: {
         select: {
@@ -150,6 +152,7 @@ export async function getSanctuaryContent(token: string): Promise<SanctuaryResul
     ownerName: pack.owner.name,
     packTitle: pack.title,
     packType: pack.type as "EMOTIONAL" | "PRACTICAL",
+    isSelf: pack.messageMode === "SELF",
     createdAt: pack.createdAt.toISOString(),
     contents,
     memories,
@@ -180,7 +183,7 @@ export async function verifySanctuaryChallengeAnswer(
   token: string,
   answer: string
 ): Promise<{ error: string }> {
-  if (!answer?.trim()) return { error: "Prosím vyplň odpověď." };
+  if (!answer?.trim()) return { error: "Please enter an answer." };
 
   const recipients = await prisma.recipient.findMany({
     where: { messagePackId: packId, NOT: { challengeAnswerHash: null } },
@@ -191,7 +194,7 @@ export async function verifySanctuaryChallengeAnswer(
     recipients.length === 0 ||
     recipients.some((r) => r.challengeAnswerHash && verifyAnswer(answer, r.challengeAnswerHash));
 
-  if (!verified) return { error: "Odpověď nesedí. Zkus to prosím znovu." };
+  if (!verified) return { error: "That answer doesn't match. Please try again." };
 
   const cookieStore = await cookies();
   cookieStore.set(`arca-unlocked-${packId}`, signUnlockToken(packId), {
