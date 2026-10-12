@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.22.0] - npm audit: 97 → 47 zranitelností
+### Opraveno
+- Celá rodina `@tiptap/*` (31 balíčků) povýšena z `^3.23.6` na `^3.31.4` — opravuje **high-severity ReDoS** v parsování Markdown atributů a **moderate XSS/prototype-pollution** v `mergeAttributes()` (vlastní `__proto__` klíč se dal proměnit ve vykonatelné DOM atributy). Tiptap je živě používaný rich-text editor appky (`ArcaRichEditor`/`ArcaEditorNew`/`ComposeWizard`), takže šlo o reálně dosažitelnou zranitelnost z uživatelského vstupu, ne jen dev-tooling.
+- `npm audit fix` (bez `--force`) po čisté reinstalaci (`rm -rf node_modules package-lock.json && npm install`) smazal zbytek: kritickou **next** zranitelnost (SDK byl v rámci stávajícího `^16.2.4` rozsahu zastaralý), kritickou **tar** path-traversal, high **ws**/**sharp**/**postcss**/**form-data**/**prosemirror-view**/**js-yaml**/**hono** a moderate **uuid**/**svix**/**supabase**/**resend** — všechno v rámci existujících `^` rozsahů v `package.json`, žádná verze v `package.json` se neměnila krom tiptapu (lockfile byl prostě zastaralý).
+- Vedlejší efekt čisté reinstalace: `stripe` SDK (`^22.1.0`, rozsah beze změny) se refreshnul na novější patch, jehož typy vyžadují novější `apiVersion` literal — `lib/stripe.ts` aktualizováno z `"2026-04-22.dahlia"` na `"2026-08-26.dahlia"` (stejná "dahlia" release řada, jen novější datované vydání — odpovídá tomu, co SDK teď typově očekává).
+
+### Vědomě nedořešeno — zbývá 47 zranitelností (1 low, 5 moderate, 40 high, 1 critical)
+Všechny zbylé jsou výhradně v **`vercel`** (deploy CLI) a **`prisma`**/**`@tailwindcss/typography`** build-tooling řetězcích — nic z toho se neshippuje do produkčního bundlu, běží to jen lokálně/v CI pod kontrolou vývojáře. Oprava by vyžadovala skutečný **downgrade** (`npm audit fix --force` chce nainstalovat `vercel@50.41.0` místo současné `^53.1.1` a `prisma@6.19.3` místo současné `^7.8.0`) — u Prisma by to rozbilo appku rovnou (`prisma.config.ts` vyžaduje Prisma 7+ formát konfigurace), u Vercel CLI by to byl reálný krok zpět ve funkcích bez odpovídajícího přínosu. Necháno beze změny, dokud tyto nástroje samy nevydají opravenou verzi v rámci svých současných major verzí.
+
 ## [1.21.0] - Odstraněn nepoužívaný model Executor (hardening #3)
 ### Odstraněno
 - Prisma model `Executor` + enum `ExecutorStatus` + relace `User.ownedExecutors`/`User.assignedExecutors` — z auditu vyšlo, že na tento model nikde v `app`/`components`/`lib` neexistuje jediná reference (jen v automaticky generovaném Prisma klientovi). Odstranění nic funkčně neubírá.

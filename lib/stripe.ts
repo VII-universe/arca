@@ -6,7 +6,7 @@ const globalForStripe = globalThis as unknown as { stripe?: Stripe };
 export const stripe =
   globalForStripe.stripe ??
   new Stripe(process.env.STRIPE_SECRET_KEY ?? "sk_test_placeholder", {
-    apiVersion: "2026-04-22.dahlia",
+    apiVersion: "2026-08-26.dahlia",
     typescript: true,
   });
 
