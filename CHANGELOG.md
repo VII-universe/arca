@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.17.0] - Sentry error monitoring (hardening #2, část 2 — dokončeno)
+### Přidáno
+- `@sentry/nextjs` (v11) nainstalován a zapojen přes `instrumentation.ts` (server + edge runtime), `instrumentation-client.ts` (browser) a `sentry.server.config.ts`/`sentry.edge.config.ts`. `next.config.ts` obalen přes `withSentryConfig` (z `@sentry/nextjs/config`, aktuální subpath pro SDK v11+).
+- DSN projektu `vii-universe/javascript-nextjs` natvrdo v configu (DSN nejsou tajné — jsou veřejná, bezpečně viditelná i v browser bundlu).
+- `tunnelRoute: "/monitoring"` — client-side chyby jdou přes vlastní Next.js server (obchází ad-blockery). `/monitoring` doplněno do `PUBLIC_PREFIXES` v `proxy.ts`, aby tunelované requesty neprocházely zbytečně Supabase auth kontrolou.
+- `tracesSampleRate: 1` (performance monitoring zapnuto na 100 %, lze snížit později podle objemu provozu).
+- `npx @sentry/wizard` se v tomto neinteraktivním prostředí opakovaně tiše zasekával na promptu "routovat přes server?" (clack prompt bez TTY → tichý `process.exit(0)` bez zápisu souborů) — zjištěno ze zdrojového kódu wizardu v npx cache. Soubory napsány ručně podle stejných šablon, které wizard generuje.
+
+### Zbývá
+- **`SENTRY_AUTH_TOKEN`** není nikde nastavený (ani lokálně, ani na Vercelu) — bez něj se při produkčním buildu neuploadují source maps, takže stack traces v Sentry budou minifikované/nečitelné. Build i bez něj proběhne v pořádku (`silent: !process.env.CI`, chyba se nevyhazuje). Uživatel má token doplnit: Sentry → Settings → Auth Tokens → scope `project:releases`, a nastavit jako `SENTRY_AUTH_TOKEN` ve Vercel env (Production + Preview).
+- Hardening roadmapa #2 (Sentry + rate limiting) je tímto hotová celá.
+
 ## [1.16.0] - Rate limiting (hardening #2, část 1)
 ### Přidáno
 - `lib/rate-limit.ts` — sdílený rate limiter nad Upstash Redis (`@upstash/redis` + `@upstash/ratelimit`, sliding window). **Fail-open design**: když Redis není nakonfigurovaný nebo kontrola selže, požadavek se propustí (nechráněný provoz je lepší než plný výpadek celé appky).
