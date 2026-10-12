@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0] - i18n: ArcaEditorNew + sdílený ArcaRichEditor
+### Přidáno
+- `components/arca/ArcaRichEditor.tsx` — celý toolbar, AI Pomoc panel, crop overlay a resize úchyty přeloženy přes nový sdílený namespace `RichEditor` (next-intl). Protože je komponenta sdílená mezi `ComposeWizard` (nová zpráva) a `ArcaEditorNew` (editace existující zprávy), oprava se projeví na obou místech najednou — žádné prop-drillování, komponenta si bere `useTranslations("RichEditor")` sama.
+  - AI Pomoc: nabídka příležitostí (narozeniny/poděkování/omluva/…) se teď generuje z překladů, takže hodnota posílaná do `/api/arca/ai-assist` promptu je ve správném jazyce (ten endpoint sám sleduje aktivní locale od PR #34).
+  - Barevná témata (Motiv): štítky "Výchozí"/"Pergamen" přeloženy, zbytek (Midnight/Slate/Forest/Wine) zůstal jako vlastní jména beze změny.
+- `components/arca/ArcaEditorNew.tsx` (editace existující zprávy — poslední netknutá velká plocha z i18n rozsahu) — plně přeloženo přes nový namespace `ArcaEditorNew`: breadcrumb, kroky 01–04 (příjemci/forma/obsah/spouštěč), náhled doručení, akce (uložit/aktivovat/zrušit), stavové chipy (`PackStatus` enum), AI CTA panel. Formátování data v náhledu teď sleduje aktivní locale (`cs-CZ`/`en-GB`) stejným vzorem jako `ComposeWizard.tsx`, místo natvrdo `cs-CZ`.
+
 ## [1.23.0] - i18n: /guardian/confirmed + sjednocení /(sanctuary)/s/[token] s /arca/[hash]
 ### Přidáno
 - `/guardian/confirmed` (stránka, na kterou strážce přistane po potvrzení/uvolnění) nově plně v next-intl — nový namespace `GuardianConfirmed` v `messages/cs.json`/`en.json` pro všech 5 stavů (`confirmed_alive`/`released`/`already_used`/`expired`/`invalid`).

@@ -1000,6 +1000,137 @@
       "signupSuccess": "Zkontroluj svůj e-mail — poslali jsme ti potvrzovací odkaz."
     }
   },
+  "RichEditor": {
+    "placeholder": "Začni psát…",
+    "toolbar": {
+      "bold": "Tučné (Ctrl+B)",
+      "italic": "Kurzíva (Ctrl+I)",
+      "quote": "Citát",
+      "insertImageFile": "Vložit obrázek ze souboru",
+      "insertImageUrl": "Vložit obrázek z URL",
+      "insertImageUrlPrompt": "URL obrázku:",
+      "fontFamily": "Změnit písmo",
+      "fontSize": "Velikost písma",
+      "fontSizeNormal": "Norm.",
+      "charCount": "{count} znaků"
+    },
+    "theme": {
+      "label": "Motiv",
+      "default": "Výchozí",
+      "parchment": "Pergamen"
+    },
+    "imageMenu": {
+      "alignLeft": "Vlevo",
+      "alignCenter": "Na střed",
+      "alignRight": "Vpravo",
+      "crop": "Ořezat obrázek",
+      "cropLabel": "OŘÍZNOUT"
+    },
+    "resize": {
+      "corner": "Táhni pro změnu velikosti",
+      "edge": "Táhni pro změnu šířky"
+    },
+    "cropOverlay": {
+      "instruction": "Přetáhni oblast k ořezu",
+      "applying": "Ukládám…",
+      "apply": "Použít ořez",
+      "cancel": "Zrušit"
+    },
+    "aiPanel": {
+      "title": "AI Pomoc",
+      "subtitle": "Pár vět, a AI ti napíše první verzi.",
+      "close": "Zavřít",
+      "occasionLabel": "Příležitost",
+      "notesLabel": "Klíčové myšlenky",
+      "notesPlaceholder": "Napiš pár slov, co chceš vyjádřit… např. chci jí poděkovat za to, jak mě podržela",
+      "generating": "Generuji…",
+      "generate": "Vygenerovat návrhy",
+      "useThisText": "Použít tento text",
+      "genericError": "Chyba.",
+      "connectionError": "Nepodařilo se spojit s AI.",
+      "privacyDisclaimer": "Text z tohoto pole je anonymně zpracován AI modelem pro vygenerování inspirace a není nikde ukládán na našich serverech.",
+      "occasions": {
+        "birthday": "Narozeniny",
+        "thanks": "Poděkování",
+        "apology": "Omluva",
+        "farewell": "Rozloučení",
+        "encouragement": "Povzbuzení",
+        "anniversary": "Výročí",
+        "personal": "Osobní zpráva"
+      }
+    }
+  },
+  "ArcaEditorNew": {
+    "breadcrumbVault": "Schránka",
+    "defaultRecipientName": "příjemce",
+    "untitled": "Zpráva",
+    "kicker": "Editace zprávy",
+    "headingPlain": "Uprav, co ",
+    "headingEmphasis": "jednou najdou.",
+    "titleStep": "Název zprávy",
+    "titlePlaceholder": "Název zprávy…",
+    "step1": "Pro koho",
+    "hidePicker": "Skrýt výběr",
+    "addRecipient": "Přidat příjemce",
+    "groups": "Skupiny",
+    "contacts": "Kontakty",
+    "newPerson": "Nová osoba",
+    "fullNamePlaceholder": "Celé jméno *",
+    "emailPlaceholder": "E-mail",
+    "add": "Přidat",
+    "step2": "Forma",
+    "kind": {
+      "text": { "label": "Text", "sub": "Dopis, věta." },
+      "voice": { "label": "Hlas", "sub": "Nahraný hlas." },
+      "video": { "label": "Video", "sub": "Krátké video." },
+      "photo": { "label": "Fotky", "sub": "Album." }
+    },
+    "step3": "Obsah",
+    "contentPlaceholder": "Milý {name},\n\nkdyž si tohle čteš…",
+    "step4": "Kdy se otevře",
+    "trigger": {
+      "date": { "title": "V daný den", "sub": "Konkrétní datum." },
+      "inactivity": { "title": "Nečinnost", "sub": "Po X dnech." },
+      "sealed": { "title": "Zapečetit", "sub": "Manuální potvrzení." },
+      "dateLabel": "Datum",
+      "timeLabel": "Čas",
+      "inactivityDaysLabel": "Počet dní nečinnosti",
+      "inactivityHint": "Zpráva se otevře, pokud tě ARCA neuvidí {days} dní v řadě.",
+      "sealedHint": "Zpráva se otevře až po manuálním potvrzení strážci. Předtím nikdo obsah neuvidí."
+    },
+    "preview": {
+      "kicker": "Náhled doručení",
+      "emotional": "✦ Emocionální",
+      "practical": "⬡ Praktická",
+      "for": "Pro {name}",
+      "noRecipient": "Žádný příjemce",
+      "placeholder": "Začni psát…",
+      "onInactivity": "Po {days} dnech nečinnosti",
+      "onGuardianConfirm": "Při potvrzení strážci",
+      "noTrigger": "Bez spouštěče"
+    },
+    "status": "Stav",
+    "saving": "Ukládám…",
+    "saved": "Uloženo",
+    "saveChanges": "Uložit změny",
+    "sealAndActivate": "Zapečetit a aktivovat",
+    "cancelDelivery": "Zrušit doručení",
+    "backToVault": "Zpět do schránky",
+    "aiCta": {
+      "title": "Nevíš, jak začít?",
+      "sub": "Popiš pár myšlenek a AI z nich napíše návrh dopisu."
+    },
+    "encrypted": "Šifrováno end-to-end.",
+    "statusChip": {
+      "DRAFT": "Návrh",
+      "ACTIVE": "Aktivní",
+      "TRIGGERED": "Odesláno",
+      "DELIVERED": "Doručeno",
+      "GRACE_PERIOD": "Lhůta",
+      "PENDING_GUARDIAN_APPROVAL": "Strážci",
+      "ARCHIVED": "Archiv"
+    }
+  },
   "GuardianConfirmed": {
     "confirmed_alive": {
       "title": "Vše v pořádku.",
