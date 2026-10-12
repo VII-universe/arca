@@ -1,6 +1,6 @@
 # Arca
 
-Dead-man switch application for message and password vaults.
+Dead-man switch application for delivering personal messages and practical/estate information (accounts, documents, instructions) to loved ones after a configured trigger.
 
 ## Testing
 
