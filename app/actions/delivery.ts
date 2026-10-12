@@ -285,7 +285,7 @@ export async function sendSanctuaryInvitation(
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: recipient.email,
-    subject: "Zpráva, která čeká právě na tebe.",
+    subject: "A message that's waiting just for you.",
     html,
   });
 

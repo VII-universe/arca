@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.25.0] - i18n: dokončen celý zbývající rozsah (e-maily + metadata layoutu)
+### Opraveno
+- `emails/SanctuaryInvitation.tsx` — jediná ze 4 transakčních e-mailových šablon, která byla celá hardcoded česky (`lang="cs"`), zatímco zbylé 3 (`ArcaDeliveryEmail`/`GracePeriodWarningEmail`/`GuardianAlertEmail`) už byly plně anglicky (recipient-facing, stejná konvence jako `/arca/[hash]`). Navíc tenhle e-mail vede přímo na `/(sanctuary)/s/[token]`, kterou PR #39 právě přeložil na angličtinu — česky psaný e-mail vedoucí na anglickou stránku by byl nová nekonzistence. Přeloženo (`lang="en"`), stejně tak e-mailový `subject` v `app/actions/delivery.ts`.
+- `app/layout.tsx` — `metadata` (statický `export const`) nahrazeno `generateMetadata()`, které čte nový namespace `App.meta` (next-intl, server-side). Předtím byl titulek/popisek v záložce prohlížeče natvrdo anglicky na každé stránce, co nemá vlastní `generateMetadata` override (většina dashboardu, `/guardian/confirmed`, …) — `/` (Landing) a `/login` (Auth) už svůj vlastní override měly, ty beze změny.
+
+### Zkontrolováno beze změny
+- `ArcaDeliveryEmail.tsx`, `GracePeriodWarningEmail.tsx`, `GuardianAlertEmail.tsx` — všechny tři už byly plně anglicky, žádný zásah potřeba.
+
+**Tímto je dokončený celý "remaining i18n scope" seznam ze zbytku auditu: `/guardian/confirmed` + `/(sanctuary)/s/[token]` (PR #39), `ArcaEditorNew`/`ArcaRichEditor` (PR #40), transakční e-maily a metadata layoutu (tato PR).**
+
 ## [1.22.0] - npm audit: 97 → 47 zranitelností
 ### Opraveno
 - Celá rodina `@tiptap/*` (31 balíčků) povýšena z `^3.23.6` na `^3.31.4` — opravuje **high-severity ReDoS** v parsování Markdown atributů a **moderate XSS/prototype-pollution** v `mergeAttributes()` (vlastní `__proto__` klíč se dal proměnit ve vykonatelné DOM atributy). Tiptap je živě používaný rich-text editor appky (`ArcaRichEditor`/`ArcaEditorNew`/`ComposeWizard`), takže šlo o reálně dosažitelnou zranitelnost z uživatelského vstupu, ne jen dev-tooling.

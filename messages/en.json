@@ -999,5 +999,11 @@
     "status": {
       "signupSuccess": "Check your email — we sent you a confirmation link."
     }
+  },
+  "App": {
+    "meta": {
+      "title": "ARCA — Your words, preserved with care.",
+      "description": "A secure vault for time capsules and legacy messages — delivered precisely when they're needed most."
+    }
   }
 }

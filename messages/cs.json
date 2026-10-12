@@ -999,5 +999,11 @@
     "status": {
       "signupSuccess": "Zkontroluj svůj e-mail — poslali jsme ti potvrzovací odkaz."
     }
+  },
+  "App": {
+    "meta": {
+      "title": "ARCA — Tvá slova, uchovaná s péčí.",
+      "description": "Bezpečná schránka pro časové kapsle a odkazy pro blízké — doručené přesně ve chvíli, kdy jsou nejvíc potřeba."
+    }
   }
 }

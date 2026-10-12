@@ -40,10 +40,10 @@ const sans  = "'Helvetica Neue', 'Arial', sans-serif";
 
 export function SanctuaryInvitation({ ownerName, sanctuaryUrl }: SanctuaryInvitationProps) {
   return (
-    <Html lang="cs">
+    <Html lang="en">
       <Head />
       <Preview>
-        {ownerName} ti zanechal zprávu, která čeká jen na tebe.
+        {ownerName} has left you a message that's waiting just for you.
       </Preview>
 
       <Body style={body}>
@@ -75,7 +75,7 @@ export function SanctuaryInvitation({ ownerName, sanctuaryUrl }: SanctuaryInvita
               margin: "0 0 4px",
               letterSpacing: "0.01em",
             }}>
-              {ownerName} ti zanechal zprávu.
+              {ownerName} has left you a message.
             </Text>
             <Text style={{
               fontFamily: serif,
@@ -87,7 +87,7 @@ export function SanctuaryInvitation({ ownerName, sanctuaryUrl }: SanctuaryInvita
               margin: 0,
               letterSpacing: "0.01em",
             }}>
-              Je čas ji otevřít.
+              It's time to open it.
             </Text>
           </Section>
 
@@ -108,7 +108,7 @@ export function SanctuaryInvitation({ ownerName, sanctuaryUrl }: SanctuaryInvita
                 textDecoration: "none",
               }}
             >
-              Vstoupit do schránky →
+              Enter the vault →
             </Link>
           </Section>
 
@@ -129,9 +129,9 @@ export function SanctuaryInvitation({ ownerName, sanctuaryUrl }: SanctuaryInvita
               letterSpacing: "0.02em",
               margin: 0,
             }}>
-              Tento odkaz je z bezpečnostních důvodů chráněn a je určen pouze tobě.
+              This link is protected for security reasons and is meant for you alone.
               <br />
-              Neposílej ho nikomu dalšímu.
+              Please don't forward it to anyone else.
             </Text>
           </Section>
 
