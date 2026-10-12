@@ -8,7 +8,9 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "keywords": [],
   "author": "",
@@ -81,7 +83,9 @@
     "vercel": "^53.1.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/typography": "^0.5.19",
-    "supabase": "^2.98.1"
+    "supabase": "^2.98.1",
+    "vitest": "^5.0.3"
   }
 }

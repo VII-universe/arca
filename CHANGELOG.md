@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.15.0] - Testy na kritickou cestu (začátek hardeningu)
+### Přidáno
+- **Vitest** pro čisté funkce — `lib/triggers/milestone.test.ts` (15 testů): výpočet věkového milníku a relativního posunu data, přechodné roky, hranice "future date", `nextValidTargetAge`. Žádná DB/env proměnná potřeba, běží okamžitě.
+- **Playwright e2e** pro kritickou cestu compose → trigger → delivery:
+  - `e2e/compose-flow.spec.ts` — přihlášení, celý ComposeWizard (výběr režimu SELF, vyplnění editoru, nastavení spouštěče), ověření přes Prisma, že pack skutečně vznikl se správným `messageMode`/obsahem/příjemcem.
+  - `e2e/cron-trigger.spec.ts` — zasadí pack s už splatným `SPECIFIC_DATE` spouštěčem a zavolá skutečný `/api/cron/process-triggers` endpoint (stejně jako Vercel Cron), ověří přechod `ACTIVE → TRIGGERED` a `TriggerCondition.status → EXECUTED`; druhý test ověřuje, že špatný `CRON_SECRET` dostane 401.
+  - `e2e/stripe-webhook.spec.ts` — `checkout.session.completed` podepsaný lokálně přes `stripe.webhooks.generateTestHeaderString` (bez nutnosti volat Stripe API), ověří `User.isPremium → true`; druhý test ověřuje, že podvržený podpis dostane 400. **Zatím se přeskakuje** — v tomhle prostředí chybí `STRIPE_WEBHOOK_SECRET` (viz níže).
+  - `e2e/helpers/test-user.ts` — sdílený throwaway-účet helper (stejný vzor jako ruční ověřování při i18n práci), teď jednou napsaný a znovupoužitelný napříč testy.
+- `npm test` (Vitest) a `npm run test:e2e` (Playwright) nahrazují dřívější `"test": "echo ... && exit 1"` stub.
+- `README.md` — krátká sekce Testing s instrukcemi a varováním, že e2e testy běží proti reálné projektové DB (žádná vyhrazená testovací Supabase instance zatím neexistuje — vědomé rozhodnutí z debaty před touhle PR).
+
+### Zjištěno při práci (mimo scope týhle PR, zapsáno do pamětí/roadmapy)
+- **Produkční Vercel projekt je `arca` (arca-taupe.vercel.app), ne `arca-main`** — `vercel link` se bez `--project` napojí jen podle názvu složky na jiný/zastaralý projekt. Důležité pro cokoliv příště, co bude sahat na Vercel env.
+- **`arca` nemá v produkci ani preview nastavené žádné Stripe (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*`) ani `ANTHROPIC_API_KEY` proměnné** — platby (ARCA Pro) i AI-assist jsou v produkci momentálně nefunkční, bez ohledu na to, že kód je hotový. Uživatel řekl, že klíče doplní sám.
+- `npm audit` hlásí ~99 zranitelností (2 kritické, 52 high) už na `main` před přidáním testovacích balíčků — nesouvisí s touhle prací, založeno jako samostatná položka roadmapy.
+- `.env.production` je omylem trackovaný v gitu (jen `NEXT_PUBLIC_*` klíče, žádný skutečný leak, ale špatná praxe).
+
+### Zbývá (další krok v hardening roadmapě)
+- CI gate (spustit `tsc`/`build`/testy automaticky na každý PR).
+- Jakmile budou Stripe klíče doplněné, ověřit `stripe-webhook.spec.ts` doopravdy proběhne (teď jen ověřeno, že se správně přeskakuje).
+
 ## [1.14.0] - i18n: Nová zpráva (výběr režimu + celý ComposeWizard)
 ### Přidáno
 - **Celý průvodce tvorbou zprávy plně přeložen** do češtiny a angličtiny (`app/dashboard/arca/new/ComposeWizard.tsx`, `app/dashboard/arca/new/page.tsx`) — nový namespace `Compose` v `messages/cs.json`/`messages/en.json`: úvodní obrazovka výběru režimu (Fáze 0 — „Sobě do budoucna“ vs. „Odkaz pro blízké“), všechny 4 kroky průvodce (Pro koho / Forma / Obsah / Kdy se otevře), nahrávání hlasu a videa, výběr fotek, náhled doručení, chybové hlášky.
