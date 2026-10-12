@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.17.0] - AI-assist respektuje jazyk appky (hardening #4)
+## [1.19.0] - AI-assist respektuje jazyk appky (hardening #4)
 ### Opraveno
 - `app/api/arca/ai-assist/route.ts` měl natvrdo česky psaný prompt ("Píšeš výhradně v češtině") i chybové hlášky bez ohledu na to, v jakém jazyce uživatel appku používá — anglicky mluvící uživatel tak dostával česky napsané AI návrhy zprávy.
 - Endpoint teď zjišťuje aktivní jazyk stejně jako `i18n/request.ts` (pořadí: uložená `User.locale` → `arca_locale` cookie → výchozí `cs`) a podle toho vybere prompt, výchozí hodnoty (`recipientName`/`occasion`) i chybové hlášky z malého `COPY` slovníku (cs/en).
@@ -8,6 +8,31 @@
 
 ### Vědomě mimo scope
 - Model id `claude-sonnet-4-6` v témže souboru zůstává nezměněný — samostatné zjištění z auditu (neodpovídá žádnému současnému modelu), netýká se lokalizace.
+
+## [1.18.0] - Sentry error monitoring (hardening #2, část 2 — dokončeno)
+### Přidáno
+- `@sentry/nextjs` (v11) nainstalován a zapojen přes `instrumentation.ts` (server + edge runtime), `instrumentation-client.ts` (browser) a `sentry.server.config.ts`/`sentry.edge.config.ts`. `next.config.ts` obalen přes `withSentryConfig` (z `@sentry/nextjs/config`, aktuální subpath pro SDK v11+).
+- DSN projektu `vii-universe/javascript-nextjs` natvrdo v configu (DSN nejsou tajné — jsou veřejná, bezpečně viditelná i v browser bundlu).
+- `tunnelRoute: "/monitoring"` — client-side chyby jdou přes vlastní Next.js server (obchází ad-blockery). `/monitoring` doplněno do `PUBLIC_PREFIXES` v `proxy.ts`, aby tunelované requesty neprocházely zbytečně Supabase auth kontrolou.
+- `tracesSampleRate: 1` (performance monitoring zapnuto na 100 %, lze snížit později podle objemu provozu).
+- `npx @sentry/wizard` se v tomto neinteraktivním prostředí opakovaně tiše zasekával na promptu "routovat přes server?" (clack prompt bez TTY → tichý `process.exit(0)` bez zápisu souborů) — zjištěno ze zdrojového kódu wizardu v npx cache. Soubory napsány ručně podle stejných šablon, které wizard generuje.
+
+### Zbývá
+- ~~`SENTRY_AUTH_TOKEN` není nikde nastavený~~ — doplněno (Vercel env Production+Preview i `.env.local`), ověřeno lokálně s `CI=true npm run build`: `Successfully uploaded source maps to Sentry`.
+- Hardening roadmapa #2 (Sentry + rate limiting) je tímto hotová celá.
+
+## [1.17.0] - CI gate (hardening #6 — poslední bod roadmapy)
+### Přidáno
+- `.github/workflows/ci.yml` — na každý PR (a push do `main`) spustí `npx tsc --noEmit`, `npm run build` a `npm test`. Dřív běžel na PR jen Telegram notifikátor (`pr-notify.yml`), žádná skutečná kontrola.
+- Build krok běží s dummy `DATABASE_URL`/Supabase proměnnými — appka se k DB za buildu nepřipojuje (všechny routy jsou `ƒ` dynamic, Prisma codegen taky nepotřebuje živé spojení), takže nejsou potřeba žádné reálné secrets v GitHub Actions.
+- `npm test` (Vitest) v CI běží bez `KV_REST_API_URL`/`TOKEN` — živé Upstash testy v `lib/rate-limit.test.ts` se díky `describe.skipIf` samy přeskočí, nespadnou.
+- Ověřeno lokálně: `npm ci --dry-run` (lockfile v pořádku) + build se stejnými dummy proměnnými, jaké použije CI.
+
+### Opraveno
+- `app/actions/settings.ts:117` — stejný `??` vs. prázdný string bug jako v [1.17.0] SEO PR (`SITE_URL`), tentokrát v reset-password redirect URL. Opraveno na `||`.
+
+### Vědomě mimo scope
+- Lint krok vynechán — appka nemá vůbec nakonfigurovaný ESLint/lint script (samostatné zjištění z auditu, netýká se zadání tohohle kroku).
 
 ## [1.16.0] - Rate limiting (hardening #2, část 1)
 ### Přidáno

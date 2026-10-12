@@ -26,7 +26,7 @@ function applyLocaleCookie(request: NextRequest, response: NextResponse) {
 const PROTECTED_PATHS = ["/dashboard"];
 const AUTH_PATHS = ["/login"];
 // These paths are fully public — no auth check, no Supabase client needed.
-const PUBLIC_PREFIXES = ["/arca/", "/api/auth/", "/api/cron/", "/api/health", "/api/heartbeat/", "/api/guardians/action", "/api/stripe/webhook", "/guardian/"];
+const PUBLIC_PREFIXES = ["/arca/", "/api/auth/", "/api/cron/", "/api/health", "/api/heartbeat/", "/api/guardians/action", "/api/stripe/webhook", "/guardian/", "/monitoring"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
