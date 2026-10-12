@@ -53,7 +53,7 @@ export default function SanctiaryChallengeGate({ packId, token, question }: Prop
           fontFamily: "var(--font-inter), sans-serif",
           marginBottom: 24,
         }}>
-          Ověření přístupu
+          Security check
         </p>
 
         {/* Question */}
@@ -73,7 +73,7 @@ export default function SanctiaryChallengeGate({ packId, token, question }: Prop
             type="text"
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
-            placeholder="Tvoje odpověď…"
+            placeholder="Your answer…"
             autoComplete="off"
             style={{
               width: "100%",
@@ -122,7 +122,7 @@ export default function SanctiaryChallengeGate({ packId, token, question }: Prop
               transition: "all .2s",
             }}
           >
-            {pending ? "Ověřuji…" : "Otevřít zprávu"}
+            {pending ? "Verifying…" : "Open this message"}
           </button>
         </form>
 

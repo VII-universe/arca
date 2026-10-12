@@ -10,10 +10,10 @@ export const metadata = { robots: "noindex, nofollow" };
 
 function SanctuarySealed({ status }: { status: string }) {
   const label =
-    status === "DRAFT"     ? "Zpráva ještě nebyla odeslána." :
-    status === "ARCHIVED"  ? "Tato zpráva byla archivována." :
-    status === "DELIVERED" ? "Zpráva byla doručena." :
-    "Zpráva ještě nebyla aktivována.";
+    status === "DRAFT"     ? "This message hasn't been sent yet." :
+    status === "ARCHIVED"  ? "This message has been archived." :
+    status === "DELIVERED" ? "This message has been delivered." :
+    "This message hasn't been activated yet.";
 
   return (
     <div style={{
@@ -49,7 +49,7 @@ function SanctuarySealed({ status }: { status: string }) {
         margin: 0,
         opacity: 0.5,
       }}>
-        Tento odkaz není zatím aktivní.
+        This link isn't active yet.
       </p>
     </div>
   );
@@ -81,6 +81,7 @@ export default async function SanctuaryPage({
     <SanctuaryClient
       ownerName={result.ownerName}
       packType={result.packType}
+      isSelf={result.isSelf}
       createdAt={result.createdAt}
       contents={result.contents}
       memories={result.memories}

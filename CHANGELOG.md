@@ -10,6 +10,22 @@
 
 **Tímto je dokončený celý "remaining i18n scope" seznam ze zbytku auditu: `/guardian/confirmed` + `/(sanctuary)/s/[token]` (PR #39), `ArcaEditorNew`/`ArcaRichEditor` (PR #40), transakční e-maily a metadata layoutu (tato PR).**
 
+## [1.24.0] - i18n: ArcaEditorNew + sdílený ArcaRichEditor
+### Přidáno
+- `components/arca/ArcaRichEditor.tsx` — celý toolbar, AI Pomoc panel, crop overlay a resize úchyty přeloženy přes nový sdílený namespace `RichEditor` (next-intl). Protože je komponenta sdílená mezi `ComposeWizard` (nová zpráva) a `ArcaEditorNew` (editace existující zprávy), oprava se projeví na obou místech najednou — žádné prop-drillování, komponenta si bere `useTranslations("RichEditor")` sama.
+  - AI Pomoc: nabídka příležitostí (narozeniny/poděkování/omluva/…) se teď generuje z překladů, takže hodnota posílaná do `/api/arca/ai-assist` promptu je ve správném jazyce (ten endpoint sám sleduje aktivní locale od PR #34).
+  - Barevná témata (Motiv): štítky "Výchozí"/"Pergamen" přeloženy, zbytek (Midnight/Slate/Forest/Wine) zůstal jako vlastní jména beze změny.
+- `components/arca/ArcaEditorNew.tsx` (editace existující zprávy — poslední netknutá velká plocha z i18n rozsahu) — plně přeloženo přes nový namespace `ArcaEditorNew`: breadcrumb, kroky 01–04 (příjemci/forma/obsah/spouštěč), náhled doručení, akce (uložit/aktivovat/zrušit), stavové chipy (`PackStatus` enum), AI CTA panel. Formátování data v náhledu teď sleduje aktivní locale (`cs-CZ`/`en-GB`) stejným vzorem jako `ComposeWizard.tsx`, místo natvrdo `cs-CZ`.
+
+## [1.23.0] - i18n: /guardian/confirmed + sjednocení /(sanctuary)/s/[token] s /arca/[hash]
+### Přidáno
+- `/guardian/confirmed` (stránka, na kterou strážce přistane po potvrzení/uvolnění) nově plně v next-intl — nový namespace `GuardianConfirmed` v `messages/cs.json`/`en.json` pro všech 5 stavů (`confirmed_alive`/`released`/`already_used`/`expired`/`invalid`).
+
+### Opraveno — architektonické zjištění cestou
+- `AUDIT.md` popisoval `/arca/[hash]` a `/(sanctuary)/s/[token]` jako duplicitní implementace stejné doručovací stránky a doporučoval buď sloučit, nebo aspoň sjednotit SELF/LEGACY tón. Při bližším zkoumání šlo o neaktuální popis: obě stránky se reálně používají pro různé věci — `/arca/[hash]` je automatická cesta z cronu/guardian akce, `/(sanctuary)/s/[token]` je interní **test/simulační nástroj** (`components/arca/DeliverySimulator.tsx`, UI label "Simulovat doručení" s badge "TEST") pro majitele, který chce před ostrým spuštěním zkontrolovat, jak doručení vypadá, nebo poslat "cinematic invitation" e-mail navíc. Nejde tedy o sloučení, ale o dorovnání kvality — `/(sanctuary)/s/[token]` byla celá hardcoded česky a bez SELF/LEGACY rozlišení, zatímco `/arca/[hash]` je vědomě (viz [1.4.0]) hardcoded anglicky s plným SELF/LEGACY tónem (recipient-facing stránky v appce vědomě nejedou přes next-intl — příjemce může být kdokoliv).
+- `app/(sanctuary)/s/[token]/SanctuaryClient.tsx`, `SanctiaryChallengeGate.tsx`, `page.tsx` — veškerý hardcoded český text přeložen na angličtinu, datum přepnuto z `cs-CZ` na `en-GB` (stejná konvence jako `ArcaReveal.tsx`).
+- `app/actions/sanctuary.ts` — `getSanctuaryContent` teď vrací `isSelf` (`messageMode === "SELF"`, stejně jako `/arca/[hash]/page.tsx`), prochází přes `SanctuaryClient` do hero textu ("A letter from your past self is ready" vs. "This message is waiting for you") — stejné SELF/LEGACY rozlišení jako `ArcaReveal`. Chybové hlášky challenge-gate ("Prosím vyplň odpověď."/"Odpověď nesedí...") sjednoceny s anglickým zněním z `app/actions/unlock.ts` (ekvivalentní flow pro `/arca/[hash]`).
+
 ## [1.22.0] - npm audit: 97 → 47 zranitelností
 ### Opraveno
 - Celá rodina `@tiptap/*` (31 balíčků) povýšena z `^3.23.6` na `^3.31.4` — opravuje **high-severity ReDoS** v parsování Markdown atributů a **moderate XSS/prototype-pollution** v `mergeAttributes()` (vlastní `__proto__` klíč se dal proměnit ve vykonatelné DOM atributy). Tiptap je živě používaný rich-text editor appky (`ArcaRichEditor`/`ArcaEditorNew`/`ComposeWizard`), takže šlo o reálně dosažitelnou zranitelnost z uživatelského vstupu, ne jen dev-tooling.

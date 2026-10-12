@@ -2,6 +2,7 @@
 
 import { useRef, useCallback, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
@@ -136,6 +137,7 @@ function CropOverlay({
   packId?: string;
   onNewSrc: (src: string) => void;
 }) {
+  const t = useTranslations("RichEditor.cropOverlay");
   const [rect, setRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [applying, setApplying] = useState(false);
   const startRef = useRef<{ x: number; y: number } | null>(null);
@@ -205,7 +207,7 @@ function CropOverlay({
         }} />
       )}
       <div style={{ position: "absolute", top: 6, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.75)", color: "#fff", fontSize: 11, borderRadius: 4, padding: "3px 10px", whiteSpace: "nowrap", pointerEvents: "none" }}>
-        Přetáhni oblast k ořezu
+        {t("instruction")}
       </div>
       <div style={{ position: "absolute", bottom: 8, right: 8, display: "flex", gap: 6 }} onMouseDown={e => e.stopPropagation()}>
         <button
@@ -213,13 +215,13 @@ function CropOverlay({
           disabled={applying || !rect || rect.w < 10}
           style={{ background: "#B6754A", color: "#fff", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: applying ? "wait" : "pointer", opacity: (!rect || rect.w < 10) ? 0.5 : 1 }}
         >
-          {applying ? "Ukládám…" : "Použít ořez"}
+          {applying ? t("applying") : t("apply")}
         </button>
         <button
           onClick={onCancel}
           style={{ background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}
         >
-          Zrušit
+          {t("cancel")}
         </button>
       </div>
     </div>
@@ -329,6 +331,7 @@ function ToolSelect({
 // ── Resizable Image NodeView ──────────────────────────────────────────────────
 
 function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps) {
+  const t = useTranslations("RichEditor.resize");
   const { src, alt, width, align } = node.attrs as {
     src: string; alt?: string; width?: number; align?: string;
   };
@@ -393,7 +396,7 @@ function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps)
           {/* SE corner handle */}
           <div
             onMouseDown={startResize}
-            title="Táhni pro změnu velikosti"
+            title={t("corner")}
             style={{
               position: "absolute", right: -6, bottom: -6,
               width: 14, height: 14,
@@ -407,7 +410,7 @@ function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps)
           {/* Right-edge handle */}
           <div
             onMouseDown={startResize}
-            title="Táhni pro změnu šířky"
+            title={t("edge")}
             style={{
               position: "absolute", right: -5, top: "50%",
               transform: "translateY(-50%)",
@@ -465,16 +468,6 @@ const ResizableImage = TiptapImage.extend({
 
 // ── AI Assist panel ───────────────────────────────────────────────────────────
 
-const AI_OCCASIONS = [
-  { value: "narozeniny", label: "Narozeniny" },
-  { value: "poděkování", label: "Poděkování" },
-  { value: "omluva", label: "Omluva" },
-  { value: "rozloučení", label: "Rozloučení" },
-  { value: "povzbuzení", label: "Povzbuzení" },
-  { value: "výročí", label: "Výročí" },
-  { value: "osobní zpráva", label: "Osobní zpráva" },
-];
-
 interface AIVersion { label: string; content: string; }
 
 function AiAssistPanel({
@@ -490,6 +483,16 @@ function AiAssistPanel({
   relationship?: string;
   existingContent?: string;
 }) {
+  const t = useTranslations("RichEditor.aiPanel");
+  const AI_OCCASIONS = [
+    { value: t("occasions.birthday"), label: t("occasions.birthday") },
+    { value: t("occasions.thanks"), label: t("occasions.thanks") },
+    { value: t("occasions.apology"), label: t("occasions.apology") },
+    { value: t("occasions.farewell"), label: t("occasions.farewell") },
+    { value: t("occasions.encouragement"), label: t("occasions.encouragement") },
+    { value: t("occasions.anniversary"), label: t("occasions.anniversary") },
+    { value: t("occasions.personal"), label: t("occasions.personal") },
+  ];
   const [occasion, setOccasion] = useState(AI_OCCASIONS[0].value);
   const [userNotes, setUserNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -508,10 +511,10 @@ function AiAssistPanel({
         body: JSON.stringify({ recipientName, relationship, occasion, userNotes, existingContent }),
       });
       const data = await res.json();
-      if (!res.ok || data.error) { setError(data.error ?? "Chyba."); return; }
+      if (!res.ok || data.error) { setError(data.error ?? t("genericError")); return; }
       setVersions(data.versions ?? []);
     } catch {
-      setError("Nepodařilo se spojit s AI.");
+      setError(t("connectionError"));
     } finally {
       setLoading(false);
     }
@@ -551,10 +554,10 @@ function AiAssistPanel({
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 19, margin: 0 }}>AI Pomoc</h3>
-            <p style={{ margin: "1px 0 0", fontSize: 12, color: "var(--muted)" }}>Pár vět, a AI ti napíše první verzi.</p>
+            <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 19, margin: 0 }}>{t("title")}</h3>
+            <p style={{ margin: "1px 0 0", fontSize: 12, color: "var(--muted)" }}>{t("subtitle")}</p>
           </div>
-          <button type="button" onClick={onClose} title="Zavřít" style={{ background: "var(--bg-tint)", border: "1px solid var(--hairline)", borderRadius: "50%", width: 30, height: 30, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--muted)", flexShrink: 0 }}>
+          <button type="button" onClick={onClose} title={t("close")} style={{ background: "var(--bg-tint)", border: "1px solid var(--hairline)", borderRadius: "50%", width: 30, height: 30, display: "grid", placeItems: "center", cursor: "pointer", color: "var(--muted)", flexShrink: 0 }}>
             <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
@@ -563,7 +566,7 @@ function AiAssistPanel({
         <div style={{ padding: "22px 26px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
           {/* Occasion */}
           <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>Příležitost</label>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>{t("occasionLabel")}</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {AI_OCCASIONS.map(o => (
                 <button
@@ -587,12 +590,12 @@ function AiAssistPanel({
 
           {/* Notes */}
           <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>Klíčové myšlenky</label>
+            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("notesLabel")}</label>
             <textarea
               className="arca-input"
               rows={4}
               autoFocus
-              placeholder={"Napiš pár slov, co chceš vyjádřit… např. chci jí poděkovat za to, jak mě podržela"}
+              placeholder={t("notesPlaceholder")}
               value={userNotes}
               onChange={e => setUserNotes(e.target.value)}
               style={{ resize: "vertical", fontFamily: "var(--f-sans)" }}
@@ -611,9 +614,9 @@ function AiAssistPanel({
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ animation: "arca-spin .8s linear infinite" }}>
                   <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                 </svg>
-                Generuji…
+                {t("generating")}
               </span>
-            ) : "Vygenerovat návrhy"}
+            ) : t("generate")}
           </button>
 
           {error && (
@@ -635,7 +638,7 @@ function AiAssistPanel({
                     onClick={() => { onInsert(`<p>${v.content.replace(/\n/g, "</p><p>")}</p>`); onClose(); }}
                     className="arca-btn sm arca-btn--clay"
                   >
-                    Použít tento text
+                    {t("useThisText")}
                   </button>
                 </div>
               ))}
@@ -645,7 +648,7 @@ function AiAssistPanel({
           {/* Privacy disclaimer — tucked at the bottom, out of the way */}
           <p style={{ margin: 0, fontSize: 11, color: "var(--muted-2)", lineHeight: 1.5, display: "flex", gap: 6 }}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{ flexShrink: 0, marginTop: 1 }}><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-            Text z tohoto pole je anonymně zpracován AI modelem pro vygenerování inspirace a není nikde ukládán na našich serverech.
+            {t("privacyDisclaimer")}
           </p>
         </div>
       </div>
@@ -664,9 +667,9 @@ function AiAssistPanel({
 // ── Curated palette ───────────────────────────────────────────────────────────
 
 export const MESSAGE_THEMES = [
-  { id: "default",   bg: null,      text: null,       label: "Výchozí"  },
+  { id: "default",   bg: null,      text: null,       label: "default"  },
   { id: "midnight",  bg: "#16161a", text: "#e8e3d8",  label: "Midnight" },
-  { id: "parchment", bg: "#f5f0dc", text: "#2c2418",  label: "Pergamen" },
+  { id: "parchment", bg: "#f5f0dc", text: "#2c2418",  label: "parchment" },
   { id: "slate",     bg: "#2d3748", text: "#e2e8f0",  label: "Slate"    },
   { id: "forest",    bg: "#142014", text: "#d4c98a",  label: "Forest"   },
   { id: "wine",      bg: "#2a0a14", text: "#f0d8c8",  label: "Wine"     },
@@ -683,7 +686,9 @@ function ThemeBubbles({
   bgColor: string | null;
   onSelect: (bg: string | null, text: string | null) => void;
 }) {
-  const activeId = MESSAGE_THEMES.find(t => t.bg === bgColor)?.id ?? "default";
+  const t = useTranslations("RichEditor.theme");
+  const themeLabel = (label: string) => (label === "default" || label === "parchment" ? t(label) : label);
+  const activeId = MESSAGE_THEMES.find(th => th.bg === bgColor)?.id ?? "default";
 
   return (
     <div style={{
@@ -703,7 +708,7 @@ function ThemeBubbles({
         whiteSpace: "nowrap",
         flexShrink: 0,
       }}>
-        Motiv
+        {t("label")}
       </span>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         {MESSAGE_THEMES.map((theme) => {
@@ -712,7 +717,7 @@ function ThemeBubbles({
             <button
               key={theme.id}
               type="button"
-              title={theme.label}
+              title={themeLabel(theme.label)}
               onClick={() => onSelect(theme.bg ?? null, theme.text ?? null)}
               style={{
                 width: 22,
@@ -751,7 +756,7 @@ function ThemeBubbles({
           fontFamily: "var(--f-sans)",
           marginLeft: 2,
         }}>
-          {MESSAGE_THEMES.find(t => t.id === activeId)?.label}
+          {themeLabel(MESSAGE_THEMES.find(th => th.id === activeId)?.label ?? "")}
         </span>
       )}
     </div>
@@ -780,7 +785,7 @@ export interface ArcaRichEditorHandle {
 
 const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(function ArcaRichEditor({
   content, onChange,
-  placeholder = "Začni psát…",
+  placeholder,
   packId, userId,
   minHeight = 260,
   recipientName,
@@ -789,6 +794,8 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
   textColor = null,
   onThemeChange,
 }, ref) {
+  const t = useTranslations("RichEditor");
+  const effectivePlaceholder = placeholder ?? t("placeholder");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropImg, setCropImg] = useState<HTMLImageElement | null>(null);
   const [showAiPanel, setShowAiPanel] = useState(false);
@@ -804,7 +811,7 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
       TextStyle,
       FontFamily.configure({ types: ["textStyle"] }),
       FontSize,
-      Placeholder.configure({ placeholder }),
+      Placeholder.configure({ placeholder: effectivePlaceholder }),
       ResizableImage.configure({ inline: false, allowBase64: false }),
     ],
     content,
@@ -842,9 +849,9 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
   }, [editor, userId, packId]);
 
   const insertImageUrl = useCallback(() => {
-    const url = window.prompt("URL obrázku:");
+    const url = window.prompt(t("toolbar.insertImageUrlPrompt"));
     if (url && editor) editor.chain().focus().setImage({ src: url }).run();
-  }, [editor]);
+  }, [editor, t]);
 
   // Paste & drop images
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -911,24 +918,24 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
     <div className="arca-card" style={{ padding: 0, overflow: "hidden" }}>
       {/* Toolbar */}
       <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", background: "var(--bg-tint)" }}>
-        <ToolBtn title="Tučné (Ctrl+B)" onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive("bold")}>
+        <ToolBtn title={t("toolbar.bold")} onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive("bold")}>
           <strong style={{ fontFamily: "var(--f-serif)", fontSize: 14 }}>B</strong>
         </ToolBtn>
-        <ToolBtn title="Kurzíva (Ctrl+I)" onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive("italic")}>
+        <ToolBtn title={t("toolbar.italic")} onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive("italic")}>
           <em style={{ fontFamily: "var(--f-serif)", fontSize: 14 }}>I</em>
         </ToolBtn>
-        <ToolBtn title="Citát" onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive("blockquote")}>
+        <ToolBtn title={t("toolbar.quote")} onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive("blockquote")}>
           <span style={{ fontSize: 16 }}>"</span>
         </ToolBtn>
         <TDivider />
-        <ToolBtn title="Vložit obrázek ze souboru" onClick={() => fileInputRef.current?.click()}>
+        <ToolBtn title={t("toolbar.insertImageFile")} onClick={() => fileInputRef.current?.click()}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round">
             <rect x="3.5" y="5" width="17" height="14" rx="2"/>
             <circle cx="9" cy="10.5" r="1.5"/>
             <path d="M4 17l5-4 4 3 3-2 4 3"/>
           </svg>
         </ToolBtn>
-        <ToolBtn title="Vložit obrázek z URL" onClick={insertImageUrl}>
+        <ToolBtn title={t("toolbar.insertImageUrl")} onClick={insertImageUrl}>
           <span style={{ fontSize: 10, fontFamily: "var(--f-mono)", letterSpacing: "0.02em" }}>url</span>
         </ToolBtn>
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }}
@@ -937,7 +944,7 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
         <TDivider />
         {/* Font family */}
         <ToolSelect
-          title="Změnit písmo"
+          title={t("toolbar.fontFamily")}
           width={118}
           value={editor?.getAttributes("textStyle").fontFamily ?? ""}
           onChange={val => {
@@ -957,7 +964,7 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
         />
         {/* Font size */}
         <ToolSelect
-          title="Velikost písma"
+          title={t("toolbar.fontSize")}
           width={72}
           value={editor?.getAttributes("textStyle").fontSize ?? ""}
           onChange={val => {
@@ -969,7 +976,7 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
             }
           }}
           options={[
-            { value: "",     label: "Norm." },
+            { value: "",     label: t("toolbar.fontSizeNormal") },
             { value: "12px", label: "12" },
             { value: "14px", label: "14" },
             { value: "16px", label: "16" },
@@ -980,7 +987,7 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
           ]}
         />
         <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted-2)", fontFamily: "var(--f-mono)" }}>
-          {charCount} znaků
+          {t("toolbar.charCount", { count: charCount })}
         </span>
       </div>
 
@@ -1005,9 +1012,9 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
           }}>
             {/* Alignment */}
             {[
-              { v: "left",   icon: "←", title: "Vlevo" },
-              { v: "center", icon: "⊞", title: "Na střed" },
-              { v: "right",  icon: "→", title: "Vpravo" },
+              { v: "left",   icon: "←", title: t("imageMenu.alignLeft") },
+              { v: "center", icon: "⊞", title: t("imageMenu.alignCenter") },
+              { v: "right",  icon: "→", title: t("imageMenu.alignRight") },
             ].map(a => (
               <button key={a.v} type="button" title={a.title}
                 onMouseDown={e => { e.preventDefault(); setAlign(a.v); }}
@@ -1024,10 +1031,10 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
             <div style={{ width: 1, background: "color-mix(in srgb, var(--bg) 15%, transparent)", height: 16, margin: "0 4px" }} />
 
             {/* Crop */}
-            <button type="button" title="Ořezat obrázek"
+            <button type="button" title={t("imageMenu.crop")}
               onMouseDown={e => { e.preventDefault(); openCrop(); }}
               style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--bg)", padding: "3px 8px", borderRadius: 4, fontSize: 11, fontFamily: "var(--f-mono)", letterSpacing: "0.04em", lineHeight: 1.4 }}>
-              CROP
+              {t("imageMenu.cropLabel")}
             </button>
           </div>
         </BubbleMenu>
