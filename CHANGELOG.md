@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.31.0] - Oprava neplatného model ID v AI-assist
+`app/api/arca/ai-assist/route.ts` volalo Anthropic API s `model: "claude-sonnet-4-6"` — tohle ID nikdy neexistovalo, takže každé volání skončilo chybou API (zachycenou jako `aiConnectionFailed`). Opraveno na `claude-sonnet-5-5`, aktuální nejschopnější Sonnet model. Netestováno proti živému API — lokálně ani v produkci (projekt `arca` na Vercelu) není nastaven `ANTHROPIC_API_KEY`.
+
 ## [1.30.0] - AUDIT.md: implementován přechod TRIGGERED → DELIVERED
 Poslední dva otevřené nálezy z `AUDIT.md`. Dva ze čtyř bodů (duplicitní stránka, anglický text) už byly vyřešeny dřívější i18n prací — `AUDIT.md` aktualizováno, ať to odráží.
 
