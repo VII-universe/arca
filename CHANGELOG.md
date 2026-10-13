@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.0] - Vercel Analytics + Speed Insights
+Appka dosud neměla žádnou viditelnost do reálného používání — nulová analytika, žádný přehled o Core Web Vitals v produkci.
+
+### Přidáno
+- `@vercel/analytics` a `@vercel/speed-insights`, oba vykresleny v `app/layout.tsx` (`<Analytics />` + `<SpeedInsights />` vedle sebe, mimo providery — nepotřebují žádný kontext).
+- **Pozor, nutný ruční krok**: samotné přidání komponent neaktivuje sběr dat — ve Vercel dashboardu (`arca` projekt → záložka Analytics / Speed Insights) je potřeba jednou kliknout "Enable". Nenašel jsem API endpoint, který by tohle přepnul programaticky.
+
 ## [1.31.0] - AI-assist přesunut na OpenRouter, oprava neplatného model ID
 `app/api/arca/ai-assist/route.ts` volalo Anthropic API s `model: "claude-sonnet-4-6"` — tohle ID nikdy neexistovalo, takže každé volání skončilo chybou API (zachycenou jako `aiConnectionFailed`). Místo opravy na přímé Anthropic API přepnuto na OpenRouter (`anthropic/claude-sonnet-5.5`) — účtuje se proti existujícímu OpenRouter kreditu, žádný samostatný Anthropic účet není potřeba.
 
