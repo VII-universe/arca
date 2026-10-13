@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.29.0] - next/image migrace (hardening #5, dokončení)
+Dokončuje bod #5 z hardening roadmapy, odložený při PR #36 (favicon/OG/robots). 9 z 10 skutečných míst s obrázky migrováno na `next/image`, zbylé vědomě ponechané jako `<img>` s vysvětlujícím komentářem — žádné holé `eslint-disable` bez důvodu.
+
+### Migrováno na next/image
+- **`components/arca/Avatar.tsx`** — sdílený avatar (Supabase signed URL). Velikost appka řídí přes CSS třídy (`sm`/`lg`/`xl`/default), `next/image` ale potřebuje explicitní `width`/`height` — doplněna mapa `SIZE_PX` podle skutečných pixelových hodnot z `globals.css` (`.arca-avatar{,.sm,.lg,.xl}`).
+- **`components/arca/GifPicker.tsx`** — GIF náhledy v gridu (`fill`, kontejner už měl `position: relative` + `aspect-square`). **Záměrně `unoptimized`** — GIPHY už posílá vhodně zmenšený webp náhled a optimalizace přes `next/image` by animaci zploštila na jeden statický snímek.
+- **`components/arca/MediaGalleryClient.tsx`** — galerie nahraných médií v editoru zprávy (`fill`, pevný `aspect-[4/3]` kontejner).
+- **`app/(sanctuary)/s/[token]/SanctuaryClient.tsx`** — čtvercové náhledy vzpomínek (`MemoryPhoto`, `fill`, pevný poměr stran 1:1).
+- **`components/arca/RecipientProfileEditor.tsx`** — karta vzpomínky s fotkou (`fill`, pevný `aspectRatio: "4/3"`).
+- **`next.config.ts`** — `images.remotePatterns` pro `**.supabase.co/storage/v1/object/**` (signed URLs pro avatary/cover/vzpomínky/media) a `*.giphy.com` (GIF náhledy).
+
+### Vědomě ponecháno jako `<img>` (s komentářem proč)
+- **`ArcaRichEditor.tsx`** (vložený obrázek v rich-textu) — `src` může být `blob:` URL během nahrávání, libovolná externí URL (nástroj "Vložit z URL" pouští jakoukoliv doménu), nebo signed URL; navíc drag-resize/ořez logika potřebuje přímý `ref` a DOM queries na neobalený `<img>`.
+- **`RecipientProfileEditor.tsx`** (náhled před uploadem), **`ComposeWizard.tsx`** (2× — náhled fotek v albu + lightbox) — `blob:` object URL z `URL.createObjectURL()`, `next/image` je fundamentálně nedokáže načíst.
+- **`SanctuaryClient.tsx`** (obsah zprávy), **`ArcaReveal.tsx`** (obsah zprávy) — fotky vložené do textu zprávy na celou šířku v jejich přirozeném poměru stran; appka neukládá rozměry nahraných obrázků do DB, takže `next/image` nemá, čím by si spočítal layout bez zploštění/ořezání fotky do vynuceného poměru stran.
+
 ## [1.28.0] - React Compiler-readiness cleanup (PR #42 follow-up)
 PR #42 (ESLint setup) stáhlo `react-hooks/set-state-in-effect`/`purity`/`static-components` na `warn`, protože nálezy byly rozsáhlé a různorodé. Po rozboru šlo o dvě různé kategorie — tahle PR obě dořešila a vrátila pravidla zpátky na `error` v `eslint.config.mjs`.
 

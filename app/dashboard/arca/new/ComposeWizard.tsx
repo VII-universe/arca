@@ -413,6 +413,8 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
             title={t("viewReplace")}
             style={{ position: "relative", aspectRatio: "1", padding: 0, border: "none", cursor: "pointer", borderRadius: 10, overflow: "hidden" }}
           >
+            {/* urls[i] is a blob: object URL (local file, not yet uploaded) — next/image can't load those. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={urls[i]} alt={f.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             <span
               onClick={(e) => { e.stopPropagation(); removeAt(i); }}
@@ -454,6 +456,8 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
           }}
         >
           <div style={{ width: "min(560px, 100%)", display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* Same reasoning as the thumbnail above: urls[openIndex] is a blob: object URL. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={urls[openIndex]}
               alt={photos[openIndex].name}

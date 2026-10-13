@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import type {
   SanctuaryContent,
   SanctuaryMemory,
@@ -94,6 +95,11 @@ function MediaItem({ item }: { item: SanctuaryContent }) {
   if (item.type === "FILE" && isImageKey(item.s3FileKey)) {
     return (
       <figure style={{ margin: "36px 0" }}>
+        {/* Full-width at the image's natural aspect ratio — intentional,
+            these are user-uploaded message attachments of arbitrary size,
+            and the DB doesn't store their dimensions. next/image needs
+            either a known width/height or a fixed-aspect `fill` container,
+            neither of which is available without cropping the photo. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.signedUrl}
@@ -145,17 +151,14 @@ function MemoryPhoto({ memory }: { memory: SanctuaryMemory }) {
     : null;
 
   return (
-    <figure style={{ margin: 0, position: "relative", overflow: "hidden", borderRadius: 6 }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+    <figure style={{ margin: 0, position: "relative", overflow: "hidden", borderRadius: 6, aspectRatio: "1" }}>
+      <Image
         src={memory.signedUrl!}
         alt={memory.title ?? "Memory"}
-        loading="lazy"
+        fill
+        sizes="(max-width: 640px) 50vw, 220px"
         style={{
-          width: "100%",
-          aspectRatio: "1",
           objectFit: "cover",
-          display: "block",
           filter: "brightness(0.88)",
         }}
       />
