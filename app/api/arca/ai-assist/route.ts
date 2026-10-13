@@ -3,10 +3,13 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, type Locale } from "@/i18n/config";
-import Anthropic from "@anthropic-ai/sdk";
 import { createRateLimiter } from "@/lib/rate-limit";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Routed through OpenRouter (not the Anthropic API directly) — same model,
+// billed against the team's existing OpenRouter credit instead of a
+// separate Anthropic account.
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODEL = "anthropic/claude-sonnet-5.5";
 
 // Each call costs real money (Anthropic API usage) — cap it per user rather
 // than leaving it open to an accidental retry loop or deliberate abuse.
@@ -121,13 +124,28 @@ export async function POST(req: NextRequest) {
   const prompt = copy.buildPrompt(recipientName, relationship, occasion, userNotes, existingContent);
 
   try {
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1200,
-      messages: [{ role: "user", content: prompt }],
+    const openRouterRes = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        max_tokens: 1200,
+        messages: [{ role: "user", content: prompt }],
+      }),
     });
 
-    const raw = message.content[0].type === "text" ? message.content[0].text : "";
+    if (!openRouterRes.ok) {
+      console.error("[ai-assist] OpenRouter error:", openRouterRes.status, await openRouterRes.text());
+      return NextResponse.json({ error: copy.aiConnectionFailed }, { status: 500 });
+    }
+
+    const message = await openRouterRes.json() as {
+      choices: { message: { content: string } }[];
+    };
+    const raw = message.choices[0]?.message?.content ?? "";
 
     // Strip potential markdown code fences
     const cleaned = raw.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim();

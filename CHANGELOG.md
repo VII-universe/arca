@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.31.0] - AI-assist přesunut na OpenRouter, oprava neplatného model ID
+`app/api/arca/ai-assist/route.ts` volalo Anthropic API s `model: "claude-sonnet-4-6"` — tohle ID nikdy neexistovalo, takže každé volání skončilo chybou API (zachycenou jako `aiConnectionFailed`). Místo opravy na přímé Anthropic API přepnuto na OpenRouter (`anthropic/claude-sonnet-5.5`) — účtuje se proti existujícímu OpenRouter kreditu, žádný samostatný Anthropic účet není potřeba.
+
+### Opraveno
+- Odstraněn `@anthropic-ai/sdk` (nikde jinde v appce nepoužívaný) a nahrazen přímým `fetch` na OpenRouter's OpenAI-kompatibilní `/chat/completions` endpoint — pro jediné volání nedávalo smysl tahat si další SDK závislost.
+- Nová env proměnná `OPENROUTER_API_KEY` (sensitive, Production+Preview na Vercelu).
+- Ověřeno živým voláním proti OpenRouter API (model slug + klíč potvrzeny přes `curl`), ne jen typecheck/build.
+
 ## [1.30.0] - AUDIT.md: implementován přechod TRIGGERED → DELIVERED
 Poslední dva otevřené nálezy z `AUDIT.md`. Dva ze čtyř bodů (duplicitní stránka, anglický text) už byly vyřešeny dřívější i18n prací — `AUDIT.md` aktualizováno, ať to odráží.
 
