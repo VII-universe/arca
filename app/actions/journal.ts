@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma/client";
 
 // Public action — no user account needed.
 // Anyone who has reached this point holds the living-link hash, which means:
-//   1. The pack is in TRIGGERED status.
+//   1. The pack is in TRIGGERED or DELIVERED status.
 //   2. They passed any challenge question gate.
-// We validate the pack still exists and is triggered before writing.
+// We validate the pack still exists and is open before writing.
 
 export async function addJournalEntry(
   messagePackId: string,
@@ -22,7 +22,7 @@ export async function addJournalEntry(
   });
 
   if (!pack) return { error: "Arca not found." };
-  if (pack.status !== "TRIGGERED")
+  if (pack.status !== "TRIGGERED" && pack.status !== "DELIVERED")
     return { error: "This Arca is not yet open." };
 
   await prisma.recipientJournal.create({

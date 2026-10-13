@@ -86,7 +86,9 @@ export default async function LivingLinkPage({
   });
 
   if (!pack) notFound();
-  if (pack.status !== "TRIGGERED") return <VaultSealed status={pack.status} />;
+  if (pack.status !== "TRIGGERED" && pack.status !== "DELIVERED") {
+    return <VaultSealed status={pack.status} />;
+  }
 
   // ── Challenge gate ──────────────────────────────────────────────────────────
 
@@ -106,6 +108,17 @@ export default async function LivingLinkPage({
         />
       );
     }
+  }
+
+  // Mark DELIVERED on the first real view of the content — after any
+  // challenge gate has passed, so this reflects "the recipient actually
+  // read it", not just "the link was requested". Idempotent: once it's
+  // DELIVERED this is skipped on every later re-read.
+  if (pack.status === "TRIGGERED") {
+    await prisma.messagePack.update({
+      where: { id: pack.id },
+      data: { status: "DELIVERED" },
+    });
   }
 
   // ── Signed URLs for media ───────────────────────────────────────────────────

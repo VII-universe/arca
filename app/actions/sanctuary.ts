@@ -100,7 +100,13 @@ export async function getSanctuaryContent(token: string): Promise<SanctuaryResul
   });
 
   if (!pack) return { status: "not_found" };
-  if (pack.status !== "TRIGGERED") return { status: "sealed", packStatus: pack.status };
+  // TRIGGERED and DELIVERED are both "unsealed" — the latter just means
+  // /arca/[hash] has already recorded a first real view (see that page's
+  // DELIVERED transition). This simulator route never writes DELIVERED
+  // itself, it only needs to keep showing content once the real page has.
+  if (pack.status !== "TRIGGERED" && pack.status !== "DELIVERED") {
+    return { status: "sealed", packStatus: pack.status };
+  }
 
   // Challenge gate check
   const challengeRecipient = pack.recipients.find(

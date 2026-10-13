@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.30.0] - AUDIT.md: implementován přechod TRIGGERED → DELIVERED
+Poslední dva otevřené nálezy z `AUDIT.md`. Dva ze čtyř bodů (duplicitní stránka, anglický text) už byly vyřešeny dřívější i18n prací — `AUDIT.md` aktualizováno, ať to odráží.
+
+### Přidáno
+- `app/arca/[livingLinkHash]/page.tsx` — zapisuje `MessagePack.status = DELIVERED` při prvním skutečném zobrazení obsahu příjemci (po challenge gate, idempotentně — jen při přechodu z `TRIGGERED`). UI na to čekalo připravené už od dřívějška (`RecipientTimeline`, `VaultClient`, `ArcaEditorNew`, dashboard karty — všechny už měly `DELIVERED` label/chip hotový, nikdy se ale nezobrazil).
+
+### Opraveno
+- Tři místa, co kontrolovala přesně `pack.status === "TRIGGERED"` (a po mé změně by po prvním zobrazení omylem appku "zapečetily" znovu) — opraveno, ať berou `TRIGGERED`/`DELIVERED` jako stejný "odemčený" stav: `VaultSealed.tsx`/gate v `page.tsx`, `app/actions/sanctuary.ts` (`/s/[token]` simulátor), `app/actions/journal.ts` (GriefJournal na doručené stránce).
+- `VaultSealed.tsx` a `app/(sanctuary)/s/[token]/page.tsx`'s `SanctuarySealed` měly připravený `DELIVERED` label, co se nikdy nezobrazil (ani předtím, ani teď — po mé změně je `DELIVERED` nově explicitně "odemčený" stav, takže se k těmhle komponentám vůbec nedostane). Odstraněno jako mrtvý kód, se zdůvodněním v komentáři.
+
+### Nástroje
+- `scripts/fix-stuck-trigger-conditions.sql` — jednorázový úklid dat pro `TriggerCondition` řádky zaseknuté na `PENDING`, i když jejich `MessagePack` je dávno `TRIGGERED`/`DELIVERED` (pozůstatek starší, dnes už opravené cron logiky — `process-triggers/route.ts` teď zapisuje oba stavy atomicky ve stejné transakci). SELECT pro náhled + UPDATE pro opravu. Nemohl jsem to spustit sám — lokální `DATABASE_URL` je od incidentu s `vercel env pull` pořád nefunkční — potřebuje se spustit ručně přes Supabase SQL editor.
+
 ## [1.29.0] - next/image migrace (hardening #5, dokončení)
 Dokončuje bod #5 z hardening roadmapy, odložený při PR #36 (favicon/OG/robots). 9 z 10 skutečných míst s obrázky migrováno na `next/image`, zbylé vědomě ponechané jako `<img>` s vysvětlujícím komentářem — žádné holé `eslint-disable` bez důvodu.
 

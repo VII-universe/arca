@@ -2,24 +2,22 @@
 
 Poznámky k věcem, které jsme při práci objevili, ale vědomě neřešili — ne bugy k okamžité opravě, spíš dluh/otázky pro některou z příštích fází.
 
-## Duplicitní implementace doručovací stránky (od Fáze 1.5)
+## ~~Duplicitní implementace doručovací stránky~~ — vyřešeno
 
-`app/arca/[livingLinkHash]/page.tsx` a `app/(sanctuary)/s/[token]/page.tsx` jsou dvě nezávislé implementace téhož zobrazení doručené zprávy. `token` v `/s/[token]` je ve skutečnosti tentýž `MessagePack.livingLinkHash` — `getSanctuaryContent` (`app/actions/sanctuary.ts`) ho vyhledává přesně stejně jako `/arca/[hash]`. Není to oddělený flow (např. "guardian-confirmed" vs. "osobní odkaz"), jak by názvy mohly naznačovat, jen dvě různá UI nad stejnými daty.
+Vyřešeno v rámci i18n práce 2026-10-13 (viz CHANGELOG [1.23.0]). Ukázalo se, že `/arca/[hash]` a `/(sanctuary)/s/[token]` nejsou duplicita — `/s/[token]` je owner-facing "Simulovat doručení" test nástroj (`components/arca/DeliverySimulator.tsx`), ne druhá cesta pro stejný recipient flow. `/(sanctuary)/s/[token]` dorovnána na stejnou kvalitu jako `/arca/[hash]` (SELF/LEGACY tón, angličtina).
 
-V rámci Fáze 1.5 jsme SELF/LEGACY tón i "Otevřít" odkazy zapojili jen do `/arca/[hash]` (podle zadání) — `/s/[token]` zůstává beze změny a bude mít starý, mode-agnostic anglický text. Než na `/s/[token]` cíleně odkážeme odjinud v appce, stojí za zvážení buď sjednotit na jednu implementaci, nebo aspoň replikovat stejné SELF/LEGACY větvení tam.
+## ~~Anglický text v `/arca/[livingLinkHash]`~~ — vědomé rozhodnutí, ne bug
 
-## `PackStatus.DELIVERED` — mrtvá větev (od Fáze 1.5)
+`ArcaReveal.tsx` i `/s/[token]` zůstávají vědomě anglicky — recipient-facing stránky, příjemce může být kdokoliv, next-intl se sem záměrně nezapojuje (viz CHANGELOG [1.4.0], potvrzeno znovu při [1.23.0]). Zbytek appky (dashboard) je plně dvojjazyčný od i18n práce dokončené 2026-10-13.
 
-Enum `PackStatus` má hodnotu `DELIVERED`, ale nikde v kódu se na ni nezapisuje — cron (`app/api/cron/process-triggers/route.ts`) přepíná jen do `TRIGGERED`, dál už nikam. `VaultSealed.tsx` i `RecipientTimeline`/`ArcaEditorNew`/nová "ready to open" karta na Dashboardu mají pro `DELIVERED` připravený label/text, ale ten se reálně nikdy nezobrazí.
+## ~~`PackStatus.DELIVERED` — mrtvá větev~~ — implementováno
 
-Fáze 1.5 do tohohle vědomě nezasahuje — všechny nové "Otevřít" odkazy/karty reagují na `TRIGGERED` (a mimochodem i na `DELIVERED`, kdyby k němu jednou došlo). Otevřená otázka pro později: má appka přechod `TRIGGERED → DELIVERED` vůbec potřebovat (např. při prvním otevření odkazu), nebo je `TRIGGERED` jako finální stav dostatečné?
+Vyřešeno 2026-10-13 (viz CHANGELOG). `/arca/[livingLinkHash]/page.tsx` teď zapisuje `DELIVERED` při prvním skutečném zobrazení obsahu (po challenge gate, jen jednou — idempotentní). `VaultSealed.tsx`/`SanctuarySealed` (`/s/[token]`) traktují `TRIGGERED`+`DELIVERED` jako stejný "odemčený" stav, stejně jako `app/actions/journal.ts` a `app/actions/sanctuary.ts` — všechna tři místa, co dřív kontrolovala přesně `=== "TRIGGERED"`, teď přijímají oboje.
 
-## Anglický text v `/arca/[livingLinkHash]` (od Fáze 1.5)
+## `TriggerCondition.status` zůstává `PENDING` i po doručení — datový úklid, kód už opraven
 
-Celá stránka `ArcaReveal.tsx` (a `/s/[token]`) je psaná anglicky, zatímco zbytek appky je česky. Fáze 1.5 přidala SELF/LEGACY větvení textu, ale zachovala angličtinu — lokalizace celé doručovací stránky do češtiny je mimo scope týhle fáze a nebyla řešena.
+Při ověřování na produkční DB (dávno, Fáze 1.5) jsme narazili na existující packy, kde `MessagePack.status` je `TRIGGERED`, ale příslušný `TriggerCondition.status` zůstal `PENDING` — nikdy se nepřepnul na `EXECUTED`.
 
-## `TriggerCondition.status` zůstává `PENDING` i po doručení — cron nekonzistence (od Fáze 1.5)
+**Aktuální kód (`app/api/cron/process-triggers/route.ts`) je v pořádku** — všechny 4 sweepy zapisují `MessagePack.status` i `TriggerCondition.status` atomicky ve stejné `$transaction`, takže tahle nekonzistence novými běhy cronu už vzniknout nemůže. Zaseknuté řádky jsou pozůstatek nějaké starší verze cron logiky (před touhle atomickou dvojicí zápisů), ne aktivní bug.
 
-Při ověřování Fáze 1.5 na produkční DB jsme narazili na existující packy (`calvin hariss — Text`, `narozky`), kde `MessagePack.status` je `TRIGGERED` (u `narozky` dokonce jen `DRAFT`), ale příslušný `TriggerCondition.status` zůstal `PENDING` — nikdy se nepřepnul na `EXECUTED`. Cron sweep A (`app/api/cron/process-triggers/route.ts`) hledá kandidáty přes `TriggerCondition.status = PENDING AND executeAtDate <= now`, takže tyhle řádky by teoreticky mohly být "found" znovu při každém běhu cronu, i když pack samotný už dávno `TRIGGERED` je (sweep je ale správně chrání přes `MessagePack.status = ACTIVE` v tom samém where — takže reálně re-triggered nejsou, jen zůstávají v nekonzistentním datovém stavu).
-
-Nesouvisí s prací Fáze 1.5 — nalezeno náhodou při ručním testu cron endpointu, vědomě neřešeno teď. Otevřená otázka pro později: proč se `TriggerCondition.status` u těchto řádků nikdy nezapsal jako `EXECUTED` (chyba v nějaké starší verzi cron logiky? Ruční zásah do DB?), a jestli má appka tyhle osiřelé `PENDING` triggery nějak dodatečně vyčistit/opravit.
+**Zbývá: jednorázový úklid dat na produkci.** `scripts/fix-stuck-trigger-conditions.sql` — SELECT pro náhled + UPDATE pro opravu, spustit ručně přes Supabase SQL editor (lokální `DATABASE_URL` je od incidentu s `vercel env pull` nefunkční, takže to nejde spustit z tohohle prostředí). Bezpečné spustit víckrát (po první opravě SELECT už nic nenajde).
