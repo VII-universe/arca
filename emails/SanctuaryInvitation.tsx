@@ -43,7 +43,7 @@ export function SanctuaryInvitation({ ownerName, sanctuaryUrl }: SanctuaryInvita
     <Html lang="en">
       <Head />
       <Preview>
-        {ownerName} has left you a message that's waiting just for you.
+        {ownerName} has left you a message that&apos;s waiting just for you.
       </Preview>
 
       <Body style={body}>
@@ -87,7 +87,7 @@ export function SanctuaryInvitation({ ownerName, sanctuaryUrl }: SanctuaryInvita
               margin: 0,
               letterSpacing: "0.01em",
             }}>
-              It's time to open it.
+              It&apos;s time to open it.
             </Text>
           </Section>
 
@@ -131,7 +131,7 @@ export function SanctuaryInvitation({ ownerName, sanctuaryUrl }: SanctuaryInvita
             }}>
               This link is protected for security reasons and is meant for you alone.
               <br />
-              Please don't forward it to anyone else.
+              Please don&apos;t forward it to anyone else.
             </Text>
           </Section>
 

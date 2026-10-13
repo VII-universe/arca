@@ -197,7 +197,7 @@ function CreateGroupPanel({
     });
   }
 
-  function usePreset(p: typeof GROUP_PRESETS[0]) {
+  function applyPreset(p: typeof GROUP_PRESETS[0]) {
     setName(p.name);
     setColor(p.color);
     setEmoji(p.emoji);
@@ -221,7 +221,7 @@ function CreateGroupPanel({
           <button
             key={p.name}
             type="button"
-            onClick={() => usePreset(p)}
+            onClick={() => applyPreset(p)}
             className="arca-btn sm arca-btn--outline"
             style={{ fontSize: 12 }}
           >
