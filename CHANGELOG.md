@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.28.0] - React Compiler-readiness cleanup (PR #42 follow-up)
+PR #42 (ESLint setup) stáhlo `react-hooks/set-state-in-effect`/`purity`/`static-components` na `warn`, protože nálezy byly rozsáhlé a různorodé. Po rozboru šlo o dvě různé kategorie — tahle PR obě dořešila a vrátila pravidla zpátky na `error` v `eslint.config.mjs`.
+
+### Opraveno (skutečná oprava, ne jen umlčení)
+- **`components/dashboard/ModeFilterSection.tsx`** — `FilterTab` byla komponenta definovaná uvnitř render těla rodiče (nová instance na každý render). Vytažena ven, `active`/`onClick` teď jdou přes props místo closure nad `filter`/`setFilter`.
+- **`components/arca/TriggerSettings.tsx`, `sheets/ChapterSheet.tsx`** — `Date.now()` volané přímo v render těle (pro "zítřek" jako min. datum) je nepurity. `useMemo(() => Date.now(), [])` pravidlo NEuspokojí (purity kontrola platí i uvnitř `useMemo` callbacků) — funguje jen lazy `useState(() => Date.now())` inicializér, protože ten běží jen jednou za instanci komponenty. Přepsáno na `useState` lazy init.
+- **`app/dashboard/settings/SettingsClient.tsx` + `page.tsx`** — `daysSinceActive` (stejná nepurity, ale závislá na `user.lastActiveAt` z propu, takže lazy `useState` by zastaralo). Přesunuto na server — `page.tsx` ho teď počítá a posílá jako prop, stejný vzor jako `dashboard/page.tsx` už dřív dělal pro `ModeFilterSection`. (Mimochodem: `new Date()` tohle pravidlo neřeší, jen explicitní `Date.now()` — i server-side varianta musela přejít na `new Date().getTime()`.)
+- **`components/layout/DashboardShell.tsx`** — "zavřít mobilní drawer při změně route" byl `useEffect` reagující na `pathname`. Přepsáno na Reactem doporučený vzor "uprav stav během renderu" (track `prevPathname`, `setDrawerOpen(false)` přímo v těle komponenty při změně) — drawer se teď zavře ve stejném renderu jako navigace, ne o snímek později.
+
+### Umlčeno cíleně, s komentářem (ne přes blanket rule downgrade)
+Zbylých 9 nálezů napříč `ComposeWizard.tsx` (6×), `RecipientManager.tsx`, `GifPicker.tsx`, `AppearanceButton.tsx`, `vibe-context.tsx`, `BlueprintClient.tsx` jsou legitimní vzory, co pravidlo nerozpozná:
+- **Object-URL lifecycle** (nahrávání hlasu/videa/fotek v `ComposeWizard.tsx`) — `useEffect` synchronizující state s externím zdrojem (blob → `URL.createObjectURL` → cleanup `revokeObjectURL`), přesně to, co pravidlo samo označuje za platné použití efektu.
+- **localStorage čtení po mountu** (`AppearanceButton.tsx`, `vibe-context.tsx`) — appka má flash-prevention inline script v `app/layout.tsx`, co nastaví DOM přímo před prvním vykreslením; React state to musí dohnat až po mountu, protože `localStorage` na serveru neexistuje (lazy initializer by při SSR spadl).
+- **Sync z URL parametru / Server Component re-fetch** (`ComposeWizard.tsx`'s `prefilledDate`, `RecipientManager.tsx`) — hodnota se může změnit i po prvním mountu (App Router component reuse, `router.refresh()`), takže lazy initializer nestačí.
+- **Data fetch při otevření** (`GifPicker.tsx`) — "načti GIFy, když se picker otevře" je učebnicový platný efekt.
+- **Auto-korekce neplatného výchozího věku + zavření lightboxu při smazané fotce** (`ComposeWizard.tsx`) — defensive, ne load-bearing (render guard už stejně stav ošetří), ale přepis bez možnosti to vizuálně otestovat (dashboard vyžaduje login, lokální DB je rozbitá) by byl zbytečné riziko.
+- **Reset formuláře + focus inputu při otevření sheetu** (`BlueprintClient.tsx`) — focus skutečně potřebuje efekt (DOM musí být připravený), smícháno se state resetem.
+
+Každé umlčení je `eslint-disable-next-line`/`eslint-disable`-`eslint-enable` pár přímo u řádku, co pravidlo hlásí (ne u `useEffect(` o řádek výš — na tom pravidlo trvá přesně, jinak hlásí "unused directive"), s komentářem vysvětlujícím proč.
+
 ## [1.27.0] - Security: 5 nálezů z IDOR auditu
 Prošel jsem všech 26 souborů v `app/actions/` a `app/api/` (server actions + API routy) a zkontroloval, že každá operace nad konkrétním záznamem (podle ID z klienta) má odpovídající `ownerId`/`userId` filtr. Drtivá většina kódu to má správně (dobrý, konzistentní vzor napříč appkou) — ale našlo se 5 skutečných mezer:
 

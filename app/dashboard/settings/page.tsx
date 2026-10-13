@@ -33,12 +33,19 @@ export default async function SettingsPage() {
     // ignore — page renders without switch settings until server restarts
   }
 
+  const lastActiveAt = dbUser?.lastActiveAt ?? new Date();
+  // Computed server-side (not via Date.now() in the client component) so
+  // the render stays pure — same reasoning as dashboard/page.tsx's own
+  // daysSinceActive prop. `new Date()` rather than `Date.now()` — the
+  // latter trips react-hooks/purity even in a Server Component.
+  const daysSinceActive = Math.floor((new Date().getTime() - lastActiveAt.getTime()) / 86_400_000);
+
   return (
     <SettingsClient
       user={{
         name: dbUser?.name ?? "",
         email: dbUser?.email ?? user.email ?? "",
-        lastActiveAt: (dbUser?.lastActiveAt ?? new Date()).toISOString(),
+        lastActiveAt: lastActiveAt.toISOString(),
         isPremium: dbUser?.isPremium ?? false,
         webhookSecret: dbUser?.webhookSecret ?? "",
         settings: userSettings
@@ -51,6 +58,7 @@ export default async function SettingsPage() {
             }
           : null,
       }}
+      daysSinceActive={daysSinceActive}
     />
   );
 }

@@ -43,15 +43,22 @@ export default function DashboardShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
 
+  // Close drawer on route change — adjusted during render (React's
+  // documented pattern for "reset state when a prop changes") rather than
+  // in an effect, so the drawer closes in the same render as the
+  // navigation instead of one frame later.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setDrawerOpen(false);
+  }
+
   const BOTTOM_NAV = [
     { href: "/dashboard",           label: t("overview"),  Icon: IcHome,      exact: true  },
     { href: "/dashboard/vault",     label: t("vault"),     Icon: IcVault,     exact: false },
     { href: "/dashboard/calendar",  label: t("calendar"),  Icon: IcCalendar,  exact: false },
     { href: "/dashboard/guardians", label: t("guardians"), Icon: IcGuardians, exact: false },
   ];
-
-  // Close drawer on route change
-  useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
   // Lock body scroll while drawer is open
   useEffect(() => {

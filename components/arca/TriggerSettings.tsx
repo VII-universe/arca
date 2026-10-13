@@ -65,9 +65,7 @@ export default function TriggerSettings({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const minDate = toDateInputValue(
-    new Date(Date.now() + 24 * 60 * 60 * 1000) // tomorrow
-  );
+  const [minDate] = useState(() => toDateInputValue(new Date(Date.now() + 24 * 60 * 60 * 1000))); // tomorrow
 
   function handleSave() {
     setErrorMsg(null);

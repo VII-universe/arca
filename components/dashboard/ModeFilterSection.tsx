@@ -48,6 +48,27 @@ function toneFor(name: string): string {
 const kindIcon = (type: "EMOTIONAL" | "PRACTICAL") => (type === "EMOTIONAL" ? "✦" : "⬡");
 const kindColor = (type: "EMOTIONAL" | "PRACTICAL") => (type === "EMOTIONAL" ? "var(--accent)" : "var(--sky)");
 
+function FilterTab({ active, onClick, label, count, dotColor }: { active: boolean; onClick: () => void; label: string; count: number; dotColor: string | null }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 7,
+        padding: "7px 16px", borderRadius: "var(--r-pill)", border: "none",
+        background: active ? "var(--ink)" : "transparent",
+        color: active ? "var(--bg)" : "var(--muted)",
+        fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--f-sans)",
+        transition: "all .15s",
+      }}
+    >
+      {dotColor && <span style={{ width: 7, height: 7, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />}
+      {label}
+      <span className="arca-mono" style={{ fontSize: 11, opacity: active ? 0.55 : 0.7 }}>{count}</span>
+    </button>
+  );
+}
+
 function StatCard({ label, value, hint, tone }: { label: string; value: number | string; hint: string; tone?: "clay" | "sage" | "sky" }) {
   const color = tone === "clay" ? "var(--accent)" : tone === "sage" ? "var(--sage)" : tone === "sky" ? "var(--sky)" : "var(--ink)";
   return (
@@ -85,29 +106,6 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
 
   const avatarFor = (path: string | null) => (path ? avatarUrlByPath[path] ?? null : null);
 
-  const FilterTab = ({ id, label, count }: { id: Filter; label: string; count: number }) => {
-    const active = filter === id;
-    const dotColor = id === "SELF" ? "var(--accent-deep)" : id === "LEGACY" ? "var(--sky)" : null;
-    return (
-      <button
-        type="button"
-        onClick={() => setFilter(id)}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 7,
-          padding: "7px 16px", borderRadius: "var(--r-pill)", border: "none",
-          background: active ? "var(--ink)" : "transparent",
-          color: active ? "var(--bg)" : "var(--muted)",
-          fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--f-sans)",
-          transition: "all .15s",
-        }}
-      >
-        {dotColor && <span style={{ width: 7, height: 7, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />}
-        {label}
-        <span className="arca-mono" style={{ fontSize: 11, opacity: active ? 0.55 : 0.7 }}>{count}</span>
-      </button>
-    );
-  };
-
   return (
     <>
       {/* ── Filter tabs — only shown when there's actually a mix to filter ── */}
@@ -116,9 +114,9 @@ export default function ModeFilterSection({ packs, guardians, avatarUrlByPath, d
           display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 20,
           padding: 4, borderRadius: "var(--r-pill)", background: "var(--surface)", border: "1px solid var(--hairline)",
         }}>
-          <FilterTab id="ALL" label={t("filter.all")} count={packs.length} />
-          <FilterTab id="SELF" label={t("filter.self")} count={selfCount} />
-          <FilterTab id="LEGACY" label={t("filter.legacy")} count={legacyCount} />
+          <FilterTab active={filter === "ALL"} onClick={() => setFilter("ALL")} label={t("filter.all")} count={packs.length} dotColor={null} />
+          <FilterTab active={filter === "SELF"} onClick={() => setFilter("SELF")} label={t("filter.self")} count={selfCount} dotColor="var(--accent-deep)" />
+          <FilterTab active={filter === "LEGACY"} onClick={() => setFilter("LEGACY")} label={t("filter.legacy")} count={legacyCount} dotColor="var(--sky)" />
         </div>
       )}
 

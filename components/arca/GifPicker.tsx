@@ -69,8 +69,10 @@ export default function GifPicker({ onSelect }: Props) {
     setLoading(false);
   }, []);
 
-  // Load trending GIFs when picker opens
+  // Load trending GIFs when picker opens — a data fetch triggered by a
+  // prop change, the canonical valid use of an effect.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open && gifs.length === 0) load("");
   }, [open, gifs.length, load]);
 

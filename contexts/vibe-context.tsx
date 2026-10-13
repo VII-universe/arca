@@ -59,6 +59,11 @@ export function VibeProvider({ children }: { children: ReactNode }) {
   const [customImageUrl, setCustomImageUrlState] = useState("");
   const [groupImageOverride, setGroupImageOverride] = useState<string | null>(null);
 
+  // Reads localStorage after mount — SSR has no localStorage, so this
+  // can't be a lazy useState initializer; the default values above match
+  // what's rendered on the server, and this effect reconciles them with
+  // the visitor's saved preference once mounted.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const storedOpacity = localStorage.getItem("arca-glass-opacity");
     if (storedOpacity) {
@@ -69,6 +74,7 @@ export function VibeProvider({ children }: { children: ReactNode }) {
     if (storedVibe && VALID_VIBES.includes(storedVibe)) setVibeState(storedVibe);
     setCustomImageUrlState(localStorage.getItem("arca-custom-image") ?? "");
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const setGlassOpacity = (o: number) => {
     setGlassOpacityState(o);
