@@ -776,6 +776,19 @@ html[data-arca-glow="off"] {
 }
 .arca-fade-in { animation: arca-fadeUp .35s cubic-bezier(.22,1,.36,1) both; }
 
+/* ── Loading skeletons (app/**/loading.tsx) ─────────────────────── */
+.arca-skeleton {
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-tint) 25%,
+    color-mix(in srgb, var(--bg-tint) 50%, var(--hairline-2)) 50%,
+    var(--bg-tint) 75%
+  );
+  background-size: 200% 100%;
+  animation: arca-shimmer 1.8s ease-in-out infinite;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    ARCA — Sheet drawer animations (Radix Dialog, data-state attrs)
    ═══════════════════════════════════════════════════════════════ */

@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.33.0] - Skeleton loading stavy pro dashboard
+Appka měla skoro žádné `loading.tsx`/Suspense pokrytí (1 výskyt v celé appce) — navigace mezi dashboard podstránkami dřív jen "visela" na bílé/prázdné obrazovce, než doběhl datový fetch.
+
+### Přidáno
+- `components/ui/Skeleton.tsx` — sdílený `Skeleton` primitiv + dva generické shellové layouty (`PageSkeleton` pro karty/grid, `FormSkeleton` pro formuláře), napojené na nový `.arca-skeleton` shimmer styl v `globals.css` (využívá existující, dosud nepoužitý `@keyframes arca-shimmer`).
+- `loading.tsx` pro všech 10 dashboard rout (`/dashboard`, `/dashboard/vault`, `/dashboard/vault/[personId]`, `/dashboard/calendar`, `/dashboard/guardians`, `/dashboard/blueprint`, `/dashboard/billing`, `/dashboard/settings`, `/dashboard/arca/new`, `/dashboard/arca/[id]/edit`).
+
+### Důležité omezení
+- Skeletony jsou **záměrně obecné** (hlavička + grid karet / stack polí), ne pixel-přesné kopie každé stránky — jde o to zabránit prázdné obrazovce a posunu layoutu, ne o 1:1 vizuální shodu. Nemohl jsem to ověřit v prohlížeči — lokální `DATABASE_URL`/Supabase auth je stále rozbité z incidentu s `vercel env pull`, takže nejde se přihlásit a projít dashboard naživo. Stojí za to zkontrolovat na Vercel preview deploymentu před mergem.
+- **`app/dashboard/layout.tsx` sám dělá blokující DB dotazy** (user, počty, recipients, skupiny) před vykreslením — `loading.tsx` na první (plné) načtení stránky nepomůže, protože layout se renderuje mimo Suspense hranici, kterou `loading.tsx` vytváří. Hlavní přínos je při **navigaci mezi podstránkami uvnitř dashboardu** (layout zůstává při životě, mění se jen `children`) — tam `loading.tsx` reálně naskočí. Zrychlení prvního načtení by vyžadovalo přesunout ty dotazy do vlastní streamované Suspense hranice v layoutu — mimo rozsah tohohle PR.
+
 ## [1.32.0] - Vercel Analytics + Speed Insights
 Appka dosud neměla žádnou viditelnost do reálného používání — nulová analytika, žádný přehled o Core Web Vitals v produkci.
 
