@@ -150,8 +150,10 @@ function VoiceRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
   // and back; without this, only the local previewSrc was reset on that
   // remount, so a recording that was still there internally looked lost —
   // the UI dropped back to the empty "start recording" state instead of
-  // showing playback.
+  // showing playback. Synchronizes state with an external resource (the
+  // object URL) that needs cleanup — a valid effect use, not derived state.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!blob) { setPreviewSrc(null); return; }
     const url = URL.createObjectURL(blob);
     setPreviewSrc(url);
@@ -265,6 +267,7 @@ function VideoRecorder({ blob, onChange }: { blob: Blob | null; onChange: (b: Bl
   // `blob` prop so switching to another "Forma" tab and back still shows
   // the recorded video instead of an empty recorder.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!blob) { setPreviewSrc(null); return; }
     const url = URL.createObjectURL(blob);
     setPreviewSrc(url);
@@ -369,14 +372,21 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
   const [urls, setUrls] = useState<string[]>([]);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
+  // Synchronizes state with an external resource (object URLs) that needs
+  // cleanup — a valid effect use, not derived state.
   useEffect(() => {
     const next = photos.map((f) => URL.createObjectURL(f));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrls(next);
     return () => { next.forEach((u) => URL.revokeObjectURL(u)); };
   }, [photos]);
 
-  // Close the lightbox if its photo got removed from elsewhere
+  // Close the lightbox if its photo got removed from elsewhere. Defensive,
+  // not strictly load-bearing — the render guard at `photos[openIndex]`
+  // below already no-ops a stale index, this just prevents the lightbox
+  // from silently reappearing if photos are re-added back up to that count.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (openIndex !== null && openIndex >= photos.length) setOpenIndex(null);
   }, [photos.length, openIndex]);
 
@@ -642,8 +652,11 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
   const [photos, setPhotos] = useState<File[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
 
-  // Sync date from URL param — handles App Router component reuse across navigations
+  // Sync date from URL param — handles App Router component reuse across
+  // navigations, so `prefilledDate` can genuinely change post-mount; a
+  // lazy useState initializer (which only ever runs once) can't track that.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (prefilledDate) setDateVal(prefilledDate);
   }, [prefilledDate]);
 
@@ -688,6 +701,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
     if (trigger !== "age" || !primaryBirthdayIso) return;
     const birthday = parseISODate(primaryBirthdayIso);
     if (!isFutureDate(computeAgeMilestoneDate(birthday, targetAge))) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTargetAge(nextValidTargetAge(birthday));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

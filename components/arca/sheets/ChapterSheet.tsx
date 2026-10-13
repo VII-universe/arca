@@ -227,7 +227,7 @@ function ChapterForm({ packId, initial, nextOrder, onSave, onCancel }: FormProps
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  const [tomorrow] = useState(() => new Date(Date.now() + 86400000).toISOString().split("T")[0]);
 
   const handleSave = () => {
     if (!title.trim()) { setError("Title is required."); return; }

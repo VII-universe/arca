@@ -106,6 +106,11 @@ function Sheet({
   const [error, setError] = useState<string | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
+  // Resets the form fields and focuses the title input whenever the sheet
+  // opens (for a new item or to edit a different one) — the focus call
+  // genuinely needs an effect (DOM must be mounted first); bundled with it
+  // here rather than split into a separate render-time state adjustment.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open) {
       setCategory(preCategory ?? editItem?.category as Category ?? "SUBSCRIPTION");
@@ -114,6 +119,7 @@ function Sheet({
       setTimeout(() => titleRef.current?.focus(), 80);
     }
   }, [open, preCategory, editItem]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Close on Escape
   useEffect(() => {

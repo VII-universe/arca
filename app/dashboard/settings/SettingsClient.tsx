@@ -24,6 +24,7 @@ interface Props {
     webhookSecret: string;
     settings: UserSettingsData | null;
   };
+  daysSinceActive: number;
 }
 
 type Tab = "profile" | "security" | "switch";
@@ -73,7 +74,7 @@ function Feedback({ msg }: { msg: { ok?: boolean; text: string } | null }) {
 
 // ── SettingsClient ────────────────────────────────────────────────────────────
 
-export default function SettingsClient({ user }: Props) {
+export default function SettingsClient({ user, daysSinceActive }: Props) {
   const t = useTranslations("Settings");
   const dateLocale = useLocale() === "cs" ? "cs-CZ" : "en-GB";
   const [tab, setTab] = useState<Tab>("profile");
@@ -99,9 +100,6 @@ export default function SettingsClient({ user }: Props) {
   const [switchMsg, setSwitchMsg] = useState<{ ok?: boolean; text: string } | null>(null);
 
   // Computed
-  const daysSinceActive = Math.floor(
-    (Date.now() - new Date(user.lastActiveAt).getTime()) / 86_400_000
-  );
   const daysUntilTrigger =
     switchEnabled && switchType === "INACTIVITY"
       ? Math.max(0, inactivityDays - daysSinceActive)

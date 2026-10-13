@@ -27,8 +27,11 @@ export default function RecipientManager({
   const [recipients, setRecipients] = useState(initialRecipients);
   const [showForm, setShowForm] = useState(initialRecipients.length === 0);
 
-  // Sync when Server Component re-renders after router.refresh()
+  // Sync when Server Component re-renders after router.refresh() — this
+  // component keeps its own copy of `recipients` for the add/remove UI,
+  // and needs to pick up the server's fresh list once a mutation commits.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecipients(initialRecipients);
   }, [initialRecipients]);
 

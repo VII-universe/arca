@@ -93,6 +93,11 @@ export default function AppearanceButton() {
   const bgFileRef = useRef<HTMLInputElement>(null);
   const bgUrlRef = useRef<HTMLInputElement>(null);
 
+  // Reads localStorage after mount to sync React state with what the
+  // flash-prevention inline script (app/layout.tsx) already applied
+  // directly to the DOM before first paint — a lazy useState initializer
+  // can't do this since localStorage doesn't exist during SSR.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setTheme((localStorage.getItem("arca.theme") as Theme | null) ?? "light");
     const savedAccent = (localStorage.getItem("arca.accent") as Accent | null) ?? "clay";
@@ -104,6 +109,7 @@ export default function AppearanceButton() {
     }
     setGlowOn((localStorage.getItem("arca.glow") ?? "on") !== "off");
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Close only when clicking outside BOTH the trigger and the panel
   useEffect(() => {
