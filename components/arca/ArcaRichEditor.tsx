@@ -370,6 +370,12 @@ function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps)
 
   return (
     <NodeViewWrapper as="div" style={{ ...alignStyle, display: "inline-block", maxWidth: "100%", position: "relative", lineHeight: 0, userSelect: "none" }}>
+      {/* Not a next/image candidate: `src` can be a `blob:` object URL
+          mid-upload (next/image can't load those at all), a user-pasted
+          external URL from any domain (via the toolbar's "insert from URL"),
+          or a Supabase signed URL — and the drag-resize/crop logic above
+          needs a direct, unwrapped <img> ref and DOM queries. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
         src={src}

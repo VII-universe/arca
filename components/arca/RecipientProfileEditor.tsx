@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useTransition, useCallback } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import { useTranslations, useLocale } from "next-intl";
 import { updateRecipientProfile, uploadRecipientAvatar, uploadRecipientCover, addMemory, deleteMemory } from "@/app/actions/recipients";
@@ -287,6 +288,9 @@ function MemoryAddSheet({
             }}
           >
             {preview ? (
+              // `preview` is a blob: object URL from URL.createObjectURL()
+              // (local file, not yet uploaded) — next/image can't load those.
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={preview} alt="" style={{ width: "100%", borderRadius: "var(--r-lg)", display: "block" }} />
             ) : (
               <>
@@ -363,7 +367,9 @@ function MemoryCard({
   return (
     <div className="arca-card" style={{ overflow: "hidden" }}>
       {memory.signedUrl && memory.mediaType === "image" && (
-        <img src={memory.signedUrl} alt={memory.title ?? ""} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+        <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+          <Image src={memory.signedUrl} alt={memory.title ?? ""} fill sizes="(max-width: 640px) 100vw, 400px" style={{ objectFit: "cover" }} />
+        </div>
       )}
       <div style={{ padding: "14px 16px" }}>
         {memory.title && <div style={{ fontWeight: 550, fontSize: 13.5, marginBottom: 4 }}>{memory.title}</div>}

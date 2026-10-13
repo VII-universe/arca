@@ -19,6 +19,25 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb",
     },
   },
+  images: {
+    remotePatterns: [
+      {
+        // Supabase Storage signed URLs for avatars/covers/memories/message
+        // media (recipient-avatars, memories, arca-media buckets). Scoped
+        // to the storage object path, not the whole supabase.co domain.
+        protocol: "https",
+        hostname: "**.supabase.co",
+        pathname: "/storage/v1/object/**",
+      },
+      {
+        // GIF picker previews (components/arca/GifPicker.tsx) — served
+        // `unoptimized` there anyway (see that file for why), but still
+        // needs to be allow-listed for next/image to load them at all.
+        protocol: "https",
+        hostname: "*.giphy.com",
+      },
+    ],
+  },
 };
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");

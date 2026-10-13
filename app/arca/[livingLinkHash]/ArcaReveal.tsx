@@ -260,6 +260,11 @@ function MediaBlock({ item }: { item: RevealContent }) {
   if (item.type === "FILE" && isImageKey(item.s3FileKey)) {
     return (
       <figure className="space-y-2">
+        {/* Full-width at the image's natural aspect ratio — intentional,
+            these are user-uploaded message attachments of arbitrary size,
+            and the DB doesn't store their dimensions. next/image needs
+            either a known width/height or a fixed-aspect `fill` container,
+            neither of which is available without cropping the photo. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.signedUrl}

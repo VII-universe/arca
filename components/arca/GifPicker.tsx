@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { Popover } from "radix-ui";
 import { Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -141,12 +142,16 @@ export default function GifPicker({ onSelect }: Props) {
                     }}
                     className="relative rounded-lg overflow-hidden bg-zinc-800 hover:ring-2 hover:ring-primary/60 transition-all aspect-square"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={gif.preview}
                       alt={gif.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
+                      fill
+                      sizes="(max-width: 480px) 33vw, 100px"
+                      className="object-cover"
+                      // GIPHY already serves an appropriately-sized webp/gif
+                      // preview — running it through next/image's optimizer
+                      // would flatten the animation to a single static frame.
+                      unoptimized
                     />
                   </button>
                 ))}

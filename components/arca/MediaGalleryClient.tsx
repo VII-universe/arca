@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { deleteMedia } from "@/app/actions/arca";
 
@@ -102,14 +103,15 @@ function MediaCard({
       ].join(" ")}
     >
       {/* Preview area */}
-      <div className="aspect-[4/3] flex items-center justify-center overflow-hidden bg-neutral-900/80">
+      <div className="relative aspect-[4/3] flex items-center justify-center overflow-hidden bg-neutral-900/80">
         {item.signedUrl && isImage(item.s3FileKey) ? (
           // Image thumbnail
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={item.signedUrl}
             alt={filename}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 640px) 50vw, 200px"
+            className="object-cover"
           />
         ) : item.signedUrl && isAudio(item.s3FileKey) ? (
           // Inline audio player
