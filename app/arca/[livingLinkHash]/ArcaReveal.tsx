@@ -277,7 +277,6 @@ function MediaBlock({ item }: { item: RevealContent }) {
   if (item.type === "VIDEO") {
     return (
       <figure className="space-y-2">
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           controls
           src={item.signedUrl}
@@ -297,7 +296,6 @@ function MediaBlock({ item }: { item: RevealContent }) {
           <span className="text-muted-foreground text-lg">♪</span>
           <p className="text-sm text-muted-foreground truncate flex-1">{filename}</p>
         </div>
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <audio controls src={item.signedUrl} className="w-full" />
       </div>
     );

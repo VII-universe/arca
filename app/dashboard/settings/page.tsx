@@ -28,7 +28,6 @@ export default async function SettingsPage() {
   // userSettings may not exist if Prisma client is stale (restart dev server to fix)
   let userSettings = null;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     userSettings = await (prisma as any).userSettings?.findUnique?.({ where: { userId: user.id } }) ?? null;
   } catch {
     // ignore — page renders without switch settings until server restarts

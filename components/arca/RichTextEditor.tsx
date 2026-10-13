@@ -192,7 +192,7 @@ function Toolbar({
         isActive={editor.isActive("blockquote")}
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
       >
-        <span className="text-base leading-none">"</span>
+        <span className="text-base leading-none">&quot;</span>
       </Btn>
 
       <Sep />

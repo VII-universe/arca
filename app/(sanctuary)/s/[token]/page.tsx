@@ -49,7 +49,7 @@ function SanctuarySealed({ status }: { status: string }) {
         margin: 0,
         opacity: 0.5,
       }}>
-        This link isn't active yet.
+        This link isn&apos;t active yet.
       </p>
     </div>
   );

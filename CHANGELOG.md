@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.26.0] - ESLint setup
+### Přidáno
+- `eslint.config.mjs` (flat config) + `eslint-config-next` — appka dosud neměla vůbec nakonfigurovaný lint. Next.js 16 vlastní `next lint` příkaz zrušil, takže přímo přes `eslint-config-next`'s nativní flat-config export (žádný `FlatCompat`/legacy most potřeba — `eslint-config-next@16` ho sám exportuje jako pole).
+- `npm run lint` (`eslint .`) doplněn do `.github/workflows/ci.yml` jako čtvrtý krok CI gatu (#37), vedle typecheck/build/testů.
+
+### Opraveno
+- Prvních ~15 nálezů: neescapované uvozovky v JSX textu (`react/no-unescaped-entities`, mechanická oprava), 4 mrtvé `eslint-disable` komentáře pro pravidlo, co se v nové konfiguraci vůbec nespouští (`jsx-a11y/media-has-caption`), a jeden skutečný `rules-of-hooks` nález — `VaultClient.tsx` mělo funkci `usePreset()`, kterou ESLint podezíral z Reactího hooku jen kvůli jménu (false positive z pojmenovací kolize, ne `useState`/`useEffect` uvnitř). Přejmenováno na `applyPreset`.
+
+### Vědomě ponecháno jako warning, ne error
+- `react-hooks/set-state-in-effect`, `react-hooks/purity`, `react-hooks/static-components` — nová pravidla v `eslint-config-next@16` připravující na React Compiler. Odhalila reálný, ale rozšířený vzor napříč ~14 soubory (`AppearanceButton.tsx`, `DashboardShell.tsx`, `vibe-context.tsx`, `ComposeWizard.tsx`, …): čtení z `localStorage` uvnitř `useEffect` + synchronní `setState`, a komponenty definované uvnitř render těla rodiče. Skutečné nálezy, ne false positives — ale oprava každého znamená restrukturalizaci (lazy `useState` inicializéry, vytažení inline komponent ven), což potřebuje individuální review a test, ne hromadný commit v rámci "zapoj lint" úkolu. Staženo na `warn` (vidět v `npm run lint`, nerozbíjí CI), dokud se na to nedojde jako na samostatný kus práce.
+
 ## [1.25.0] - i18n: dokončen celý zbývající rozsah (e-maily + metadata layoutu)
 ### Opraveno
 - `emails/SanctuaryInvitation.tsx` — jediná ze 4 transakčních e-mailových šablon, která byla celá hardcoded česky (`lang="cs"`), zatímco zbylé 3 (`ArcaDeliveryEmail`/`GracePeriodWarningEmail`/`GuardianAlertEmail`) už byly plně anglicky (recipient-facing, stejná konvence jako `/arca/[hash]`). Navíc tenhle e-mail vede přímo na `/(sanctuary)/s/[token]`, kterou PR #39 právě přeložil na angličtinu — česky psaný e-mail vedoucí na anglickou stránku by byl nová nekonzistence. Přeloženo (`lang="en"`), stejně tak e-mailový `subject` v `app/actions/delivery.ts`.

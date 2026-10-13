@@ -89,7 +89,7 @@ export default async function BillingPage({
         {canceled && (
           <div className="rounded-2xl border border-border/40 bg-muted/20 px-6 py-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Checkout was cancelled. Your plan hasn't changed.
+              Checkout was cancelled. Your plan hasn&apos;t changed.
             </p>
           </div>
         )}

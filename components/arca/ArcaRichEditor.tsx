@@ -925,7 +925,7 @@ const ArcaRichEditor = forwardRef<ArcaRichEditorHandle, ArcaRichEditorProps>(fun
           <em style={{ fontFamily: "var(--f-serif)", fontSize: 14 }}>I</em>
         </ToolBtn>
         <ToolBtn title={t("toolbar.quote")} onClick={() => editor?.chain().focus().toggleBlockquote().run()} active={editor?.isActive("blockquote")}>
-          <span style={{ fontSize: 16 }}>"</span>
+          <span style={{ fontSize: 16 }}>&quot;</span>
         </ToolBtn>
         <TDivider />
         <ToolBtn title={t("toolbar.insertImageFile")} onClick={() => fileInputRef.current?.click()}>

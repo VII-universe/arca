@@ -111,7 +111,6 @@ function MediaItem({ item }: { item: SanctuaryContent }) {
   if (item.type === "VIDEO") {
     return (
       <figure style={{ margin: "36px 0" }}>
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           controls
           src={item.signedUrl}
@@ -130,7 +129,6 @@ function MediaItem({ item }: { item: SanctuaryContent }) {
         <p style={{ fontSize: 13, color: "#a1a1aa", fontFamily: "var(--font-inter), sans-serif", margin: "0 0 12px" }}>
           ♪ {filename}
         </p>
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <audio controls src={item.signedUrl} style={{ width: "100%" }} />
       </div>
     );
@@ -188,10 +186,8 @@ function MemoryAV({ memory }: { memory: SanctuaryMemory }) {
   return (
     <div style={{ margin: "20px 0", border: "1px solid rgba(245,240,223,0.07)", borderRadius: 8, overflow: "hidden" }}>
       {isVideo
-        ? /* eslint-disable-next-line jsx-a11y/media-has-caption */
-          <video controls src={memory.signedUrl!} style={{ width: "100%", background: "#111" }} />
-        : /* eslint-disable-next-line jsx-a11y/media-has-caption */
-          <div style={{ padding: "20px 24px" }}>
+        ? <video controls src={memory.signedUrl!} style={{ width: "100%", background: "#111" }} />
+        : <div style={{ padding: "20px 24px" }}>
             <p style={{ fontSize: 12, color: "#a1a1aa", fontFamily: "var(--font-inter), sans-serif", margin: "0 0 12px" }}>
               ♪ {memory.title ?? "Recording"}
             </p>
