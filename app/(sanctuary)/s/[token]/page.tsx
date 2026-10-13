@@ -9,10 +9,11 @@ export const metadata = { robots: "noindex, nofollow" };
 // ── Sealed screen ─────────────────────────────────────────────────────────────
 
 function SanctuarySealed({ status }: { status: string }) {
+  // No DELIVERED case — getSanctuaryContent treats TRIGGERED and DELIVERED
+  // as the same "open" state, so this component never receives it.
   const label =
     status === "DRAFT"     ? "This message hasn't been sent yet." :
     status === "ARCHIVED"  ? "This message has been archived." :
-    status === "DELIVERED" ? "This message has been delivered." :
     "This message hasn't been activated yet.";
 
   return (

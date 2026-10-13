@@ -16,10 +16,9 @@ const STATE: Record<
     headline: "Almost time.",
     body: "This Arca is preparing itself for delivery. You may receive it very soon.",
   },
-  DELIVERED: {
-    headline: "Already delivered.",
-    body: "This message has been delivered. If you believe you received it in error, please contact the person who sent it to you.",
-  },
+  // No DELIVERED entry — the caller (page.tsx) now treats TRIGGERED and
+  // DELIVERED as the same "unsealed, show the content" state, so this
+  // component never actually receives status: "DELIVERED".
   ARCHIVED: {
     headline: "No longer available.",
     body: "This Arca has been archived and can no longer be accessed.",
