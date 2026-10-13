@@ -3,7 +3,17 @@
 // (to verify it). Lives outside app/actions/ so it can be imported from both.
 import { createHmac } from "crypto";
 
-const key = () => process.env.CRON_SECRET ?? "dev-signing-key-replace-in-prod";
+// This key gates the challenge-question unlock cookie for delivered Arcas —
+// it must never silently fall back to a value anyone can read in this (public)
+// source file. Only dev/test environments get the placeholder; production
+// fails loudly instead of fail-opening to a guessable key.
+const key = () => {
+  if (process.env.CRON_SECRET) return process.env.CRON_SECRET;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("CRON_SECRET must be set in production — it also signs the Arca unlock token.");
+  }
+  return "dev-signing-key-replace-in-prod";
+};
 
 export function signUnlockToken(packId: string): string {
   return createHmac("sha256", key())

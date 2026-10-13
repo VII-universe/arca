@@ -40,6 +40,14 @@ export async function assignCategory(packId: string, categoryId: string | null) 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
+  if (categoryId) {
+    const category = await prisma.category.findFirst({
+      where: { id: categoryId, userId: user.id },
+      select: { id: true },
+    });
+    if (!category) throw new Error("Category not found");
+  }
+
   await prisma.messagePack.updateMany({
     where: { id: packId, ownerId: user.id },
     data: { categoryId },
