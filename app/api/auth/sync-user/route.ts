@@ -29,7 +29,11 @@ async function syncUser() {
 
 // GET — handles browser redirects (e.g. after email confirmation)
 export async function GET(request: NextRequest) {
-  const next = request.nextUrl.searchParams.get("next") ?? "/dashboard";
+  // Open-redirect guard: `next` must be a same-site relative path, never an
+  // absolute URL (e.g. "https://evil.example") — `new URL(next, base)` lets
+  // an absolute `next` override `base` entirely and send the user off-site.
+  const rawNext = request.nextUrl.searchParams.get("next") ?? "/dashboard";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard";
   const user = await syncUser();
 
   if (!user) {

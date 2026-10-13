@@ -128,6 +128,13 @@ export async function uploadRecipientCover(
 ): Promise<{ ok: true; coverUrl: string } | { error: string }> {
   const user = await requireUser();
   if (!user) return { error: "Unauthorized" };
+
+  const recipient = await prisma.recipient.findFirst({
+    where: { id: recipientId, messagePack: { ownerId: user.id } },
+    select: { id: true },
+  });
+  if (!recipient) return { error: "Příjemce nenalezen." };
+
   const file = formData.get("file") as File | null;
   if (!file) return { error: "Soubor chybí." };
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -140,6 +147,8 @@ export async function uploadRecipientCover(
 }
 
 export async function getSignedCoverUrl(path: string): Promise<string | null> {
+  const user = await requireUser();
+  if (!user || !path.startsWith(`${user.id}/`)) return null;
   const { data } = await supabaseAdmin.storage.from("recipient-avatars").createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
 }
@@ -228,10 +237,14 @@ export async function deleteMemory(
 }
 
 // ─── getSignedAvatarUrl ───────────────────────────────────────────────────────
-// Server-side helper for generating signed URLs. Not exported as action,
-// called directly from Server Components.
+// Called directly from Server Components. Still a "use server" export, so
+// it's technically a callable action endpoint — scope it by path prefix the
+// same way addMediaContent (arca.ts) does, rather than relying on it never
+// being referenced from a Client Component.
 
 export async function getSignedAvatarUrl(path: string): Promise<string | null> {
+  const user = await requireUser();
+  if (!user || !path.startsWith(`${user.id}/`)) return null;
   const { data } = await supabaseAdmin.storage
     .from("recipient-avatars")
     .createSignedUrl(path, 60 * 60); // 1 hour
@@ -239,6 +252,8 @@ export async function getSignedAvatarUrl(path: string): Promise<string | null> {
 }
 
 export async function getSignedMemoryUrl(path: string): Promise<string | null> {
+  const user = await requireUser();
+  if (!user || !path.startsWith(`${user.id}/`)) return null;
   const { data } = await supabaseAdmin.storage
     .from("memories")
     .createSignedUrl(path, 60 * 60);
