@@ -1182,5 +1182,32 @@
       "title": "Neplatný odkaz.",
       "body": "Tento odkaz není platný. Mohl být nesprávně zkopírován nebo už byl odstraněn."
     }
+  },
+  "GuardianAction": {
+    "already_used": {
+      "title": "Již použito.",
+      "body": "Tento odkaz už byl použit. Není potřeba nic dalšího dělat."
+    },
+    "expired": {
+      "title": "Odkaz vypršel.",
+      "body": "Platnost tohoto strážcovského odkazu vypršela. Pokud je stále potřeba jednat, kontaktuj prosím přímo majitele Archy."
+    },
+    "invalid": {
+      "title": "Neplatný odkaz.",
+      "body": "Tento odkaz není platný. Mohl být nesprávně zkopírován nebo už byl odstraněn."
+    },
+    "recipientsLabel": "Bude doručeno",
+    "aiSummaryPrefix": "Zkráceně:",
+    "confirmAlive": {
+      "title": "Potvrdit, že {ownerName} je v pořádku?",
+      "body": "Tím se zruší plánované doručení \"{packTitle}\" a resetuje se časovač neaktivity {ownerName}.",
+      "button": "Ano, je v pořádku — zrušit doručení"
+    },
+    "confirmRelease": {
+      "title": "Uvolnit \"{packTitle}\" hned?",
+      "body": "{ownerName} ti svěřil/a tohle rozhodnutí. Potvrzením se Archa okamžitě doručí.",
+      "warning": "Tohle nelze vzít zpět. Potvrď jen pokud jsi si jistý/á, že situace to vyžaduje.",
+      "button": "Ano, uvolnit Archu hned"
+    }
   }
 }

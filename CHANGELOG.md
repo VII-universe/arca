@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.40.0] - Feature: AI shrnutí pro strážce + oprava skutečné bezpečnostní díry
+Pátá položka z feature backlogu. Při zkoumání se ukázalo, že původní zadání ("AI shrne strážci, co se spustí, než potvrdí") narazí na reálný problém: appka dosud neměla žádný potvrzovací mezikrok vůbec — odkaz v e-mailu (GET) spouštěl nevratnou akci okamžitě při kliknutí, bez jakéhokoli "opravdu chceš?" kroku.
+
+### Opraveno — bezpečnostní díra
+- **GET odkaz s vedlejším efektem = zranitelnost vůči e-mailovým skenerům.** Outlook Safe Links, Gmail a další bezpečnostní skenery běžně navštěvují (prefetchují) všechny odkazy v e-mailu kvůli kontrole na malware — to mohlo spustit **nevratné doručení Archy** samo, aniž by strážce cokoliv klikl.
+- Mutující logika (`CONFIRM_ALIVE`/`RELEASE`) přesunuta z `GET /api/guardians/action` do nového Server Action `confirmGuardianAction` (`app/actions/guardian.ts`) — spouští se jen z reálného kliknutí na potvrzovací tlačítko (POST, Next.js Server Action, originem chráněný frameworkem).
+- `GET /api/guardians/action` teď jen bezpečně přesměruje na novou potvrzovací stránku — zachovává zpětnou kompatibilitu s odkazy v už odeslaných e-mailech (72h okno platnosti tokenu).
+
+### Přidáno
+- `app/guardian/action/page.tsx` — nová potvrzovací stránka. Čistě read-only GET lookup (`getGuardianActionPreview`, bezpečný pro prefetch), zobrazí **deterministické, vždy správné** fakty (vlastník, název zprávy, příjemci, typ akce) a teprve pak AI shrnutí jako doplněk.
+- `lib/ai/guardian-summary.ts` — AI vygeneruje jednu větu lidsky shrnující, co se stane. **Záměrně nikdy není jediným zdrojem pravdy** — fakta na stránce jsou vždy natvrdo vyrenderovaná appkou, AI je jen doplňková parafráze s fallbackem na nic (když AI selže, sekce se jednoduše nezobrazí, stránka zůstává plně funkční).
+- `GuardianAction` překladový namespace (cs/en), parametrizovaný jmény vlastníka/příjemců.
+
+### Ověřeno
+- Živě otestováno: stránka bez tokenu správně zobrazí "Neplatný odkaz". AI shrnutí živě ověřeno pro obě akce (`CONFIRM_ALIVE`/`RELEASE`) v obou jazycích přes dočasnou debug route — výstup správně zachovává jména příjemců a nevymýšlí si fakta.
+- Netestováno end-to-end s reálným tokenem z DB (lokální `DATABASE_URL` stále rozbité) — Server Action logika je 1:1 přenesená z už fungující staré GET route, jen přesunutá za potvrzovací krok.
+
 ## [1.39.0] - Feature: AI kontrola kompletnosti Blueprintu
 Čtvrtá položka z feature backlogu. Na stránce "Manuál k životu" (Blueprint) přibylo tlačítko "Zkontrolovat přes AI" — AI navrhne až 5 běžně opomíjených položek (banka, pojištění, mazlíček, přístup k e-mailu...), co uživatel pravděpodobně zapomněl přidat.
 

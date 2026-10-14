@@ -248,8 +248,8 @@ export async function GET(request: NextRequest) {
                 guardianName: guardian.name,
                 ownerName: pack.owner?.name ?? "the owner",
                 packTitle: pack.title,
-                confirmAliveUrl: `${APP_URL}/api/guardians/action?token=${confirmToken.token}`,
-                releaseUrl: `${APP_URL}/api/guardians/action?token=${releaseToken.token}`,
+                confirmAliveUrl: `${APP_URL}/guardian/action?token=${confirmToken.token}`,
+                releaseUrl: `${APP_URL}/guardian/action?token=${releaseToken.token}`,
                 expiresInHours: 72,
               })
             );
