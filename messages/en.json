@@ -1060,6 +1060,13 @@
       "genericError": "Error.",
       "connectionError": "Couldn't connect to the AI.",
       "privacyDisclaimer": "Text from this field is processed anonymously by an AI model to generate inspiration and isn't stored on our servers.",
+      "rewrite": {
+        "heading": "Already have a draft? Try a different tone",
+        "formal": "More formal",
+        "warm": "Warmer",
+        "short": "Shorter",
+        "generating": "Rewriting…"
+      },
       "occasions": {
         "birthday": "Birthday",
         "thanks": "Thank you",
