@@ -199,6 +199,15 @@ model MessagePack {
   // Nullable until the user configures a delivery trigger
   triggerCondition TriggerCondition?
 
+  // Co-authoring — someone the owner invites (via a shareable link, not
+  // necessarily an app user) adds their own words to this message. Kept as
+  // its own model rather than another MessageContent row: upsertContent
+  // does `findFirst({ type: TEXT })` and overwrites whatever it finds,
+  // which would silently clobber a contributor's text (or vice versa) the
+  // next time the owner saves their own edits.
+  contributions       Contribution[]
+  contributionInvites ContributionInvite[]
+
   // Fáze 2: "Odpověz svému minulému já" / roční rituál — obojí je ve
   // skutečnosti jen řetězec zpráv. Odpověď je normální MessagePack, který
   // odkazuje zpět na zprávu, na kterou reaguje. onDelete: SetNull — smazání
@@ -551,4 +560,40 @@ model UserSettings {
   updatedAt DateTime @updatedAt
 
   @@index([switchEnabled, switchType])
+}
+
+// ---------------------------------------------------------------------------
+// Contribution + ContributionInvite  (co-authoring — someone else adds
+// their own words to a message, via a shareable link)
+// ---------------------------------------------------------------------------
+
+model Contribution {
+  id         String @id @default(cuid())
+  authorName String
+  content    String // plain text — deliberately not rich HTML, keeps the public contribute form simple
+
+  createdAt DateTime @default(now())
+
+  messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
+  messagePackId String
+
+  @@index([messagePackId])
+}
+
+model ContributionInvite {
+  id    String @id @default(cuid())
+  token String @unique @default(cuid())
+
+  // Single-use, same pattern as GuardianToken — the owner generates a new
+  // one per person they want to invite.
+  usedAt    DateTime?
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  messagePack   MessagePack @relation(fields: [messagePackId], references: [id], onDelete: Cascade)
+  messagePackId String
+
+  @@index([token])
+  @@index([messagePackId])
 }

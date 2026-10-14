@@ -31,6 +31,7 @@ export const PDF_COPY = {
     packCount: (n: number) => `${n} ${n === 1 ? "zpráva" : n < 5 ? "zprávy" : "zpráv"}`,
     audioTranscript: "Přepis hlasové zprávy:",
     videoTranscript: "Přepis video zprávy:",
+    contributionFrom: (name: string) => `Od ${name}:`,
     dateLocale: "cs-CZ",
   },
   en: {
@@ -46,6 +47,7 @@ export const PDF_COPY = {
     packCount: (n: number) => `${n} ${n === 1 ? "message" : "messages"}`,
     audioTranscript: "Transcript of voice message:",
     videoTranscript: "Transcript of video message:",
+    contributionFrom: (name: string) => `From ${name}:`,
     dateLocale: "en-GB",
   },
 } as const;
@@ -71,6 +73,17 @@ export function buildMainParagraphs(contents: ContentSource[], copy: PdfCopy): s
     if (c.type === "VIDEO") return [copy.videoTranscript, c.transcript];
     return [];
   });
+}
+
+interface ContributionSource {
+  authorName: string;
+  content: string;
+}
+
+// Plain-text contributions (not HTML, unlike TEXT content — the public
+// contribute form is a plain textarea) labeled by author name.
+export function buildContributionParagraphs(contributions: ContributionSource[], copy: PdfCopy): string[] {
+  return contributions.flatMap((c) => [copy.contributionFrom(c.authorName), c.content]);
 }
 
 interface ChapterSource {

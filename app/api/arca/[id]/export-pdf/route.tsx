@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { LegacyBookDocument, type LegacyBookData } from "@/lib/pdf/LegacyBookDocument";
-import { resolvePdfLocale, PDF_COPY, buildChapterSections, buildMainParagraphs } from "@/lib/pdf/pdf-copy";
+import { resolvePdfLocale, PDF_COPY, buildChapterSections, buildMainParagraphs, buildContributionParagraphs } from "@/lib/pdf/pdf-copy";
 import { APP_URL } from "@/lib/resend";
 
 export async function GET(
@@ -35,6 +35,10 @@ export async function GET(
         select: { title: true, content: true, unlockDate: true, unlockDelayDays: true },
       },
       triggerCondition: { select: { triggeredAt: true } },
+      contributions: {
+        orderBy: { createdAt: "asc" },
+        select: { authorName: true, content: true },
+      },
     },
   });
 
@@ -45,7 +49,10 @@ export async function GET(
   const locale = await resolvePdfLocale(pack.owner.locale);
   const copy = PDF_COPY[locale];
 
-  const mainParagraphs = buildMainParagraphs(pack.contents, copy);
+  const mainParagraphs = [
+    ...buildMainParagraphs(pack.contents, copy),
+    ...buildContributionParagraphs(pack.contributions, copy),
+  ];
   const chapters = buildChapterSections(pack.chapters, pack.triggerCondition?.triggeredAt ?? null, copy);
 
   const livingLinkUrl = `${APP_URL}/arca/${pack.livingLinkHash}`;

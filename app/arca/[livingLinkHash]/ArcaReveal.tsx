@@ -25,10 +25,17 @@ export interface ThreadLink {
   livingLinkHash: string;
 }
 
+export interface RevealContribution {
+  id: string;
+  authorName: string;
+  content: string;
+}
+
 interface Props {
   packId: string;
   livingLinkHash: string;
   ownerName: string;
+  contributions?: RevealContribution[];
   packType: "EMOTIONAL" | "PRACTICAL";
   isSelf: boolean;
   createdAt: Date;
@@ -69,6 +76,7 @@ export default function ArcaReveal({
   packId,
   livingLinkHash,
   ownerName,
+  contributions = [],
   packType,
   isSelf,
   createdAt,
@@ -140,6 +148,23 @@ export default function ArcaReveal({
                 <MediaBlock key={item.id} item={item} />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── Contributions from others ───────────────────────────────── */}
+        {contributions.length > 0 && (
+          <div className="mt-16 space-y-8 border-t border-border/50 pt-12">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/40">
+              Also from
+            </p>
+            {contributions.map((c) => (
+              <div key={c.id} className="space-y-2">
+                <p className="text-xs text-muted-foreground/60 font-medium">{c.authorName}</p>
+                <p className="font-serif text-base font-light leading-[1.85] text-zinc-300 whitespace-pre-wrap">
+                  {c.content}
+                </p>
+              </div>
+            ))}
           </div>
         )}
 

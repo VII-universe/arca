@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.49.0] - Feature: spoluautorství zprávy
+Pátá a poslední položka z druhé vlny feature backlogu. Vlastník zprávy teď může pozvat někoho dalšího (ne nutně příjemce), aby ke zprávě přidal vlastní slova — odkazem, bez nutnosti účtu.
+
+### Architektonické zjištění
+Appka má v datovém modelu přesně jeden textový blok na zprávu — `upsertContent` dělá `findFirst({ type: TEXT })` a přepíše, co najde. Přidat příspěvek jako druhý `MessageContent` s typem `TEXT` by znamenalo reálné riziko, že vlastníkovo příští uložení přepíše cizí příspěvek (nebo naopak). Řešení: samostatné modely `Contribution` + `ContributionInvite`, nic se nedotýká existující `upsertContent`/compose/PDF logiky kolem `TEXT` obsahu.
+
+### Přidáno
+- `prisma/schema.prisma` — nové modely `Contribution` (autor + text) a `ContributionInvite` (jednorázový token, stejný vzor jako `GuardianToken`, 72h platnost). Hand-written migrace (lokální DB stále rozbitá).
+- `app/actions/contribution.ts` — `createContributionInvite` (vlastník, autentizováno) vygeneruje sdílený odkaz; `getContributionInvitePreview`/`submitContribution` (veřejné, bez přihlášení — přispěvatel není app uživatel, stejný bezpečnostní model jako strážci).
+- `app/contribute/[token]/page.tsx` — nová veřejná stránka s jednoduchým formulářem (jméno + text), přidáno do `proxy.ts` `PUBLIC_PREFIXES`.
+- UI v `ArcaEditorNew.tsx` — sekce "Pozvat spoluautora" s tlačítkem na vygenerování odkazu (kopírování do schránky) a seznamem už přidaných příspěvků.
+- Příspěvky se zobrazují i příjemci na `/arca/[hash]` (sekce "Also from"), a jsou zahrnuté v obou PDF exportech (jednotlivá zpráva i celý trezor), označené jménem autora.
+
+### Ověřeno
+- Typecheck, lint, build, testy (31/31) v pořádku.
+- **Na rozdíl od ostatních položek téhle session se nepodařilo tuhle funkci živě otestovat end-to-end** — `/contribute/[token]` na rozdíl od `/guardian/action` nemá žádnou cestu bez DB dotazu (token je povinný route parametr, i neplatný token potřebuje `findUnique` na ověření), takže s rozbitým lokálním `DATABASE_URL` jde jen potvrdit, že build/typecheck prochází a že kód strukturálně kopíruje už prověřený `GuardianToken` vzor (re-validace, jednorázovost, expirace). Stojí za to si tenhle flow ručně projít na produkci/preview po mergi.
+
 ## [1.48.0] - Chore: automatické nasazení Prisma migrací při produkčním buildu
 Opravuje opakující se problém z celé téhle session — hand-written migrace (Executor removal, `lastReminderSentAt`, `transcript`) se musely spouštět ručně přes `npx prisma migrate deploy`, protože nic v buildovacím pipeline to nedělalo samo. Teď už ano, natrvalo.
 

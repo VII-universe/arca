@@ -7,6 +7,7 @@ import Link from "next/link";
 import { upsertContent, updatePackTitle } from "@/app/actions/arca";
 import ArcaRichEditor, { type ArcaRichEditorHandle } from "./ArcaRichEditor";
 import { upsertTrigger, activatePack, cancelDelivery, addRecipient, removeRecipient } from "@/app/actions/delivery";
+import { createContributionInvite } from "@/app/actions/contribution";
 import AppearanceButton from "@/components/layout/AppearanceButton";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -54,6 +55,7 @@ export interface ArcaEditorNewProps {
   } | null;
   allContacts?: Contact[];
   contactGroups?: ContactGroup[];
+  initialContributions?: { id: string; authorName: string; content: string; createdAt: Date }[];
 }
 
 function Step({ n, label }: { n: string; label: string }) {
@@ -107,6 +109,7 @@ export default function ArcaEditorNew({
   initialBackgroundColor = null, initialTextColor = null,
   initialRecipients, initialTrigger,
   allContacts = [], contactGroups = [],
+  initialContributions = [],
 }: ArcaEditorNewProps) {
   const t = useTranslations("ArcaEditorNew");
   const dateLocale = useLocale() === "cs" ? "cs-CZ" : "en-GB";
@@ -114,6 +117,29 @@ export default function ArcaEditorNew({
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Co-authoring
+  const [contributions] = useState(initialContributions);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviting, setInviting] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
+
+  async function inviteCoAuthor() {
+    setInviting(true);
+    setInviteCopied(false);
+    const res = await createContributionInvite(packId);
+    if ("ok" in res) setInviteUrl(res.url);
+    setInviting(false);
+  }
+
+  async function copyInviteUrl() {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+    } catch { /* clipboard API unavailable — link is still visible to copy by hand */ }
+  }
 
   // Title
   const [title, setTitle] = useState(initialTitle);
@@ -460,6 +486,39 @@ export default function ArcaEditorNew({
                 textColor={txtColor}
                 onThemeChange={(bg, text) => { setBgColor(bg); setTxtColor(text); }}
               />
+            </div>
+
+            {/* Co-authoring */}
+            <div className="arca-card" style={{ padding: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t("contributions.title")}</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 1 }}>{t("contributions.subtitle")}</div>
+                </div>
+                <button type="button" onClick={inviteCoAuthor} disabled={inviting} className="arca-btn sm arca-btn--outline">
+                  {inviting ? t("contributions.inviting") : t("contributions.inviteBtn")}
+                </button>
+              </div>
+
+              {inviteUrl && (
+                <div style={{ marginTop: 14, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input readOnly value={inviteUrl} className="arca-input" style={{ flex: 1, minWidth: 220, fontSize: 12.5 }} onFocus={e => e.currentTarget.select()} />
+                  <button type="button" onClick={copyInviteUrl} className="arca-btn sm arca-btn--clay">
+                    {inviteCopied ? t("contributions.copied") : t("contributions.copyBtn")}
+                  </button>
+                </div>
+              )}
+
+              {contributions.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
+                  {contributions.map(c => (
+                    <div key={c.id} style={{ padding: "10px 14px", borderRadius: "var(--r-md)", background: "var(--surface-2)", border: "1px solid var(--hairline-2)" }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{c.authorName}</div>
+                      <div style={{ fontSize: 13, color: "var(--ink-2)", whiteSpace: "pre-wrap" }}>{c.content}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Step 04 – Trigger */}

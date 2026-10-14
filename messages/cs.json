@@ -1162,6 +1162,14 @@
     "sealAndActivate": "Zapečetit a aktivovat",
     "cancelDelivery": "Zrušit doručení",
     "exportPdf": "Exportovat do PDF",
+    "contributions": {
+      "title": "Pozvat spoluautora",
+      "subtitle": "Nech někoho jiného přidat ke zprávě vlastní slova.",
+      "inviteBtn": "Pozvat někoho",
+      "inviting": "Vytvářím odkaz…",
+      "copyBtn": "Zkopírovat odkaz",
+      "copied": "Zkopírováno!"
+    },
     "backToVault": "Zpět do schránky",
     "aiCta": {
       "title": "Nevíš, jak začít?",
@@ -1225,6 +1233,34 @@
       "body": "{ownerName} ti svěřil/a tohle rozhodnutí. Potvrzením se Archa okamžitě doručí.",
       "warning": "Tohle nelze vzít zpět. Potvrď jen pokud jsi si jistý/á, že situace to vyžaduje.",
       "button": "Ano, uvolnit Archu hned"
+    }
+  },
+  "Contribute": {
+    "already_used": {
+      "title": "Již použito.",
+      "body": "Tato pozvánka už byla použita. Není potřeba nic dalšího dělat."
+    },
+    "expired": {
+      "title": "Odkaz vypršel.",
+      "body": "Platnost téhle pozvánky vypršela. Pokud chceš pořád přispět, požádej o nový odkaz."
+    },
+    "invalid": {
+      "title": "Neplatný odkaz.",
+      "body": "Tento odkaz není platný. Mohl být nesprávně zkopírován nebo už byl odstraněn."
+    },
+    "done": {
+      "title": "Přidáno.",
+      "body": "Tvá slova byla přidána. Děkujeme, že jsi součástí téhle zprávy."
+    },
+    "form": {
+      "title": "Přidej svá slova k \"{packTitle}\"",
+      "body": "{ownerName} tě pozval/a, abys ke zprávě přidal/a něco od sebe.",
+      "nameLabel": "Tvoje jméno",
+      "namePlaceholder": "Tvoje jméno…",
+      "contentLabel": "Tvoje slova",
+      "contentPlaceholder": "Napiš, co bys chtěl/a přidat…",
+      "submit": "Přidat svá slova",
+      "error": "Vyplň prosím jméno i text."
     }
   }
 }

@@ -82,6 +82,10 @@ export default async function LivingLinkPage({
         orderBy: { createdAt: "desc" },
         select: { id: true, content: true, createdAt: true },
       },
+      contributions: {
+        orderBy: { createdAt: "asc" },
+        select: { id: true, authorName: true, content: true },
+      },
     },
   });
 
@@ -196,6 +200,7 @@ export default async function LivingLinkPage({
         createdAt={pack.createdAt}
         contents={contents}
         chapters={chapters}
+        contributions={pack.contributions}
         threadPrev={pack.replyToMessage}
         threadNext={pack.replies}
       />
