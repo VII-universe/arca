@@ -19,6 +19,12 @@ export interface BlueprintItem {
   updatedAt: Date;
 }
 
+interface BlueprintSuggestion {
+  category: Category;
+  title: string;
+  why: string;
+}
+
 // ── Category config ───────────────────────────────────────────────────────────
 
 const CATEGORY_META: { id: Category; color: string; icon: React.ReactNode }[] = [
@@ -84,16 +90,18 @@ const IcTrash  = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="non
 const IcAlert  = () => <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>;
 const IcCheck  = () => <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12l4 4 10-10"/></svg>;
 const IcSpin   = () => <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ animation: "arca-spin .8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
+const IcSparkle= () => <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>;
 
 // ── Sheet ─────────────────────────────────────────────────────────────────────
 
 function Sheet({
-  open, onClose, preCategory, editItem,
+  open, onClose, preCategory, preTitle, editItem,
   onCreated, onUpdated,
 }: {
   open: boolean;
   onClose: () => void;
   preCategory: Category | null;
+  preTitle: string | null;
   editItem: BlueprintItem | null;
   onCreated: (item: BlueprintItem) => void;
   onUpdated: (item: BlueprintItem) => void;
@@ -233,7 +241,7 @@ function Sheet({
               ref={titleRef}
               name="title"
               required
-              defaultValue={editItem?.title ?? ""}
+              defaultValue={editItem?.title ?? preTitle ?? ""}
               placeholder={t(`placeholders.title.${category}`)}
               className="arca-input"
               style={{ fontSize: 14 }}
@@ -433,19 +441,53 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
   const [items, setItems] = useState<BlueprintItem[]>(initialItems);
   const [sheetOpen, setSheetOpen]       = useState(false);
   const [preCategory, setPreCategory]   = useState<Category | null>(null);
+  const [preTitle, setPreTitle]         = useState<string | null>(null);
   const [editItem, setEditItem]         = useState<BlueprintItem | null>(null);
 
   const criticalItems = items.filter(i => i.isCritical);
 
-  function openNew(cat: Category | null = null) {
+  function openNew(cat: Category | null = null, title: string | null = null) {
     setEditItem(null);
     setPreCategory(cat);
+    setPreTitle(title);
     setSheetOpen(true);
   }
   function openEdit(item: BlueprintItem) {
     setEditItem(item);
     setPreCategory(null);
+    setPreTitle(null);
     setSheetOpen(true);
+  }
+
+  // ── AI completeness check ────────────────────────────────────────────────
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<BlueprintSuggestion[] | null>(null);
+
+  async function runAiCheck() {
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      // Only category + title ever leave the browser — never an item's
+      // content (that's where passwords/account numbers live).
+      const res = await fetch("/api/arca/ai-blueprint-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: items.map(i => ({ category: i.category, title: i.title })) }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setAiError(data.error ?? t("aiCheck.genericError")); return; }
+      setAiSuggestions(data.suggestions ?? []);
+    } catch {
+      setAiError(t("aiCheck.connectionError"));
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  function addSuggestion(s: BlueprintSuggestion) {
+    openNew(s.category, s.title);
+    setAiSuggestions(prev => prev?.filter(x => x !== s) ?? null);
   }
 
   const grouped = Object.fromEntries(
@@ -497,6 +539,53 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
           </div>
         </div>
       )}
+
+      {/* ── AI completeness check ─────────────────────────────── */}
+      <div className="arca-card" style={{ padding: "18px 20px", marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <span style={{
+            width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+            display: "grid", placeItems: "center",
+            background: "var(--gradient-primary)", color: "var(--on-accent)",
+          }}>
+            <IcSparkle />
+          </span>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>{t("aiCheck.title")}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 1 }}>{t("aiCheck.subtitle")}</div>
+          </div>
+          <button
+            type="button"
+            onClick={runAiCheck}
+            disabled={aiLoading}
+            className="arca-btn sm arca-btn--outline"
+          >
+            {aiLoading ? <><IcSpin /> {t("aiCheck.loading")}</> : t("aiCheck.button")}
+          </button>
+        </div>
+
+        {aiError && <p style={{ fontSize: 12.5, color: "#C0392B", margin: "12px 0 0" }}>{aiError}</p>}
+
+        {aiSuggestions && (
+          aiSuggestions.length === 0 ? (
+            <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "12px 0 0" }}>{t("aiCheck.empty")}</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
+              {aiSuggestions.map((s, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: "var(--r-md)", background: "var(--surface-2)", border: "1px solid var(--hairline-2)" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 550 }}>{s.title}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2 }}>{s.why}</div>
+                  </div>
+                  <button type="button" onClick={() => addSuggestion(s)} className="arca-btn sm arca-btn--clay" style={{ flexShrink: 0 }}>
+                    {t("aiCheck.addBtn")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+      </div>
 
       {/* ── Quick-add cards ────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
@@ -559,6 +648,7 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         preCategory={preCategory}
+        preTitle={preTitle}
         editItem={editItem}
         onCreated={item => setItems(prev => [...prev, item])}
         onUpdated={updated => setItems(prev => prev.map(i => i.id === updated.id ? updated : i))}

@@ -535,6 +535,16 @@
     "kicker": "Manuál k životu",
     "title": "Průvodce tvým světem pro ty, kdo to <em>budou potřebovat.</em>",
     "subtitle": "Ulož sem instrukce, smlouvy, běžící závazky a cokoliv, co by jinak nikdo nevěděl. Tvoji blízcí to najdou, až to bude potřeba — přehledně, krok za krokem.",
+    "aiCheck": {
+      "title": "AI kontrola úplnosti",
+      "subtitle": "Zjisti, co lidé obvykle zapomínají doplnit — posílají se jen názvy položek, nikdy obsah.",
+      "button": "Zkontrolovat přes AI",
+      "loading": "Kontroluji…",
+      "addBtn": "Přidat",
+      "empty": "Nic zjevného nechybí — vypadá to důkladně.",
+      "genericError": "Chyba.",
+      "connectionError": "Nepodařilo se spojit s AI."
+    },
     "itemsCount": "{count, plural, one {# položka} few {# položky} other {# položek}}",
     "urgentCount": "{count} urgentní",
     "reassurance": {

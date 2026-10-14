@@ -1,20 +1,16 @@
-// Shared OpenRouter call + response parsing for the app's AI features
-// (ai-assist compose, ai-rewrite tone variants). Both expect the same
-// "versions" JSON shape back from the model, so this is the one place that
-// knows how to talk to OpenRouter and unwrap its response.
+// Shared OpenRouter call + JSON response parsing for the app's AI features
+// (ai-assist compose, ai-rewrite tone variants, ai-blueprint-check). All of
+// them ask the model to return a single strict JSON object (shape varies
+// per feature) — this is the one place that knows how to talk to
+// OpenRouter and unwrap a markdown-fenced JSON response.
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "anthropic/claude-sonnet-5.5";
 
-export interface AIVersion {
-  label: string;
-  content: string;
-}
-
-export type OpenRouterVersionsResult =
-  | { ok: true; versions: AIVersion[] }
+export type OpenRouterJsonResult<T> =
+  | { ok: true; data: T }
   | { ok: false; reason: "connection" | "invalid_response" };
 
-export async function requestVersionsFromOpenRouter(prompt: string): Promise<OpenRouterVersionsResult> {
+export async function requestJsonFromOpenRouter<T>(prompt: string): Promise<OpenRouterJsonResult<T>> {
   let res: Response;
   try {
     res = await fetch(OPENROUTER_URL, {
@@ -44,10 +40,24 @@ export async function requestVersionsFromOpenRouter(prompt: string): Promise<Ope
   const cleaned = raw.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim();
 
   try {
-    const parsed = JSON.parse(cleaned) as { versions: AIVersion[] };
-    if (!Array.isArray(parsed.versions)) throw new Error("not an array");
-    return { ok: true, versions: parsed.versions };
+    return { ok: true, data: JSON.parse(cleaned) as T };
   } catch {
     return { ok: false, reason: "invalid_response" };
   }
+}
+
+export interface AIVersion {
+  label: string;
+  content: string;
+}
+
+export type OpenRouterVersionsResult =
+  | { ok: true; versions: AIVersion[] }
+  | { ok: false; reason: "connection" | "invalid_response" };
+
+export async function requestVersionsFromOpenRouter(prompt: string): Promise<OpenRouterVersionsResult> {
+  const result = await requestJsonFromOpenRouter<{ versions: AIVersion[] }>(prompt);
+  if (!result.ok) return result;
+  if (!Array.isArray(result.data.versions)) return { ok: false, reason: "invalid_response" };
+  return { ok: true, versions: result.data.versions };
 }

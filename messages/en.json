@@ -535,6 +535,16 @@
     "kicker": "Life Manual",
     "title": "A guide to your world for those who <em>will need it.</em>",
     "subtitle": "Save instructions, contracts, ongoing commitments, and anything else no one else would know. Your loved ones will find it when they need it — laid out clearly, step by step.",
+    "aiCheck": {
+      "title": "AI completeness check",
+      "subtitle": "See what people commonly forget to add — only item titles are sent, never the content.",
+      "button": "Check with AI",
+      "loading": "Checking…",
+      "addBtn": "Add",
+      "empty": "Nothing obvious missing — looks thorough.",
+      "genericError": "Error.",
+      "connectionError": "Couldn't connect to the AI."
+    },
     "itemsCount": "{count, plural, one {# item} other {# items}}",
     "urgentCount": "{count} urgent",
     "reassurance": {
