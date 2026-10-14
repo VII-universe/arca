@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.42.0] - Feature: hromadný import příjemců z CSV
+Sedmá a poslední položka ze schváleného feature backlogu. V kroku "příjemci" v Compose wizardu přibylo tlačítko "Importovat CSV" vedle ručního přidávání jednoho kontaktu — nahraje všechny řádky ze souboru najednou jako nové příjemce rozepsané zprávy.
+
+### Důležité zjištění o architektuře
+Appka nemá samostatnou tabulku/adresář kontaktů — `Recipient` existuje jen jako vedlejší produkt přidání do konkrétní zprávy, "seznam kontaktů" ve Vault je jen deduplikace napříč existujícími zprávami. Po diskuzi s uživatelem (AskUserQuestion) zvolen jednodušší, k architektuře appky konzistentní rozsah: CSV se importuje jako hromadné přidání příjemců do PRÁVĚ rozepsané zprávy (ne jako nový trvalý adresář, který by vyžadoval nový Prisma model a migraci).
+
+### Přidáno
+- `lib/csv.ts` — malý, cílený CSV parser (ne obecná knihovna). Očekává sloupce `name,email` v libovolném pořadí (email identifikován přítomností `@`), toleruje quotované pole s čárkami, automaticky detekuje a přeskočí hlavičkový řádek, deduplikuje podle e-mailu (case-insensitive).
+- `lib/csv.test.ts` — 8 jednotkových testů (hlavička, obrácené pořadí sloupců, quotované pole, chybějící jméno/e-mail, duplicity, prázdný vstup, extra sloupce navíc).
+- UI v `ComposeWizard.tsx` — skrytý file input + tlačítko, parsování proběhne čistě v prohlížeči (appka samotná CSV nikam neposílá). Import přeskočí kontakty, co jsou už vybrané/přidané (podle e-mailu), a ukáže toast se zprávou, kolik se přidalo / přeskočilo.
+
+### Ověřeno
+- Čistě deterministická klientská logika bez závislosti na externím API — pokryto 8 jednotkovými testy místo živého debug-route testu (na rozdíl od AI funkcí tady není co ověřovat živě).
+
 ## [1.41.0] - Feature: AI "rozhovor" pro psaní zprávy (guided interview)
 Šestá a největší položka z feature backlogu. V AI panelu editoru přibyl přepínač "Rychlé generování" / "Rozhovor s AI" — druhá varianta je skutečný víceturnový chat: AI postupně klade až 4 konkrétní otázky, adaptivně navazující na předchozí odpovědi, a z celého rozhovoru pak sestaví návrh zprávy.
 

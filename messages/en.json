@@ -765,7 +765,12 @@
       "groupsLabel": "Groups",
       "namePlaceholder": "Name *",
       "emailPlaceholder": "Email",
-      "addBtn": "Add"
+      "addBtn": "Add",
+      "csvImportBtn": "Import CSV",
+      "csvHint": "Columns: name, email",
+      "csvImported": "{count, plural, one {Added # contact} other {Added # contacts}}",
+      "csvSkipped": "{count, plural, one {Skipped # row (duplicate or invalid)} other {Skipped # rows (duplicates or invalid)}}",
+      "csvEmpty": "No valid contacts found in that file."
     },
     "trigger": {
       "date":     { "title": "On a specific day",     "sub": "An exact date and time." },
