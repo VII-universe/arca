@@ -4,8 +4,7 @@ import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { VaultBookDocument, type VaultBookData } from "@/lib/pdf/VaultBookDocument";
-import { htmlToParagraphs } from "@/lib/pdf/html-to-text";
-import { resolvePdfLocale, PDF_COPY, buildChapterSections } from "@/lib/pdf/pdf-copy";
+import { resolvePdfLocale, PDF_COPY, buildChapterSections, buildMainParagraphs } from "@/lib/pdf/pdf-copy";
 import { APP_URL } from "@/lib/resend";
 
 export async function GET(req: NextRequest) {
@@ -24,9 +23,9 @@ export async function GET(req: NextRequest) {
       livingLinkHash: true,
       recipients: { select: { name: true } },
       contents: {
-        where: { type: "TEXT" },
+        where: { type: { in: ["TEXT", "AUDIO", "VIDEO"] } },
         orderBy: { createdAt: "asc" },
-        select: { textBody: true },
+        select: { type: true, textBody: true, transcript: true },
       },
       chapters: {
         orderBy: { order: "asc" },
@@ -41,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   const packSections = await Promise.all(
     packs.map(async (pack) => {
-      const mainParagraphs = pack.contents.flatMap((c) => htmlToParagraphs(c.textBody));
+      const mainParagraphs = buildMainParagraphs(pack.contents, copy);
       const chapters = buildChapterSections(pack.chapters, pack.triggerCondition?.triggeredAt ?? null, copy);
       const livingLinkUrl = `${APP_URL}/arca/${pack.livingLinkHash}`;
       const qrCodeDataUrl = await QRCode.toDataURL(livingLinkUrl, { width: 200, margin: 1 }).catch((err) => {

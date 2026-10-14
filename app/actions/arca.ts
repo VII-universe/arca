@@ -4,9 +4,11 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { prisma } from "@/lib/prisma/client";
 import { PackType, ContentType, TriggerType, MessageMode, TriggerBasis } from "@/lib/prisma/generated";
 import { computeAgeMilestoneDate, computeRelativeOffsetDate, isFutureDate } from "@/lib/triggers/milestone";
+import { transcribeAudio, transcribeVideo } from "@/lib/ai/transcribe";
 
 function parseISODate(iso: string): Date {
   const [y, m, d] = iso.split("-").map(Number);
@@ -338,6 +340,34 @@ export async function addMediaContent(
     },
     select: { id: true },
   });
+
+  // Auto-transcribe audio/video so it has a textual representation
+  // (searchable, and otherwise the PDF export has nothing to show for a
+  // voice/video message at all). Awaited rather than fire-and-forget —
+  // serverless functions can be torn down once their response is sent, so
+  // background work here isn't reliable without a separate queue. A
+  // transcription failure never fails the upload itself; it just leaves
+  // transcript null.
+  if (contentType === "AUDIO" || contentType === "VIDEO") {
+    try {
+      const { data: signed } = await supabaseAdmin.storage
+        .from("arca-media")
+        .createSignedUrl(s3FileKey, 60 * 10);
+      if (signed?.signedUrl) {
+        const transcript = contentType === "AUDIO"
+          ? await transcribeAudio(signed.signedUrl, s3FileKey)
+          : await transcribeVideo(signed.signedUrl);
+        if (transcript) {
+          await prisma.messageContent.update({
+            where: { id: content.id },
+            data: { transcript },
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[addMediaContent] transcription failed:", err);
+    }
+  }
 
   return { ok: true, id: content.id };
 }
