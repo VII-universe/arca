@@ -23,6 +23,11 @@ const IcSparkle = () => (
     <path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/>
   </svg>
 );
+const IcDownload = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/>
+  </svg>
+);
 
 function Topbar({ crumb }: { crumb: string }) {
   return (
@@ -118,9 +123,14 @@ export default async function VaultPage({
             <div className="arca-kicker">{t("kicker")}</div>
             <h1 className="arca-h1" style={{ marginTop: 8 }}>{t.rich("title", { em: (chunks) => <em>{chunks}</em> })}</h1>
           </div>
-          <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary">
-            <IcPlus /> {t("newMessageBtn")}
-          </Link>
+          <div style={{ display: "flex", gap: 8 }}>
+            <a href="/api/arca/export-vault" className="arca-btn arca-btn--ghost">
+              <IcDownload /> {t("exportVaultBtn")}
+            </a>
+            <Link href="/dashboard/arca/new" className="arca-btn arca-btn--primary">
+              <IcPlus /> {t("newMessageBtn")}
+            </Link>
+          </div>
         </div>
 
         <p className="arca-sub" style={{ maxWidth: 540, marginBottom: 24 }}>

@@ -1,13 +1,5 @@
-import { Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
-import path from "path";
-
-Font.register({
-  family: "NotoSans",
-  fonts: [
-    { src: path.join(process.cwd(), "lib/pdf/fonts/NotoSans-Regular.ttf"), fontWeight: "normal" },
-    { src: path.join(process.cwd(), "lib/pdf/fonts/NotoSans-Bold.ttf"), fontWeight: "bold" },
-  ],
-});
+import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import "./fonts";
 
 export interface LegacyBookChapter {
   title: string;
