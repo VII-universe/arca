@@ -139,6 +139,7 @@
   },
   "Vault": {
     "kicker": "Schránka",
+    "close": "Zavřít",
     "title": "Komu zanecháváš <em>stopu.</em>",
     "subtitle": "Každý člověk má vlastní schránku. Otevři kohokoli a uvidíš zprávy, fotky a vzpomínky, které ho jednou najdou.",
     "newMessageBtn": "Nová zpráva",
@@ -239,6 +240,7 @@
       "noRecipients": "Zatím žádní příjemci. Přidej je přes editor zprávy."
     },
     "detail": {
+      "close": "Zavřít",
       "status": {
         "draft": "Návrh",
         "scheduled": "Naplánováno",
@@ -376,6 +378,7 @@
   },
   "Calendar": {
     "kicker": "Kalendář",
+    "close": "Zavřít",
     "title": "Okamžiky, které <em>se vrátí.</em>",
     "subtitle": "Narozeniny, výročí, dny, kdy chceš, aby tě někdo slyšel. Klikni na libovolný den a přidej zprávu, která tam jednou přistane.",
     "newMessageBtn": "Nová zpráva",
@@ -748,6 +751,7 @@
     "recipient": {
       "alreadyAdded": "Ty sama jsi v seznamu",
       "addMyself": "Přidat sebe jako příjemce",
+      "remove": "Odebrat {name}",
       "groupsLabel": "Skupiny",
       "namePlaceholder": "Jméno *",
       "emailPlaceholder": "E-mail",
@@ -788,6 +792,7 @@
     },
     "preview": {
       "title": "Náhled doručení",
+      "toggle": "Přepnout náhled",
       "for": "Pro {name}",
       "fillBirthday": "Doplň datum narození",
       "ageSuffix": "{age} let",
@@ -1078,6 +1083,7 @@
     "step1": "Pro koho",
     "hidePicker": "Skrýt výběr",
     "addRecipient": "Přidat příjemce",
+    "removeRecipient": "Odebrat {name}",
     "groups": "Skupiny",
     "contacts": "Kontakty",
     "newPerson": "Nová osoba",
