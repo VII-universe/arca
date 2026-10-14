@@ -288,6 +288,13 @@ model MessageContent {
   textBody  String? // for TEXT type
   s3FileKey String? // for VIDEO / AUDIO / FILE — object key inside S3/R2 bucket
 
+  // Auto-generated speech-to-text transcript for VIDEO/AUDIO content —
+  // makes voice/video messages searchable and gives them a textual
+  // representation in the PDF export, which otherwise has nothing to show
+  // for non-TEXT content. null until transcription runs (or if it fails —
+  // never blocks the content upload itself).
+  transcript String?
+
   // Micro-theming: curated palette for premium letter styling.
   // null = default (inherits editor/sanctuary theme)
   backgroundColor String?

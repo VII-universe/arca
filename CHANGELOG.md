@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.46.0] - Feature: automatický přepis hlasových a video zpráv
+Čtvrtá položka z druhé vlny feature backlogu. Appka teď automaticky vygeneruje textový přepis pro každou nahranou hlasovou/video zprávu — hned po nahrání, bez dalšího kroku od uživatele.
+
+### Technické zjištění
+Žádná vyhrazená transkripční služba není potřeba — OpenRouter podporuje `input_audio`/`video_url` jako běžné typy obsahu v multimodálním chat completion volání (ověřeno proti oficiální OpenAPI specifikaci openrouter.ai, ne proti podezřelým "zrcadlovým" doménám, co se objevily ve výsledcích vyhledávání a vypadaly jako spam). Stejná infrastruktura, žádný nový provider/klíč.
+
+### Přidáno
+- `MessageContent.transcript` — nové nullable pole (hand-written migrace, lokální DB stále rozbitá).
+- `lib/ai/transcribe.ts` — `transcribeAudio` (stáhne soubor, base64 — OpenRouter nepodporuje URL pro audio) a `transcribeVideo` (pošle přímo URL, žádné stahování).
+- `app/actions/arca.ts::addMediaContent` — po úspěšném uploadu audia/videa se transkripce spustí automaticky a rovnou se čeká na výsledek (ne fire-and-forget — serverless funkce může skončit dřív, než by se stihla dokončit práce na pozadí). Selhání transkripce nikdy nezablokuje samotný upload.
+- **Synergie s PDF exportem**: hlasové/video zprávy dřív v PDF exportu (jednotlivém i celovaultovém) úplně chyběly — exportovaly se jen `TEXT` obsahy. `lib/pdf/pdf-copy.ts::buildMainParagraphs` teď zahrne i přepis, označený "Přepis hlasové/video zprávy:".
+
+### Ověřeno
+- Živě otestováno přes skutečnou `say` (macOS TTS) vygenerovanou nahrávku — jak syrové volání na OpenRouter, tak celá exportovaná funkce `transcribeAudio` (fetch → base64 → OpenRouter → parsing) vrátily přesný přepis českého i anglického textu.
+- `transcribeVideo` (formát `video_url`) nebyl živě otestován — nemám k dispozici reálné video s veřejně dostupnou URL (OpenRouter by k ní potřeboval přístup ze svých serverů, ne z mého). Formát je ale potvrzený přímo z oficiální OpenAPI specifikace, strukturálně stejný vzor jako už ověřené audio volání.
+
 ## [1.45.0] - Feature: automatický AI překlad zprávy pro příjemce
 Třetí položka z druhé vlny feature backlogu. Na recipient-facing stránce (`/arca/[hash]`) pod hlavní zprávou přibyly dva odkazy — "Zobrazit v češtině" / "Show in English". Příjemce si může zprávu nechat přeložit do druhého jazyka appky jedním kliknutím.
 
