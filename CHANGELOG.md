@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.39.0] - Feature: AI kontrola kompletnosti Blueprintu
+Čtvrtá položka z feature backlogu. Na stránce "Manuál k životu" (Blueprint) přibylo tlačítko "Zkontrolovat přes AI" — AI navrhne až 5 běžně opomíjených položek (banka, pojištění, mazlíček, přístup k e-mailu...), co uživatel pravděpodobně zapomněl přidat.
+
+### Přidáno
+- `app/api/arca/ai-blueprint-check/route.ts` — nová route, sdílí rate limit s ostatními AI features (`"ai-assist"` prefix). **Důležité pro soukromí**: appka posílá AI jen `category` + `title` existujících položek, nikdy `content` — tam jsou hesla, čísla účtů apod. Server navíc filtruje přijatý payload (`isCategory` + typeof check), takže i kdyby klient poslal víc, nic jiného než kategorie+název se nikdy nedostane do promptu.
+- UI v `app/dashboard/blueprint/BlueprintClient.tsx` — karta s tlačítkem, seznam návrhů s krátkým "proč" u každého, tlačítko "Přidat" rovnou otevře formulář s předvyplněnou kategorií a názvem (obsah nechá na uživateli — AI nikdy nevymýšlí skutečný obsah položky).
+- `lib/ai/openrouter.ts` — zobecněn na `requestJsonFromOpenRouter<T>()` (dřív jen `requestVersionsFromOpenRouter`, specifické pro `{versions: ...}` tvar), ať se dá použít i pro jiný JSON tvar (`{suggestions: ...}`). `requestVersionsFromOpenRouter` teď jen volá ten obecný a validuje tvar — beze změny chování pro `ai-assist`/`ai-rewrite`.
+
+### Ověřeno
+- Živé volání na OpenRouter (ne jen typecheck) přes dočasnou neautentizovanou debug route — se 2 existujícími položkami (rodný list, Netflix) vrátila AI 5 smysluplných, nekolidujících návrhů (vůle, bankovní účty, pojištění, přístup k e-mailu, mazlíček).
+
 ## [1.38.0] - Feature: chytré e-mailové připomínky neaktivním uživatelům
 Třetí položka z feature backlogu. Nový týdenní cron pošle přátelskou připomínku lidem, co se v appce dlouho neukázali, ať si projdou svou schránku — bez AI, čistě na existující Resend + cron infrastruktuře.
 
