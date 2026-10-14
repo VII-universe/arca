@@ -189,6 +189,7 @@ export default async function LivingLinkPage({
     <>
       <ArcaReveal
         packId={pack.id}
+        livingLinkHash={livingLinkHash}
         ownerName={pack.owner.name}
         packType={pack.type}
         isSelf={pack.messageMode === "SELF"}

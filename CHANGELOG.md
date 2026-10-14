@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.45.0] - Feature: automatický AI překlad zprávy pro příjemce
+Třetí položka z druhé vlny feature backlogu. Na recipient-facing stránce (`/arca/[hash]`) pod hlavní zprávou přibyly dva odkazy — "Zobrazit v češtině" / "Show in English". Příjemce si může zprávu nechat přeložit do druhého jazyka appky jedním kliknutím.
+
+### Bezpečnostní rozvaha (recipient-facing, bez přihlášení)
+Příjemci nejsou přihlášení uživatelé appky — endpoint `app/api/arca/translate-content/route.ts` musí být veřejný (přidán do `proxy.ts` `PUBLIC_PREFIXES`), což znamená žádnou standardní Supabase auth kontrolu. Aby se z toho nestal volně zneužitelný "přelož cokoliv zadarmo" nástroj:
+- Endpoint **nikdy nepřekládá text poslaný klientem** — bere jen `livingLinkHash` + cílový jazyk, obsah si sám znovu natáhne z DB.
+- Před překladem **znovu ověří přesně ten samý gate**, co recipient stránka sama — stav zprávy (`TRIGGERED`/`DELIVERED`) i challenge otázku (`isUnlocked` cookie check) — jinak by šlo přes překlad obejít zamčenou zprávu.
+- Rate limit podle IP (20/h), stejný vzor jako `guardian-action`.
+
+### Přidáno
+- `app/arca/[livingLinkHash]/TranslatableText.tsx` — nová klientská komponenta (ostatní recipient stránka zůstává čistě server-rendered), přepíná mezi originálem a přeloženou verzí, žádná auto-detekce jazyka — ruční volba, appka stejně podporuje jen cs/en.
+- Prompt instruuje AI, ať text vrátí beze změny, pokud je už v cílovém jazyce — ověřeno živě.
+
+### Ověřeno
+- Živé volání na OpenRouter pro oba směry (EN→CS, CS→EN) i no-op případ (text už v cílovém jazyce) přes dočasnou debug route — všechny tři scénáře fungují správně, zachovává tón a smysl osobní zprávy.
+
 ## [1.44.0] - Feature: export celého trezoru najednou
 Druhá položka z druhé vlny feature backlogu. Ve Vault teď vedle "Nová zpráva" přibylo tlačítko "Exportovat vše" — stáhne jedno PDF se všemi zprávami uživatele najednou (titulní strana + každá zpráva na vlastní stránce s vlastním QR kódem).
 
