@@ -99,6 +99,12 @@ model User {
   // Indexed because this comparison runs on every cron tick across all users.
   lastActiveAt DateTime @default(now())
 
+  // Re-engagement reminder emails ("you haven't touched your vault in a
+  // while") — a soft nudge, unrelated to the dead-man switch above. Gates
+  // re-sends so the cron doesn't email the same inactive user every day
+  // once they cross the threshold.
+  lastReminderSentAt DateTime?
+
   // Unique secret used in the heartbeat webhook URL.
   // Defaults to a UUID so existing rows are populated automatically by the DB.
   webhookSecret String @unique @default(uuid())

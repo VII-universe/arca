@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.38.0] - Feature: chytré e-mailové připomínky neaktivním uživatelům
+Třetí položka z feature backlogu. Nový týdenní cron pošle přátelskou připomínku lidem, co se v appce dlouho neukázali, ať si projdou svou schránku — bez AI, čistě na existující Resend + cron infrastruktuře.
+
+### Přidáno
+- `app/api/cron/reminders/route.ts` — nový cron (pondělí 10:00 UTC, `vercel.json`). Cílí na uživatele s `lastActiveAt` staré 90+ dní, co mají aspoň jednu zprávu (prázdný účet nemá co "revidovat"), a gatuje opakované odesílání cooldownem 30 dní přes nové pole `User.lastReminderSentAt` (hand-written migrace, lokální `DATABASE_URL` je stále rozbité).
+- `emails/InactivityReminderEmail.tsx` — nová, záměrně neutrální šablona (není to bezpečnostní upozornění jako `GracePeriodWarningEmail`, jen pozvánka mrknout se zpátky).
+- `lib/cron-auth.ts` — vytažená sdílená constant-time Bearer-token kontrola (dřív kopírovaná zvlášť v `pulse` a `process-triggers`, teď potřetí — stálo za to to sjednotit alespoň pro nový kód, staré dvě route nechány beze změny mimo rozsah). **Nové**: `lib/cron-auth.test.ts`, první automatizovaný test pro cron auth logiku v appce (5 testů — chybějící header, špatný token, špatné schéma, správný token, fail-closed když `CRON_SECRET` není nastavený).
+
+### Poznámka
+- Netestováno živě proti produkční DB (lokální `DATABASE_URL`/`CRON_SECRET` jsou stále rozbité) — ověřeno typecheckem, buildem a jednotkovými testy auth logiky; dotazovací/e-mailová logika je strukturně identická s už prověřenými `pulse`/`process-triggers` routami.
+
 ## [1.37.0] - Feature: AI varianty tónu zprávy (formálněji / vřeleji / stručněji)
 Druhá položka z feature backlogu. V AI panelu editoru (ten, co dřív jen generoval zprávu od nuly) teď přibyla sekce "Už máš koncept? Zkus jiný tón" — pokud je v editoru už nějaký text, nabídne tři tlačítka, co ho jedním klikem přepíšou.
 
