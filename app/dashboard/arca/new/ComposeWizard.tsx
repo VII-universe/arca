@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import ArcaRichEditor, { type ArcaRichEditorHandle } from "@/components/arca/ArcaRichEditor";
 import { Avatar } from "@/components/arca/Avatar";
 import { computeAgeMilestoneDate, computeRelativeOffsetDate, isFutureDate, nextValidTargetAge } from "@/lib/triggers/milestone";
+import { parseContactsCsv } from "@/lib/csv";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ const IcMic      = IcVoice;
 const IcEye      = () => <Ic><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></Ic>;
 const IcBack     = () => <Ic><path d="M15 6l-6 6 6 6"/></Ic>;
 const IcPlus     = () => <Ic><path d="M12 5v14M5 12h14"/></Ic>;
+const IcUpload   = () => <Ic size={12}><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></Ic>;
 const IcX        = () => <Ic size={12}><path d="M18 6L6 18M6 6l12 12"/></Ic>;
 const IcCheck    = () => <Ic size={12}><path d="M5 12l4 4 10-10"/></Ic>;
 const IcHourglass= () => <Ic><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></Ic>;
@@ -732,6 +734,42 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
     setNewPeople(prev => prev.filter((_, idx) => idx !== i));
   }
 
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  function handleCsvFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = typeof reader.result === "string" ? reader.result : "";
+      const { contacts, skipped } = parseContactsCsv(text);
+
+      // Skip anyone already selected/added (by email) so re-importing the
+      // same file, or a file overlapping an existing recipient, doesn't
+      // create duplicates.
+      const existingEmails = new Set([
+        ...recipients.filter(r => selectedIds.has(r.id)).map(r => r.email?.toLowerCase()).filter(Boolean),
+        ...newPeople.map(p => p.email.toLowerCase()).filter(Boolean),
+      ]);
+      const fresh = contacts.filter(c => !existingEmails.has(c.email));
+
+      if (fresh.length > 0) {
+        setNewPeople(prev => [...prev, ...fresh]);
+      }
+      const skippedTotal = skipped + (contacts.length - fresh.length);
+      if (fresh.length > 0) {
+        toast.success(t("recipient.csvImported", { count: fresh.length }));
+      }
+      if (skippedTotal > 0) {
+        toast.message(t("recipient.csvSkipped", { count: skippedTotal }));
+      }
+      if (fresh.length === 0 && skippedTotal === 0) {
+        toast.error(t("recipient.csvEmpty"));
+      }
+    };
+    reader.readAsText(file);
+  }
+
   async function uploadMedia(packId: string) {
     if (!audioBlob && !videoBlob && photos.length === 0) return;
     setUploadingMedia(true);
@@ -995,6 +1033,15 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                 <input className="arca-input" style={{ width: 150, padding: "7px 10px", fontSize: 13 }} placeholder={t("recipient.namePlaceholder")} value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && addNewPerson()} />
                 <input className="arca-input" style={{ width: 180, padding: "7px 10px", fontSize: 13 }} placeholder={t("recipient.emailPlaceholder")} type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && addNewPerson()} />
                 <button type="button" onClick={addNewPerson} disabled={!newName.trim()} className="arca-btn arca-btn--ghost sm" style={{ whiteSpace: "nowrap" }}><IcPlus /> {t("recipient.addBtn")}</button>
+              </div>
+
+              {/* Bulk CSV import */}
+              <div style={{ marginTop: 4 }}>
+                <input ref={csvInputRef} type="file" accept=".csv,text/csv" onChange={handleCsvFile} style={{ display: "none" }} />
+                <button type="button" onClick={() => csvInputRef.current?.click()} className="arca-btn arca-btn--ghost sm" style={{ whiteSpace: "nowrap" }}>
+                  <IcUpload /> {t("recipient.csvImportBtn")}
+                </button>
+                <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 8 }}>{t("recipient.csvHint")}</span>
               </div>
             </div>
 

@@ -765,7 +765,12 @@
       "groupsLabel": "Skupiny",
       "namePlaceholder": "Jméno *",
       "emailPlaceholder": "E-mail",
-      "addBtn": "Přidat"
+      "addBtn": "Přidat",
+      "csvImportBtn": "Importovat CSV",
+      "csvHint": "Sloupce: jméno, e-mail",
+      "csvImported": "{count, plural, one {Přidán # kontakt} few {Přidány # kontakty} other {Přidáno # kontaktů}}",
+      "csvSkipped": "{count, plural, one {Přeskočen # řádek (duplicita nebo neplatný)} few {Přeskočeny # řádky (duplicity nebo neplatné)} other {Přeskočeno # řádků (duplicity nebo neplatné)}}",
+      "csvEmpty": "V souboru nebyly nalezeny žádné platné kontakty."
     },
     "trigger": {
       "date":     { "title": "V daný den",             "sub": "Konkrétní datum a čas." },
