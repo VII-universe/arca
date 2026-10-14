@@ -1127,6 +1127,7 @@
     "saveChanges": "Save changes",
     "sealAndActivate": "Seal and activate",
     "cancelDelivery": "Cancel delivery",
+    "exportPdf": "Export as PDF",
     "backToVault": "Back to vault",
     "aiCta": {
       "title": "Not sure how to start?",

@@ -27,6 +27,7 @@ const IcChevL  = () => <Ic d="M15 6l-6 6 6 6" size={12} />;
 const IcPlus   = () => <Ic d="M12 5v14M5 12h14" size={14} />;
 const IcX      = () => <Ic d="M18 6L6 18M6 6l12 12" size={13} />;
 const IcCheck  = () => <Ic d="M5 12l4 4 10-10" size={14} />;
+const IcDownload = () => <Ic d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" size={13} />;
 const IcSparkle= () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>;
 
 type Kind = "text" | "voice" | "video" | "photo";
@@ -584,6 +585,11 @@ export default function ArcaEditorNew({
                     {t("cancelDelivery")}
                   </button>
                 )}
+
+                <a href={`/api/arca/${packId}/export-pdf`} className="arca-btn arca-btn--ghost"
+                  style={{ width: "100%", justifyContent: "center", marginBottom: 6, fontSize: 12, color: "var(--muted)" }}>
+                  <IcDownload /> {t("exportPdf")}
+                </a>
 
                 <Link href="/dashboard/vault" className="arca-btn arca-btn--ghost"
                   style={{ width: "100%", justifyContent: "center", fontSize: 12, color: "var(--muted)" }}>

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.36.0] - Feature: export zprávy do PDF ("kniha odkazu")
+První položka z nového feature backlogu (víc hodnoty pro uživatele, víc AI). Majitel teď může jedním kliknutím stáhnout svou zprávu (hlavní text + všechny kapitoly) jako PDF — fyzická záloha pro případ, že appka/účet/cloud někdy přestane existovat.
+
+### Přidáno
+- `app/api/arca/[id]/export-pdf/route.tsx` — nová API route, generuje PDF přes `@react-pdf/renderer`. Auth + ownership check (`findFirst({ where: { id, ownerId: user.id } })`) — stejný vzor jako zbytek appky, 404 (ne 403) když zpráva neexistuje nebo není uživatelova, aby se neprozrazovalo který případ nastal.
+- `lib/pdf/LegacyBookDocument.tsx` — čistě prezentační PDF šablona (titulní strana + hlavní zpráva + kapitoly s info o odemčení).
+- `lib/pdf/html-to-text.ts` — převod HTML z rich-text editoru (`Chapter.content`, `MessageContent.textBody`) na prosté odstavce — react-pdf neumí renderovat libovolné HTML. Lossy záměrně (formátování/odkazy/obrázky se ztratí), jen odstavcové zalomení se zachová.
+- `lib/pdf/fonts/NotoSans-{Regular,Bold}.ttf` — PDF built-in fonty (Helvetica apod.) neumí českou diakritiku, musel se zaregistrovat Unicode font. Stažen přímo ze stabilní gstatic URL (Google Fonts garantuje zpětnou kompatibilitu existujících URL) a commitnut do repa — žádná závislost na externím fetchi za běhu generování PDF.
+- Tlačítko "Exportovat do PDF" v `ArcaEditorNew.tsx` (edit screen), nové překladové klíče v `cs.json`/`en.json`.
+
+### Ověřeno
+- Živý smoke test přes dočasnou neautentizovanou debug route (smazána před commitem) proti produkčnímu buildu (`npm run build && npm start`) — PDF se reálně vygenerovalo, 2 strany, čeština se všemi háčky/čárkami (č, ř, ž, ě, š, ť, ů) se vykreslila správně. Opravena jedna vizuální chyba nalezená při testu: dlouhý nadpis na titulní straně se zalamoval na 2 řádky a přesahoval do řádku "Pro: ..." pod ním — doplněn `lineHeight`/`marginBottom`.
+
 ## [1.35.0] - Accessibility: aria-label na icon-only tlačítkách
 Appka měla `aria-*` atributy jen ve 14 ze 82 `.tsx` souborů. Prošel jsem appku skriptem (regex sken `<button>` bloků bez viditelného textu a bez `aria-label`/`title`), manuálně ověřil každý nález a opravil ty skutečné — vyfiltroval jsem false positivy (tlačítka s viditelným textem/ikonou vedle textu, kde to regex nerozpoznal kvůli JSX výrazům).
 
