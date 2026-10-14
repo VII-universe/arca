@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { renderToBuffer } from "@react-pdf/renderer";
+import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, type Locale } from "@/i18n/config";
 import { LegacyBookDocument, type LegacyBookData } from "@/lib/pdf/LegacyBookDocument";
 import { htmlToParagraphs } from "@/lib/pdf/html-to-text";
+import { APP_URL } from "@/lib/resend";
 
 function isLocale(value: string | null | undefined): value is Locale {
   return !!value && (LOCALES as readonly string[]).includes(value);
@@ -21,6 +23,7 @@ const COPY = {
     unlockOnDate: (d: string) => `Odemčeno ${d}`,
     unlockAfterDays: (n: number) => `Odemčeno ${n} ${n === 1 ? "den" : n < 5 ? "dny" : "dní"} po spuštění`,
     footer: "ARCA — osobní archiv",
+    qrLabel: "Naskenuj pro zobrazení online",
     dateLocale: "cs-CZ",
   },
   en: {
@@ -32,6 +35,7 @@ const COPY = {
     unlockOnDate: (d: string) => `Unlocks ${d}`,
     unlockAfterDays: (n: number) => `Unlocks ${n} ${n === 1 ? "day" : "days"} after delivery`,
     footer: "ARCA — personal archive",
+    qrLabel: "Scan to view online",
     dateLocale: "en-GB",
   },
 } as const;
@@ -51,6 +55,7 @@ export async function GET(
     select: {
       title: true,
       createdAt: true,
+      livingLinkHash: true,
       owner: { select: { name: true, locale: true } },
       recipients: { select: { name: true } },
       contents: {
@@ -95,6 +100,14 @@ export async function GET(
     return { title: c.title, unlockLabel, paragraphs: htmlToParagraphs(c.content) };
   });
 
+  const livingLinkUrl = `${APP_URL}/arca/${pack.livingLinkHash}`;
+  const qrCodeDataUrl = await QRCode.toDataURL(livingLinkUrl, { width: 240, margin: 1 }).catch((err) => {
+    // The QR code is a nice-to-have on the cover page — never let a
+    // generation hiccup block the actual PDF export.
+    console.error("[export-pdf] QR code generation failed:", err);
+    return null;
+  });
+
   const data: LegacyBookData = {
     packTitle: pack.title,
     ownerName: pack.owner.name,
@@ -106,6 +119,8 @@ export async function GET(
     footerLabel: copy.footer,
     mainParagraphs,
     chapters,
+    qrCodeDataUrl: qrCodeDataUrl ?? undefined,
+    qrCodeLabel: qrCodeDataUrl ? copy.qrLabel : undefined,
   };
 
   const buffer = await renderToBuffer(<LegacyBookDocument data={data} />);
