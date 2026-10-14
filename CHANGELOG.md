@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.48.0] - Chore: automatické nasazení Prisma migrací při produkčním buildu
+Opravuje opakující se problém z celé téhle session — hand-written migrace (Executor removal, `lastReminderSentAt`, `transcript`) se musely spouštět ručně přes `npx prisma migrate deploy`, protože nic v buildovacím pipeline to nedělalo samo. Teď už ano, natrvalo.
+
+### Přidáno
+- `package.json` — nový `vercel-build` skript. Vercel ho při nasazení automaticky použije místo `build`, pokud existuje (zero-config chování, žádná změna nastavení na Vercelu potřeba). Běží `prisma migrate deploy` **jen když `VERCEL_ENV=production`** — ne pro preview deploymenty (ty typicky sdílí stejnou DB, spouštět migrace na každý push do PR branch by bylo zbytečné a riskantní).
+- Normální `build` skript (`npm run build`, používaný lokálně i v CI) zůstává beze změny — migrace se spouští jen na skutečném produkčním nasazení na Vercelu.
+
+### Ověřeno
+- Logika podmínky (`VERCEL_ENV === "production"`) ověřena v izolaci pro všechny tři stavy (nenastaveno/preview/production) — sandbox blokuje přímé spuštění `vercel-build` skriptu lokálně kvůli jeho názvu (klasifikátor ho vyhodnotil jako produkční deploy akci), takže otestováno obezřetně: syntax-check (`sh -n`) prošel, standardní `build` skript dál funguje beze změny.
+
 ## [1.46.0] - Feature: automatický přepis hlasových a video zpráv
 Čtvrtá položka z druhé vlny feature backlogu. Appka teď automaticky vygeneruje textový přepis pro každou nahranou hlasovou/video zprávu — hned po nahrání, bez dalšího kroku od uživatele.
 
