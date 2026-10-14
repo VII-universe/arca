@@ -13,6 +13,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { FontFamily } from "@tiptap/extension-font-family";
 import { Extension } from "@tiptap/core";
 import { createClient } from "@/lib/supabase/client";
+import { htmlToParagraphs } from "@/lib/pdf/html-to-text";
 
 // ── Font-size TipTap extension ────────────────────────────────────────────────
 const FontSize = Extension.create({
@@ -504,6 +505,29 @@ function AiAssistPanel({
   const [loading, setLoading] = useState(false);
   const [versions, setVersions] = useState<AIVersion[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [rewritingTone, setRewritingTone] = useState<"formal" | "warm" | "short" | null>(null);
+
+  const hasExistingText = htmlToParagraphs(existingContent).length > 0;
+
+  async function rewrite(tone: "formal" | "warm" | "short") {
+    setRewritingTone(tone);
+    setError(null);
+    setVersions([]);
+    try {
+      const res = await fetch("/api/arca/ai-rewrite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: existingContent, tone }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setError(data.error ?? t("genericError")); return; }
+      setVersions(data.versions ?? []);
+    } catch {
+      setError(t("connectionError"));
+    } finally {
+      setRewritingTone(null);
+    }
+  }
 
   async function generate() {
     if (!userNotes.trim()) return;
@@ -570,6 +594,28 @@ function AiAssistPanel({
 
         {/* Body — the only scrollable region */}
         <div style={{ padding: "22px 26px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
+          {/* Rewrite existing text in a different tone — only shown once there's something to rewrite */}
+          {hasExistingText && (
+            <div>
+              <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>{t("rewrite.heading")}</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {(["formal", "warm", "short"] as const).map(tone => (
+                  <button
+                    key={tone}
+                    type="button"
+                    onClick={() => rewrite(tone)}
+                    disabled={rewritingTone !== null}
+                    className="arca-btn sm arca-btn--outline"
+                    style={{ opacity: rewritingTone !== null && rewritingTone !== tone ? 0.5 : 1 }}
+                  >
+                    {rewritingTone === tone ? t("rewrite.generating") : t(`rewrite.${tone}`)}
+                  </button>
+                ))}
+              </div>
+              <hr style={{ border: 0, height: 1, background: "var(--hairline)", margin: "16px 0 0" }} />
+            </div>
+          )}
+
           {/* Occasion */}
           <div>
             <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>{t("occasionLabel")}</label>

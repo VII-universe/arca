@@ -1060,6 +1060,13 @@
       "genericError": "Chyba.",
       "connectionError": "Nepodařilo se spojit s AI.",
       "privacyDisclaimer": "Text z tohoto pole je anonymně zpracován AI modelem pro vygenerování inspirace a není nikde ukládán na našich serverech.",
+      "rewrite": {
+        "heading": "Už máš koncept? Zkus jiný tón",
+        "formal": "Formálnější",
+        "warm": "Vřelejší",
+        "short": "Stručnější",
+        "generating": "Přepisuji…"
+      },
       "occasions": {
         "birthday": "Narozeniny",
         "thanks": "Poděkování",

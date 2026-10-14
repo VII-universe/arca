@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.37.0] - Feature: AI varianty tónu zprávy (formálněji / vřeleji / stručněji)
+Druhá položka z feature backlogu. V AI panelu editoru (ten, co dřív jen generoval zprávu od nuly) teď přibyla sekce "Už máš koncept? Zkus jiný tón" — pokud je v editoru už nějaký text, nabídne tři tlačítka, co ho jedním klikem přepíšou.
+
+### Přidáno
+- `app/api/arca/ai-rewrite/route.ts` — nová route, sdílí rate limit frontu s `ai-assist` (stejný `"ai-assist"` Redis prefix — stejná nákladová položka, stejná zneužitelnost, nemá smysl mít dvě oddělené kvóty). Bere HTML obsah editoru, převede na odstavce (`htmlToParagraphs` z PDF exportu — recyklace), sestaví prompt podle tónu (`formal`/`warm`/`short`), vrátí jednu přepsanou verzi ve stejném `{ versions: [...] }` formátu jako `ai-assist`, takže frontend mohl použít už existující UI pro zobrazení výsledků beze změny.
+- `lib/ai/openrouter.ts` — vytažená sdílená logika volání OpenRouter + parsování JSON odpovědi, použitá jak v `ai-assist`, tak v `ai-rewrite`, ať se netahá to samé dvakrát.
+- Nové tlačítko/sekce v `ArcaRichEditor.tsx`'s `AiAssistPanel`, nové překladové klíče `RichEditor.aiPanel.rewrite.*`.
+
+### Ověřeno
+- Živé volání na OpenRouter (ne jen typecheck) přes dočasnou neautentizovanou debug route — ověřeno pro `formal` i `short` tón na reálném textu, výsledek dává smysl a zachovává fakta/jméno příjemce.
+
 ## [1.36.0] - Feature: export zprávy do PDF ("kniha odkazu")
 První položka z nového feature backlogu (víc hodnoty pro uživatele, víc AI). Majitel teď může jedním kliknutím stáhnout svou zprávu (hlavní text + všechny kapitoly) jako PDF — fyzická záloha pro případ, že appka/účet/cloud někdy přestane existovat.
 

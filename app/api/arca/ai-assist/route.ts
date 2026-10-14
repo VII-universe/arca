@@ -4,12 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, type Locale } from "@/i18n/config";
 import { createRateLimiter } from "@/lib/rate-limit";
-
-// Routed through OpenRouter (not the Anthropic API directly) — same model,
-// billed against the team's existing OpenRouter credit instead of a
-// separate Anthropic account.
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL = "anthropic/claude-sonnet-5.5";
+import { requestVersionsFromOpenRouter } from "@/lib/ai/openrouter";
 
 // Each call costs real money (Anthropic API usage) — cap it per user rather
 // than leaving it open to an accidental retry loop or deliberate abuse.
@@ -123,43 +118,11 @@ export async function POST(req: NextRequest) {
 
   const prompt = copy.buildPrompt(recipientName, relationship, occasion, userNotes, existingContent);
 
-  try {
-    const openRouterRes = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: OPENROUTER_MODEL,
-        max_tokens: 1200,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!openRouterRes.ok) {
-      console.error("[ai-assist] OpenRouter error:", openRouterRes.status, await openRouterRes.text());
-      return NextResponse.json({ error: copy.aiConnectionFailed }, { status: 500 });
-    }
-
-    const message = await openRouterRes.json() as {
-      choices: { message: { content: string } }[];
-    };
-    const raw = message.choices[0]?.message?.content ?? "";
-
-    // Strip potential markdown code fences
-    const cleaned = raw.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "").trim();
-
-    let parsed: { versions: { label: string; content: string }[] };
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      return NextResponse.json({ error: copy.invalidAiResponse }, { status: 500 });
-    }
-
-    return NextResponse.json(parsed);
-  } catch (err) {
-    console.error("[ai-assist] Anthropic error:", err);
-    return NextResponse.json({ error: copy.aiConnectionFailed }, { status: 500 });
+  const result = await requestVersionsFromOpenRouter(prompt);
+  if (!result.ok) {
+    const error = result.reason === "invalid_response" ? copy.invalidAiResponse : copy.aiConnectionFailed;
+    return NextResponse.json({ error }, { status: 500 });
   }
+
+  return NextResponse.json({ versions: result.versions });
 }
