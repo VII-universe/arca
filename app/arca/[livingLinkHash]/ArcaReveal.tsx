@@ -1,5 +1,6 @@
 // Pure render — no "use client" needed.
 // All data (including signed URLs) is resolved server-side before this renders.
+import { TranslatableText } from "./TranslatableText";
 
 export interface RevealContent {
   id: string;
@@ -26,6 +27,7 @@ export interface ThreadLink {
 
 interface Props {
   packId: string;
+  livingLinkHash: string;
   ownerName: string;
   packType: "EMOTIONAL" | "PRACTICAL";
   isSelf: boolean;
@@ -65,6 +67,7 @@ function formatDate(date: Date) {
 
 export default function ArcaReveal({
   packId,
+  livingLinkHash,
   ownerName,
   packType,
   isSelf,
@@ -113,9 +116,10 @@ export default function ArcaReveal({
 
         {/* ── Text content ─────────────────────────────────────────────── */}
         {textItem?.textBody && (
-          <div
+          <TranslatableText
+            livingLinkHash={livingLinkHash}
+            originalHtml={textItem.textBody}
             className="prose prose-invert prose-lg max-w-none prose-p:font-light prose-p:leading-[1.9] prose-p:text-zinc-200 prose-headings:font-serif prose-headings:font-normal prose-headings:text-zinc-100 prose-strong:text-zinc-100 prose-em:font-serif prose-em:text-zinc-300 prose-blockquote:border-l-white/20 prose-blockquote:text-zinc-400 prose-li:text-zinc-200 prose-ul:marker:text-zinc-600 prose-ol:marker:text-zinc-600"
-            dangerouslySetInnerHTML={{ __html: textItem.textBody }}
           />
         )}
 
