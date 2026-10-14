@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.44.0] - Feature: export celého trezoru najednou
+Druhá položka z druhé vlny feature backlogu. Ve Vault teď vedle "Nová zpráva" přibylo tlačítko "Exportovat vše" — stáhne jedno PDF se všemi zprávami uživatele najednou (titulní strana + každá zpráva na vlastní stránce s vlastním QR kódem).
+
+### Přidáno
+- `lib/pdf/VaultBookDocument.tsx` — nová PDF šablona pro víc zpráv v jednom dokumentu, každá zpráva na vlastní stránce (`<Page>`), vlastní QR kód pro nezávislou skenovatelnost i při fyzickém rozstříhání výtisku.
+- `lib/pdf/fonts.ts` — vytažená registrace fontu (dřív duplicitně v `LegacyBookDocument.tsx`, teď sdílená mezi oběma PDF šablonami).
+- `lib/pdf/pdf-copy.ts` — vytažená sdílená logika (resolce locale, textové konstanty, výpočet labelu odemčení kapitoly), dřív jen v `export-pdf/route.tsx`, teď použitá i v nové `export-vault` route — beze změny chování pro existující export jedné zprávy.
+- `app/api/arca/export-vault/route.tsx` — nová route, bez `[id]` parametru, natáhne všechny zprávy přihlášeného uživatele (`ownerId` scoped).
+
+### Ověřeno
+- Živě vygenerováno PDF se 2 zprávami přes dočasnou debug route — 3 strany (titulní + 2× zpráva), každá zpráva má vlastní QR kód, správné zalomení stránek, česká diakritika v pořádku.
+
 ## [1.43.0] - Feature: QR kód v PDF exportu
 První položka z druhé vlny feature backlogu. Titulní strana PDF exportu (viz 1.36.0) teď má QR kód odkazující na živou online verzi zprávy (`/arca/[hash]`) — kdokoliv najde fyzický výtisk za roky, může ho naskenovat a zobrazit aktuální stav.
 
