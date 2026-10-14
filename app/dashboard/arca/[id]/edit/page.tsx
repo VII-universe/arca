@@ -34,6 +34,10 @@ export default async function EditArcaPage({ params }: { params: Promise<{ id: s
         triggerCondition: {
           select: { type: true, executeAtDate: true, inactivityDaysLimit: true, gracePeriodDays: true },
         },
+        contributions: {
+          orderBy: { createdAt: "asc" },
+          select: { id: true, authorName: true, content: true, createdAt: true },
+        },
       },
     }),
     prisma.recipient.findMany({
@@ -81,6 +85,7 @@ export default async function EditArcaPage({ params }: { params: Promise<{ id: s
       initialTrigger={triggerForClient}
       allContacts={contacts}
       contactGroups={contactGroups}
+      initialContributions={pack.contributions}
     />
   );
 }

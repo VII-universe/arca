@@ -1162,6 +1162,14 @@
     "sealAndActivate": "Seal and activate",
     "cancelDelivery": "Cancel delivery",
     "exportPdf": "Export as PDF",
+    "contributions": {
+      "title": "Invite a co-author",
+      "subtitle": "Let someone else add their own words to this message.",
+      "inviteBtn": "Invite someone",
+      "inviting": "Creating link…",
+      "copyBtn": "Copy link",
+      "copied": "Copied!"
+    },
     "backToVault": "Back to vault",
     "aiCta": {
       "title": "Not sure how to start?",
@@ -1225,6 +1233,34 @@
       "body": "{ownerName} entrusted you with this decision. Confirming will deliver their Arca immediately.",
       "warning": "This cannot be undone. Only confirm if you're certain the situation warrants it.",
       "button": "Yes, release the Arca now"
+    }
+  },
+  "Contribute": {
+    "already_used": {
+      "title": "Already used.",
+      "body": "This invitation has already been used. No further action is needed."
+    },
+    "expired": {
+      "title": "Link expired.",
+      "body": "This invitation has expired. If you'd still like to contribute, ask for a new link."
+    },
+    "invalid": {
+      "title": "Invalid link.",
+      "body": "This link isn't valid. It may have been copied incorrectly or already removed."
+    },
+    "done": {
+      "title": "Added.",
+      "body": "Your words have been added. Thank you for being part of this."
+    },
+    "form": {
+      "title": "Add your words to \"{packTitle}\"",
+      "body": "{ownerName} invited you to add something of your own to this message.",
+      "nameLabel": "Your name",
+      "namePlaceholder": "Your name…",
+      "contentLabel": "Your message",
+      "contentPlaceholder": "Write what you'd like to add…",
+      "submit": "Add my words",
+      "error": "Please fill in both your name and your message."
     }
   }
 }
