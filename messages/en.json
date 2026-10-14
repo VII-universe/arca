@@ -1077,6 +1077,17 @@
         "short": "Shorter",
         "generating": "Rewriting…"
       },
+      "mode": {
+        "quick": "Quick generate",
+        "interview": "Guided interview"
+      },
+      "interview": {
+        "intro": "Not sure where to start? Answer a few short questions and we'll turn them into a draft together.",
+        "answerPlaceholder": "Your answer…",
+        "thinking": "Thinking…",
+        "next": "Next",
+        "finishNow": "That's enough — write it now"
+      },
       "occasions": {
         "birthday": "Birthday",
         "thanks": "Thank you",

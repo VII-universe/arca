@@ -506,8 +506,60 @@ function AiAssistPanel({
   const [versions, setVersions] = useState<AIVersion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [rewritingTone, setRewritingTone] = useState<"formal" | "warm" | "short" | null>(null);
+  const [mode, setMode] = useState<"quick" | "interview">("quick");
 
   const hasExistingText = htmlToParagraphs(existingContent).length > 0;
+
+  // ── Guided interview (multi-turn) ──────────────────────────────────────
+  const [interviewTurns, setInterviewTurns] = useState<{ question: string; answer: string }[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
+  const [currentAnswer, setCurrentAnswer] = useState("");
+  const [interviewLoading, setInterviewLoading] = useState(false);
+  const [interviewError, setInterviewError] = useState<string | null>(null);
+  const [interviewDone, setInterviewDone] = useState(false);
+  const interviewStarted = interviewTurns.length > 0 || currentQuestion !== null || interviewLoading;
+
+  async function askInterview(turns: { question: string; answer: string }[], finishNow = false) {
+    setInterviewLoading(true);
+    setInterviewError(null);
+    try {
+      const res = await fetch("/api/arca/ai-interview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientName, relationship, occasion, turns, finishNow }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setInterviewError(data.error ?? t("genericError")); return; }
+      if (data.type === "draft") {
+        setInterviewDone(true);
+        setCurrentQuestion(null);
+        setVersions(data.versions ?? []);
+      } else {
+        setCurrentQuestion(data.question);
+      }
+    } catch {
+      setInterviewError(t("connectionError"));
+    } finally {
+      setInterviewLoading(false);
+    }
+  }
+
+  function startInterview() {
+    setMode("interview");
+    setInterviewTurns([]);
+    setInterviewDone(false);
+    setVersions([]);
+    setError(null);
+    askInterview([]);
+  }
+
+  function submitAnswer(finishNow = false) {
+    if (!currentQuestion || !currentAnswer.trim()) return;
+    const nextTurns = [...interviewTurns, { question: currentQuestion, answer: currentAnswer.trim() }];
+    setInterviewTurns(nextTurns);
+    setCurrentAnswer("");
+    askInterview(nextTurns, finishNow);
+  }
 
   async function rewrite(tone: "formal" | "warm" | "short") {
     setRewritingTone(tone);
@@ -616,63 +668,147 @@ function AiAssistPanel({
             </div>
           )}
 
-          {/* Occasion */}
-          <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>{t("occasionLabel")}</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {AI_OCCASIONS.map(o => (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => setOccasion(o.value)}
-                  style={{
-                    padding: "5px 12px", borderRadius: "var(--r-pill)", fontSize: 12.5, cursor: "pointer",
-                    border: "1px solid",
-                    borderColor: occasion === o.value ? "var(--accent)" : "var(--hairline-2)",
-                    background: occasion === o.value ? "var(--accent-tint)" : "var(--surface-2)",
-                    color: occasion === o.value ? "var(--accent-deep)" : "var(--ink-2)",
-                    fontFamily: "var(--f-sans)",
-                  }}
-                >
-                  {o.label}
-                </button>
+          {/* Mode toggle: quick generate vs guided interview */}
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              type="button"
+              onClick={() => setMode("quick")}
+              className={`arca-btn sm ${mode === "quick" ? "arca-btn--clay" : "arca-btn--outline"}`}
+              style={{ flex: 1, justifyContent: "center" }}
+            >
+              {t("mode.quick")}
+            </button>
+            <button
+              type="button"
+              onClick={() => { if (mode !== "interview") startInterview(); }}
+              className={`arca-btn sm ${mode === "interview" ? "arca-btn--clay" : "arca-btn--outline"}`}
+              style={{ flex: 1, justifyContent: "center" }}
+            >
+              {t("mode.interview")}
+            </button>
+          </div>
+
+          {mode === "quick" && (
+            <>
+              {/* Occasion */}
+              <div>
+                <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 8 }}>{t("occasionLabel")}</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {AI_OCCASIONS.map(o => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => setOccasion(o.value)}
+                      style={{
+                        padding: "5px 12px", borderRadius: "var(--r-pill)", fontSize: 12.5, cursor: "pointer",
+                        border: "1px solid",
+                        borderColor: occasion === o.value ? "var(--accent)" : "var(--hairline-2)",
+                        background: occasion === o.value ? "var(--accent-tint)" : "var(--surface-2)",
+                        color: occasion === o.value ? "var(--accent-deep)" : "var(--ink-2)",
+                        fontFamily: "var(--f-sans)",
+                      }}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("notesLabel")}</label>
+                <textarea
+                  className="arca-input"
+                  rows={4}
+                  autoFocus
+                  placeholder={t("notesPlaceholder")}
+                  value={userNotes}
+                  onChange={e => setUserNotes(e.target.value)}
+                  style={{ resize: "vertical", fontFamily: "var(--f-sans)" }}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={generate}
+                disabled={loading || !userNotes.trim()}
+                className="arca-btn arca-btn--primary"
+                style={{ justifyContent: "center" }}
+              >
+                {loading ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ animation: "arca-spin .8s linear infinite" }}>
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                    {t("generating")}
+                  </span>
+                ) : t("generate")}
+              </button>
+
+              {error && (
+                <p style={{ fontSize: 13, color: "#c00", margin: 0 }}>{error}</p>
+              )}
+            </>
+          )}
+
+          {mode === "interview" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {!interviewStarted && (
+                <p style={{ fontSize: 12.5, color: "var(--muted)", margin: 0 }}>{t("interview.intro")}</p>
+              )}
+
+              {/* Transcript so far */}
+              {interviewTurns.map((turn, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div className="arca-mono" style={{ fontSize: 11, color: "var(--accent-deep)" }}>{turn.question}</div>
+                  <div style={{ fontSize: 13.5, color: "var(--ink-2)", paddingLeft: 10, borderLeft: "2px solid var(--hairline-2)" }}>{turn.answer}</div>
+                </div>
               ))}
+
+              {/* Current question */}
+              {!interviewDone && currentQuestion && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className="arca-mono" style={{ fontSize: 11, color: "var(--accent-deep)" }}>{currentQuestion}</div>
+                  <textarea
+                    className="arca-input"
+                    rows={3}
+                    autoFocus
+                    placeholder={t("interview.answerPlaceholder")}
+                    value={currentAnswer}
+                    onChange={e => setCurrentAnswer(e.target.value)}
+                    style={{ resize: "vertical", fontFamily: "var(--f-sans)" }}
+                  />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => submitAnswer(false)}
+                      disabled={interviewLoading || !currentAnswer.trim()}
+                      className="arca-btn arca-btn--primary sm"
+                    >
+                      {interviewLoading ? t("interview.thinking") : t("interview.next")}
+                    </button>
+                    {interviewTurns.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => submitAnswer(true)}
+                        disabled={interviewLoading || !currentAnswer.trim()}
+                        className="arca-btn arca-btn--outline sm"
+                      >
+                        {t("interview.finishNow")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {interviewLoading && !currentQuestion && (
+                <p style={{ fontSize: 12.5, color: "var(--muted)", margin: 0 }}>{t("interview.thinking")}</p>
+              )}
+
+              {interviewError && (
+                <p style={{ fontSize: 13, color: "#c00", margin: 0 }}>{interviewError}</p>
+              )}
             </div>
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("notesLabel")}</label>
-            <textarea
-              className="arca-input"
-              rows={4}
-              autoFocus
-              placeholder={t("notesPlaceholder")}
-              value={userNotes}
-              onChange={e => setUserNotes(e.target.value)}
-              style={{ resize: "vertical", fontFamily: "var(--f-sans)" }}
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={generate}
-            disabled={loading || !userNotes.trim()}
-            className="arca-btn arca-btn--primary"
-            style={{ justifyContent: "center" }}
-          >
-            {loading ? (
-              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ animation: "arca-spin .8s linear infinite" }}>
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                </svg>
-                {t("generating")}
-              </span>
-            ) : t("generate")}
-          </button>
-
-          {error && (
-            <p style={{ fontSize: 13, color: "#c00", margin: 0 }}>{error}</p>
           )}
 
           {/* Results */}
