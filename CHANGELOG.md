@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.43.0] - Feature: QR kód v PDF exportu
+První položka z druhé vlny feature backlogu. Titulní strana PDF exportu (viz 1.36.0) teď má QR kód odkazující na živou online verzi zprávy (`/arca/[hash]`) — kdokoliv najde fyzický výtisk za roky, může ho naskenovat a zobrazit aktuální stav.
+
+### Přidáno
+- `qrcode` balíček — generuje PNG jako data URL čistě v JS, bez závislosti na nativním `canvas` modulu (ověřeno, důležité pro serverless).
+- `lib/pdf/LegacyBookDocument.tsx` — nový volitelný `qrCodeDataUrl`/`qrCodeLabel` v datech, vykreslí se na titulní straně pod metadaty. Komponenta zůstává čistě prezentační — negeneruje QR kód sama, jen ho vykreslí, pokud dostane.
+- `app/api/arca/[id]/export-pdf/route.tsx` — generuje QR kód vždy, bez ohledu na aktuální stav zprávy (DRAFT/ACTIVE/TRIGGERED...) — smysl QR kódu je ukázat **budoucí** stav v momentě, kdy ho někdo naskenuje, ne stav při exportu. Pokud generování QR kódu selže, export PDF pokračuje bez něj (nikdy neblokuje hlavní funkci).
+
+### Ověřeno
+- Živě vygenerováno PDF s reálným QR kódem přes dočasnou debug route — QR kód se vykresluje čistě, správně umístěný pod titulkem a metadaty, s popiskem "Naskenuj pro zobrazení online".
+
 ## [1.42.0] - Feature: hromadný import příjemců z CSV
 Sedmá a poslední položka ze schváleného feature backlogu. V kroku "příjemci" v Compose wizardu přibylo tlačítko "Importovat CSV" vedle ručního přidávání jednoho kontaktu — nahraje všechny řádky ze souboru najednou jako nové příjemce rozepsané zprávy.
 
