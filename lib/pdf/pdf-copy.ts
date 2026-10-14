@@ -29,6 +29,8 @@ export const PDF_COPY = {
     footer: "ARCA — osobní archiv",
     qrLabel: "Naskenuj pro zobrazení online",
     packCount: (n: number) => `${n} ${n === 1 ? "zpráva" : n < 5 ? "zprávy" : "zpráv"}`,
+    audioTranscript: "Přepis hlasové zprávy:",
+    videoTranscript: "Přepis video zprávy:",
     dateLocale: "cs-CZ",
   },
   en: {
@@ -42,11 +44,34 @@ export const PDF_COPY = {
     footer: "ARCA — personal archive",
     qrLabel: "Scan to view online",
     packCount: (n: number) => `${n} ${n === 1 ? "message" : "messages"}`,
+    audioTranscript: "Transcript of voice message:",
+    videoTranscript: "Transcript of video message:",
     dateLocale: "en-GB",
   },
 } as const;
 
 export type PdfCopy = (typeof PDF_COPY)[Locale];
+
+interface ContentSource {
+  type: string;
+  textBody: string | null;
+  transcript: string | null;
+}
+
+// Shared between both PDF exports — TEXT content contributes its HTML as
+// plain paragraphs; AUDIO/VIDEO content contributes its transcript (if one
+// was generated) labeled by kind, so a voice/video message isn't just
+// silently absent from the PDF the way it used to be. FILE content and
+// AUDIO/VIDEO without a transcript yet contribute nothing.
+export function buildMainParagraphs(contents: ContentSource[], copy: PdfCopy): string[] {
+  return contents.flatMap((c) => {
+    if (c.type === "TEXT") return htmlToParagraphs(c.textBody);
+    if (!c.transcript) return [];
+    if (c.type === "AUDIO") return [copy.audioTranscript, c.transcript];
+    if (c.type === "VIDEO") return [copy.videoTranscript, c.transcript];
+    return [];
+  });
+}
 
 interface ChapterSource {
   title: string;
