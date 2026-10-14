@@ -918,14 +918,14 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                     <div key={r.id} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 10px 4px 4px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 13, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
                       <Avatar src={r.avatarUrl} initials={initials(r.name)} tone={toneFor(r.name)} size="sm" style={{ border: "1.5px solid color-mix(in srgb, var(--bg) 25%, transparent)" }} />
                       {r.name.split(" ")[0]}
-                      <button type="button" onClick={() => toggleId(r.id)} style={{ background: "none", border: "none", color: "color-mix(in srgb, var(--bg) 60%, transparent)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
+                      <button type="button" onClick={() => toggleId(r.id)} aria-label={t("recipient.remove", { name: r.name })} style={{ background: "none", border: "none", color: "color-mix(in srgb, var(--bg) 60%, transparent)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
                     </div>
                   ))}
                   {newPeople.map((p, i) => (
                     <div key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 10px 4px 4px", borderRadius: "var(--r-pill)", background: "var(--ink)", color: "var(--bg)", fontSize: 13, fontWeight: 500, fontFamily: "var(--f-sans)" }}>
                       <span className="arca-avatar sm" style={{ background: "color-mix(in srgb, var(--bg) 15%, transparent)", fontSize: 9 }}>{initials(p.name)}</span>
                       {p.name.split(" ")[0]}
-                      <button type="button" onClick={() => removeNewPerson(i)} style={{ background: "none", border: "none", color: "color-mix(in srgb, var(--bg) 60%, transparent)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
+                      <button type="button" onClick={() => removeNewPerson(i)} aria-label={t("recipient.remove", { name: p.name })} style={{ background: "none", border: "none", color: "color-mix(in srgb, var(--bg) 60%, transparent)", cursor: "pointer", padding: 0, display: "flex" }}><IcX /></button>
                     </div>
                   ))}
                 </div>
@@ -1213,7 +1213,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
             <div className="arca-card elev" style={{ overflow: "hidden" }}>
               <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--hairline)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span className="arca-kicker">{t("preview.title")}</span>
-                <button type="button" className="arca-btn sm arca-btn--ghost"><IcEye /></button>
+                <button type="button" aria-label={t("preview.toggle")} className="arca-btn sm arca-btn--ghost"><IcEye /></button>
               </div>
 
               <div style={{ padding: "20px 22px", background: "var(--bg-tint)" }}>

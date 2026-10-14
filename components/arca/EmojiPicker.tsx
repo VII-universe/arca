@@ -74,6 +74,7 @@ export default function EmojiPicker({ onSelect }: Props) {
         <button
           type="button"
           title="Emoji"
+          aria-label="Emoji"
           className="flex items-center justify-center w-7 h-7 rounded text-xs transition-all duration-150 select-none text-zinc-500 hover:text-zinc-200 hover:bg-white/8"
         >
           <Smile className="size-3.5" />

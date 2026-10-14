@@ -258,6 +258,7 @@ function DayModal({
           <button
             type="button"
             onClick={onClose}
+            aria-label={t("close")}
             className="arca-btn icon-btn arca-btn--ghost"
             style={{ marginTop: -4, flexShrink: 0 }}
           >

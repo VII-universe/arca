@@ -126,7 +126,7 @@ function ProfileEditSheet({
       >
         <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 10 }}>
           <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 20, margin: 0, flex: 1 }}>{t("profileSheet.title")}</h3>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}>
+          <button type="button" onClick={onClose} aria-label={t("close")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}>
             <IcX />
           </button>
         </div>
@@ -272,7 +272,7 @@ function MemoryAddSheet({
       >
         <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", gap: 10 }}>
           <h3 style={{ fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 20, margin: 0, flex: 1 }}>{t("memorySheet.title")}</h3>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}><IcX /></button>
+          <button type="button" onClick={onClose} aria-label={t("close")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}><IcX /></button>
         </div>
 
         <div style={{ padding: 24, flex: 1, display: "flex", flexDirection: "column", gap: 18 }}>

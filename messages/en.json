@@ -139,6 +139,7 @@
   },
   "Vault": {
     "kicker": "Vault",
+    "close": "Close",
     "title": "Who are you leaving <em>a trace</em> for.",
     "subtitle": "Every person has their own vault. Open anyone to see the messages, photos, and memories that will one day find them.",
     "newMessageBtn": "New message",
@@ -239,6 +240,7 @@
       "noRecipients": "No recipients yet. Add them through the message editor."
     },
     "detail": {
+      "close": "Close",
       "status": {
         "draft": "Draft",
         "scheduled": "Scheduled",
@@ -376,6 +378,7 @@
   },
   "Calendar": {
     "kicker": "Calendar",
+    "close": "Close",
     "title": "Moments that <em>come back around.</em>",
     "subtitle": "Birthdays, anniversaries, days you want someone to hear from you. Click any day and add a message that will land there one day.",
     "newMessageBtn": "New message",
@@ -748,6 +751,7 @@
     "recipient": {
       "alreadyAdded": "You're already on the list",
       "addMyself": "Add myself as recipient",
+      "remove": "Remove {name}",
       "groupsLabel": "Groups",
       "namePlaceholder": "Name *",
       "emailPlaceholder": "Email",
@@ -788,6 +792,7 @@
     },
     "preview": {
       "title": "Delivery preview",
+      "toggle": "Toggle preview",
       "for": "For {name}",
       "fillBirthday": "Add a birthday",
       "ageSuffix": "age {age}",
@@ -1078,6 +1083,7 @@
     "step1": "For whom",
     "hidePicker": "Hide picker",
     "addRecipient": "Add recipient",
+    "removeRecipient": "Remove {name}",
     "groups": "Groups",
     "contacts": "Contacts",
     "newPerson": "New person",

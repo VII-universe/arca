@@ -358,7 +358,7 @@ function GroupEditModal({
         <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid var(--hairline)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
             <h2 style={{ margin: 0, fontFamily: "var(--f-serif)", fontWeight: 400, fontSize: 22, color: "var(--ink)" }}>{t("editGroupModal.title")}</h2>
-            <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--muted)", padding: 6, borderRadius: 8, display: "flex" }}>
+            <button type="button" onClick={onClose} aria-label={t("close")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--muted)", padding: 6, borderRadius: 8, display: "flex" }}>
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>

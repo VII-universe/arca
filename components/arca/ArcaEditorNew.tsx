@@ -349,6 +349,7 @@ export default function ArcaEditorNew({
                       <span className={`arca-avatar sm ${toneFor(r.name)}`}>{initials(r.name)}</span>
                       <span style={{ fontWeight: 550, fontSize: 13 }}>{r.name}</span>
                       <button type="button" onClick={() => handleRemoveRecipient(r.id)} disabled={recipientPending}
+                        aria-label={t("removeRecipient", { name: r.name })}
                         style={{ padding: 2, border: "none", background: "transparent", cursor: "pointer", color: "var(--muted)", display: "grid", placeItems: "center", borderRadius: 4 }}>
                         <IcX />
                       </button>

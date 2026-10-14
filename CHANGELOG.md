@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.35.0] - Accessibility: aria-label na icon-only tlačítkách
+Appka měla `aria-*` atributy jen ve 14 ze 82 `.tsx` souborů. Prošel jsem appku skriptem (regex sken `<button>` bloků bez viditelného textu a bez `aria-label`/`title`), manuálně ověřil každý nález a opravil ty skutečné — vyfiltroval jsem false positivy (tlačítka s viditelným textem/ikonou vedle textu, kde to regex nerozpoznal kvůli JSX výrazům).
+
+### Opraveno — icon-only tlačítka bez přístupného jména
+- `RecipientProfileEditor.tsx` — dvě zavírací tlačítka sheetů (profil, vzpomínka).
+- `ComposeWizard.tsx` — dvě tlačítka na odebrání vybraného příjemce z chipů, + "eye" tlačítko v náhledu doručení (bez `onClick` — vypadá jako nedokončená funkce, ale aspoň má teď přístupné jméno).
+- `ArcaEditorNew.tsx` — tlačítko na odebrání příjemce.
+- `VaultClient.tsx` — zavírací tlačítko modálu úpravy skupiny.
+- `CalendarClient.tsx` — zavírací tlačítko denního detailu.
+- `EmojiPicker.tsx` — hlavní trigger tlačítko (mělo `title`, doplněno i `aria-label` pro robustnost).
+- Nové překladové klíče (`Vault.close`, `Calendar.close`, `Vault.detail.close`, `Compose.recipient.remove`, `Compose.preview.toggle`, `ArcaEditorNew.removeRecipient`) v `cs.json` i `en.json`, většina parametrizovaná jménem příjemce (`"Remove {name}"`).
+
+### Co zůstává — vědomě mimo rozsah
+- **Formulářové inputy** (74 výskytů `<input>` v appce) — nekontroloval jsem všechny jednotlivě, jde o mnohem větší sken a riziko falešných oprav bez vizuálního testu.
+- **Ruční modály/sheety bez Radix Dialog** (`VaultClient.tsx`, `RecipientProfileEditor.tsx`, `GuardianListClient.tsx` potvrzovací dialogy) — postrádají `role="dialog"`/`aria-modal`/focus trap, na rozdíl od sdíleného `components/ui/sheet.tsx`, který Radix Dialog používá a má to vyřešené. Oprava by znamenala měnit chování (focus management), ne jen přidávat atributy — větší riziko bez možnosti to vizuálně odzkoušet (lokální přihlášení je stále rozbité). Navrhuju jako samostatný následný úkol.
+
 ## [1.34.0] - Úklid: .env.example, untrack .env.production, poslední lint warningy
 Dokončení zbylého nízko-prioritního backlogu z auditu.
 
