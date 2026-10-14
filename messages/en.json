@@ -1182,5 +1182,32 @@
       "title": "Invalid link.",
       "body": "This link is not valid. It may have been copied incorrectly or already removed."
     }
+  },
+  "GuardianAction": {
+    "already_used": {
+      "title": "Already used.",
+      "body": "This link has already been used. No further action is needed."
+    },
+    "expired": {
+      "title": "Link expired.",
+      "body": "This guardian link has expired. If action is still needed, please contact the Arca owner directly."
+    },
+    "invalid": {
+      "title": "Invalid link.",
+      "body": "This link is not valid. It may have been copied incorrectly or already removed."
+    },
+    "recipientsLabel": "Will be delivered to",
+    "aiSummaryPrefix": "In short:",
+    "confirmAlive": {
+      "title": "Confirm {ownerName} is okay?",
+      "body": "This will cancel the scheduled delivery of \"{packTitle}\" and reset {ownerName}'s inactivity timer.",
+      "button": "Yes, they're okay — cancel delivery"
+    },
+    "confirmRelease": {
+      "title": "Release \"{packTitle}\" now?",
+      "body": "{ownerName} entrusted you with this decision. Confirming will deliver their Arca immediately.",
+      "warning": "This cannot be undone. Only confirm if you're certain the situation warrants it.",
+      "button": "Yes, release the Arca now"
+    }
   }
 }
