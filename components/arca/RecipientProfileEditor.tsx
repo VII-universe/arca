@@ -459,7 +459,7 @@ export default function RecipientProfileEditor({
       toast.success(t("coverSavedToast"));
       window.location.reload();
     });
-  }, [recipientId]);
+  }, [recipientId, t]);
 
   // Avatar upload
   const handleAvatarFile = useCallback((file: File) => {
@@ -472,7 +472,7 @@ export default function RecipientProfileEditor({
       setAvatarUrl(blobUrl);
       toast.success(t("avatarSavedToast"));
     });
-  }, [recipientId]);
+  }, [recipientId, t]);
 
   // Global drag & drop over the whole gallery area
   const handleDrop = (e: React.DragEvent) => {

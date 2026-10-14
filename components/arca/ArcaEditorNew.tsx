@@ -202,7 +202,7 @@ export default function ArcaEditorNew({
       setTimeout(() => setSaved(false), 2500);
       router.refresh();
     });
-  }, [packId, text, triggerKind, dateVal, timeVal, inactivityDays, graceDays, router]);
+  }, [packId, text, bgColor, txtColor, triggerKind, dateVal, timeVal, inactivityDays, graceDays, router]);
 
   const handleActivate = () => {
     startTransition(async () => {

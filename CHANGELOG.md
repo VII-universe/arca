@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.34.0] - Úklid: .env.example, untrack .env.production, poslední lint warningy
+Dokončení zbylého nízko-prioritního backlogu z auditu.
+
+### Přidáno
+- `.env.example` — seznam všech env proměnných, které appka reálně čte z kódu (`DATABASE_URL`, Supabase, Resend, OpenRouter, Stripe, Upstash Redis, Sentry, `CRON_SECRET`, URL proměnné), bez hodnot. Vercel-injected proměnné (`VERCEL_*`, `KV_URL`, `TURBO_*`) vynechány — ty se nikdy nenastavují ručně.
+
+### Opraveno
+- `.env.production` byl trackovaný v gitu (obsahoval jen `NEXT_PUBLIC_*` public klíče — Supabase URL + publishable key, žádný leak, ale špatná praxe). Untrackováno (`git rm --cached`), `.gitignore` rozšířen o `.env.production` + explicitní `!.env.example` výjimku. **Důležité**: tyhle dva Supabase klíče byly na Vercelu nastavené jen pro Production, ne Preview — preview deploymenty se dosud spoléhaly právě na ten trackovaný soubor při buildu. Před untrackováním jsem oba klíče doplnil na Vercel i pro Preview target (`create_project_env`, `upsert`), ať se preview buildy nerozbijou.
+- `ArcaEditorNew.tsx`'s `handleSave` — `bgColor`/`txtColor` chyběly v `useCallback` deps, i když se používají v těle (`upsertContent(..., { backgroundColor: bgColor, textColor: txtColor })`). Tohle byl reálný bug, ne false positive: po změně barvy bez změny jiné dependency by se při uložení mohla použít zastaralá barva ze starého closure. Doplněno do deps.
+- `RecipientProfileEditor.tsx`'s `handleCoverFile`/`handleAvatarFile` — chyběla `t` (next-intl `useTranslations`) v deps. `t` je stabilní mezi rendery, takže šlo o neškodný false positive, ale doplnění je levné a správné — raději bez `eslint-disable`.
+- `npm run lint` je teď úplně čistý — 0 errorů, 0 warningů.
+
 ## [1.33.0] - Skeleton loading stavy pro dashboard
 Appka měla skoro žádné `loading.tsx`/Suspense pokrytí (1 výskyt v celé appce) — navigace mezi dashboard podstránkami dřív jen "visela" na bílé/prázdné obrazovce, než doběhl datový fetch.
 
