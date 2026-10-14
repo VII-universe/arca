@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.41.0] - Feature: AI "rozhovor" pro psaní zprávy (guided interview)
+Šestá a největší položka z feature backlogu. V AI panelu editoru přibyl přepínač "Rychlé generování" / "Rozhovor s AI" — druhá varianta je skutečný víceturnový chat: AI postupně klade až 4 konkrétní otázky, adaptivně navazující na předchozí odpovědi, a z celého rozhovoru pak sestaví návrh zprávy.
+
+### Přidáno
+- `app/api/arca/ai-interview/route.ts` — sdílí rate limit s ostatními AI features (`"ai-assist"` prefix; rozhovor přirozeně stojí víc volání, takže si logicky bere víc ze stejné hodinové kvóty). Server (ne model) rozhoduje, kdy přejít z kladení otázek na finální návrh — po 4 odpovědích, nebo dřív, pokud uživatel klikne "To stačí — napiš to teď". To drží náklady a délku rozhovoru předvídatelné.
+- UI v `AiAssistPanel` (`components/arca/ArcaRichEditor.tsx`): mode přepínač, transkript rozhovoru, pole na odpověď, tlačítka "Další" / "To stačí — napiš to teď". Finální návrh se zobrazí přes stejnou sdílenou komponentu jako u ostatních AI funkcí ("Use this text" vloží do editoru).
+
+### Ověřeno
+- Živě otestován celý 2kolový rozhovor + finální návrh přes dočasnou debug route (reálná OpenRouter volání, ne mock). AI prokazatelně navazuje na předchozí odpověď (po "pekla mi bábovku v neděli" se zeptala na konkrétní chvíli předávání/vůni), a finální návrh čerpá výhradně ze skutečně řečených detailů (bábovka, vanilková vůně, úsměv ve dveřích) — nic si nevymýšlí.
+
 ## [1.40.0] - Feature: AI shrnutí pro strážce + oprava skutečné bezpečnostní díry
 Pátá položka z feature backlogu. Při zkoumání se ukázalo, že původní zadání ("AI shrne strážci, co se spustí, než potvrdí") narazí na reálný problém: appka dosud neměla žádný potvrzovací mezikrok vůbec — odkaz v e-mailu (GET) spouštěl nevratnou akci okamžitě při kliknutí, bez jakéhokoli "opravdu chceš?" kroku.
 

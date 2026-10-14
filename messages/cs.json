@@ -1077,6 +1077,17 @@
         "short": "Stručnější",
         "generating": "Přepisuji…"
       },
+      "mode": {
+        "quick": "Rychlé generování",
+        "interview": "Rozhovor s AI"
+      },
+      "interview": {
+        "intro": "Nevíš, kde začít? Odpověz na pár krátkých otázek a společně z toho sestavíme návrh.",
+        "answerPlaceholder": "Tvoje odpověď…",
+        "thinking": "Přemýšlím…",
+        "next": "Další",
+        "finishNow": "To stačí — napiš to teď"
+      },
       "occasions": {
         "birthday": "Narozeniny",
         "thanks": "Poděkování",
