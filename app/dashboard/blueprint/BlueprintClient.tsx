@@ -464,7 +464,7 @@ function ItemCard({
           <p
             style={{
               margin: "5px 0 0", fontSize: 12.5, lineHeight: 1.55,
-              color: revealed ? "var(--muted)" : "var(--hairline-2)",
+              color: revealed ? "var(--muted)" : "color-mix(in srgb, var(--muted) 50%, transparent)",
               letterSpacing: revealed ? undefined : "1px",
               userSelect: revealed ? undefined : "none",
             }}
