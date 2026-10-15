@@ -3,7 +3,10 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { createBlueprintItem, updateBlueprintItem, deleteBlueprintItem } from "@/app/actions/blueprint";
+import {
+  createBlueprintItem, updateBlueprintItem, deleteBlueprintItem,
+  uploadBlueprintAttachment, removeBlueprintAttachment, getBlueprintAttachmentUrl,
+} from "@/app/actions/blueprint";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -15,6 +18,8 @@ export interface BlueprintItem {
   title: string;
   content: string;
   isCritical: boolean;
+  attachmentPath?: string | null;
+  attachmentName?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,6 +96,8 @@ const IcAlert  = () => <svg width={11} height={11} viewBox="0 0 24 24" fill="non
 const IcCheck  = () => <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12l4 4 10-10"/></svg>;
 const IcSpin   = () => <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ animation: "arca-spin .8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
 const IcSparkle= () => <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>;
+const IcPaperclip = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>;
+const IcDownload = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>;
 
 // ── Sheet ─────────────────────────────────────────────────────────────────────
 
@@ -113,6 +120,9 @@ function Sheet({
   const [pending, startT] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [existingAttachmentName, setExistingAttachmentName] = useState<string | null>(null);
+  const [removeExistingAttachment, setRemoveExistingAttachment] = useState(false);
 
   // Resets the form fields and focuses the title input whenever the sheet
   // opens (for a new item or to edit a different one) — the focus call
@@ -124,6 +134,9 @@ function Sheet({
       setCategory(preCategory ?? editItem?.category as Category ?? "SUBSCRIPTION");
       setIsCritical(editItem?.isCritical ?? false);
       setError(null);
+      setAttachmentFile(null);
+      setExistingAttachmentName(editItem?.attachmentName ?? null);
+      setRemoveExistingAttachment(false);
       setTimeout(() => titleRef.current?.focus(), 80);
     }
   }, [open, preCategory, editItem]);
@@ -149,23 +162,43 @@ function Sheet({
     setError(null);
 
     startT(async () => {
+      let itemId: string;
+      let base: BlueprintItem;
+
       if (editItem) {
         const res = await updateBlueprintItem(editItem.id, formData);
         if ("error" in res) { setError(res.error); return; }
-        onUpdated({
+        itemId = editItem.id;
+        base = {
           ...editItem,
           title: formData.get("title") as string,
           content: formData.get("content") as string,
           isCritical,
           updatedAt: new Date(),
-        });
-        toast.success(t("sheet.savedToast"));
+        };
       } else {
         const res = await createBlueprintItem(formData);
         if ("error" in res) { setError(res.error); return; }
-        onCreated(res as BlueprintItem);
-        toast.success(t("sheet.createdToast"));
+        itemId = res.id;
+        base = res as BlueprintItem;
       }
+
+      if (attachmentFile) {
+        const fd = new FormData();
+        fd.set("file", attachmentFile);
+        const upRes = await uploadBlueprintAttachment(itemId, fd);
+        if ("error" in upRes) {
+          toast.error(upRes.error);
+        } else {
+          base = { ...base, attachmentName: upRes.attachmentName };
+        }
+      } else if (removeExistingAttachment && editItem?.attachmentPath) {
+        await removeBlueprintAttachment(itemId);
+        base = { ...base, attachmentPath: null, attachmentName: null };
+      }
+
+      if (editItem) { onUpdated(base); toast.success(t("sheet.savedToast")); }
+      else { onCreated(base); toast.success(t("sheet.createdToast")); }
       onClose();
     });
   }
@@ -262,6 +295,34 @@ function Sheet({
             />
           </div>
 
+          {/* Attachment */}
+          <div>
+            <label className="arca-mono" style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 6 }}>{t("sheet.attachmentLabel")}</label>
+            {attachmentFile ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: "var(--r-md)", border: "1px solid var(--hairline-2)", background: "var(--surface-2)" }}>
+                <IcPaperclip />
+                <span style={{ fontSize: 12.5, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{attachmentFile.name}</span>
+                <button type="button" onClick={() => setAttachmentFile(null)} className="arca-btn sm arca-btn--ghost" style={{ padding: "3px 8px" }}><IcClose /></button>
+              </div>
+            ) : existingAttachmentName && !removeExistingAttachment ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: "var(--r-md)", border: "1px solid var(--hairline-2)", background: "var(--surface-2)" }}>
+                <IcPaperclip />
+                <span style={{ fontSize: 12.5, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{existingAttachmentName}</span>
+                <button type="button" onClick={() => setRemoveExistingAttachment(true)} className="arca-btn sm arca-btn--ghost" style={{ padding: "3px 8px", color: "var(--danger-deep)" }}>{t("sheet.attachmentRemove")}</button>
+              </div>
+            ) : (
+              <label className="arca-btn sm arca-btn--outline" style={{ cursor: "pointer", display: "inline-flex" }}>
+                <IcPaperclip /> {t("sheet.attachmentAdd")}
+                <input
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={e => { setAttachmentFile(e.target.files?.[0] ?? null); setRemoveExistingAttachment(false); }}
+                />
+              </label>
+            )}
+            <p style={{ fontSize: 11, color: "var(--muted)", margin: "6px 0 0" }}>{t("sheet.attachmentHint")}</p>
+          </div>
+
           {/* Critical toggle */}
           <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", padding: "12px 14px", borderRadius: "var(--r-md)", background: isCritical ? "var(--danger-tint)" : "var(--surface-2)", border: `1px solid ${isCritical ? "var(--danger-soft)" : "var(--hairline-2)"}`, transition: "all .15s" }}>
             <div
@@ -308,6 +369,18 @@ function ItemCard({
   const [confirming, setConfirming] = useState(false);
   const [expanded,   setExpanded]   = useState(false);
   const [deleting,   startDel]      = useTransition();
+  const [opening,    setOpening]    = useState(false);
+
+  async function handleOpenAttachment() {
+    setOpening(true);
+    try {
+      const res = await getBlueprintAttachmentUrl(item.id);
+      if ("error" in res) { toast.error(res.error); return; }
+      window.open(res.url, "_blank", "noopener,noreferrer");
+    } finally {
+      setOpening(false);
+    }
+  }
 
   function handleDelete() {
     startDel(async () => {
@@ -361,6 +434,17 @@ function ItemCard({
               style={{ fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: "5px 0 0", fontFamily: "var(--f-sans)" }}
             >
               {expanded ? t("card.less") : t("card.fullText")}
+            </button>
+          )}
+          {item.attachmentName && (
+            <button
+              type="button"
+              onClick={handleOpenAttachment}
+              disabled={opening}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "var(--accent-tint)", border: "none", borderRadius: "var(--r-pill)", cursor: "pointer", padding: "4px 10px", marginTop: 6, fontFamily: "var(--f-sans)", alignSelf: "flex-start" }}
+            >
+              {opening ? <IcSpin /> : <IcDownload />}
+              <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>{item.attachmentName}</span>
             </button>
           )}
         </div>
