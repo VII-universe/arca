@@ -26,11 +26,27 @@ async function getUser() {
   return user;
 }
 
+// Returns the trimmed URL, or null for an empty field, or a Czech error
+// string if it's non-empty but not a valid http(s) URL.
+function parseOptionalUrl(raw: FormDataEntryValue | null): string | null | { error: string } {
+  const value = (raw as string)?.trim();
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return { error: "Odkaz musí začínat http:// nebo https://." };
+    }
+    return value;
+  } catch {
+    return { error: "Odkaz není platná URL adresa." };
+  }
+}
+
 // ── createBlueprintItem ────────────────────────────────────────────────────────
 
 export async function createBlueprintItem(formData: FormData): Promise<
   | { error: string }
-  | { id: string; category: string; title: string; content: string; isCritical: boolean; createdAt: Date; updatedAt: Date }
+  | { id: string; category: string; title: string; content: string; isCritical: boolean; url: string | null; createdAt: Date; updatedAt: Date }
 > {
   const user = await getUser();
 
@@ -38,13 +54,15 @@ export async function createBlueprintItem(formData: FormData): Promise<
   const title      = (formData.get("title")       as string)?.trim();
   const content    = (formData.get("content")     as string)?.trim();
   const isCritical = formData.get("isCritical") === "true";
+  const url        = parseOptionalUrl(formData.get("url"));
 
   if (!category) return { error: "Kategorie je povinná." };
   if (!title)    return { error: "Název je povinný." };
   if (!content)  return { error: "Popis je povinný." };
+  if (url && typeof url === "object") return { error: url.error };
 
   const item = await prisma.blueprintItem.create({
-    data: { category, title, content: encryptBlueprintContent(content), isCritical, ownerId: user.id },
+    data: { category, title, content: encryptBlueprintContent(content), isCritical, url, ownerId: user.id },
   });
 
   revalidatePath(PATH);
@@ -67,13 +85,15 @@ export async function updateBlueprintItem(
   const title      = (formData.get("title")   as string)?.trim();
   const content    = (formData.get("content") as string)?.trim();
   const isCritical = formData.get("isCritical") === "true";
+  const url        = parseOptionalUrl(formData.get("url"));
 
   if (!title)   return { error: "Název je povinný." };
   if (!content) return { error: "Popis je povinný." };
+  if (url && typeof url === "object") return { error: url.error };
 
   await prisma.blueprintItem.update({
     where: { id },
-    data: { title, content: encryptBlueprintContent(content), isCritical },
+    data: { title, content: encryptBlueprintContent(content), isCritical, url },
   });
 
   revalidatePath(PATH);

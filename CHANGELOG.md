@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.52.0] - Manuál k životu: strukturované odkazy
+Třetí krok redesignu Manuálu k životu. Nové volitelné pole `url` u položky — pro odkaz na zrušení předplatného, portál dokumentu apod. Na rozdíl od `content` (hesla/instrukce) se nejedná o citlivé pole, takže zůstává nešifrované v databázi. Validace na serveru (musí být platná http/https adresa), zobrazeno jako klikatelný chip na kartě položky. Doplněno i do `getSanctuaryContent` (doručení balíčku příjemci) — příjemce uvidí odkaz stejně jako vlastník.
+
+### Přidáno
+- `BlueprintItem.url` — nové volitelné textové pole (ruční migrace).
+- `app/actions/blueprint.ts` — validace URL (`parseOptionalUrl`) v `createBlueprintItem`/`updateBlueprintItem`.
+- `app/dashboard/blueprint/BlueprintClient.tsx` — pole pro odkaz ve formuláři, klikatelný chip na kartě.
+- `app/actions/sanctuary.ts` — `url` doplněno do výběru a vráceného typu pro doručení příjemci.
+
 ## [1.51.0] - Manuál k životu: skutečné přílohy dokumentů
 Druhý krok redesignu Manuálu k životu (po šifrování v 1.50.0). Appka dosud u položek jen popisovala dokument textem — teď lze k položce reálně nahrát soubor (smlouva, scan dokladu, potvrzení o předplatném...), uložený do privátního Supabase Storage (bucket `arca-media`, stejný vzor jako u avatarů). Přístup k přílohám je přes krátkodobě platné podepsané URL (10 min) generované až po ověření vlastnictví položky na serveru.
 

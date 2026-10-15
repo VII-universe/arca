@@ -539,6 +539,11 @@ model BlueprintItem {
   attachmentPath String?
   attachmentName String?
 
+  // Optional link — subscription cancellation page, document's source
+  // portal, etc. Not sensitive like `content` (no credentials expected
+  // here), so stored as plain text, unlike the encrypted content field.
+  url String?
+
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId String
 

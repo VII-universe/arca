@@ -35,6 +35,7 @@ export interface SanctuaryBlueprintItem {
   title: string;
   content: string;
   isCritical: boolean;
+  url: string | null;
 }
 
 export type SanctuaryResult =
@@ -71,7 +72,7 @@ export async function getSanctuaryContent(token: string): Promise<SanctuaryResul
           name: true,
           blueprintItems: {
             orderBy: [{ isCritical: "desc" as const }, { createdAt: "asc" as const }],
-            select: { id: true, category: true, title: true, content: true, isCritical: true },
+            select: { id: true, category: true, title: true, content: true, isCritical: true, url: true },
           },
         },
       },
