@@ -322,7 +322,7 @@ export default function ArcaEditorNew({
   return (
     <div data-arca-theme="" style={{ position: "fixed", inset: 0, zIndex: 50, overflowY: "auto", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
       {/* Topbar */}
-      <div className="arca-topbar">
+      <div className="arca-topbar arca-topbar--standalone">
         <div className="arca-topbar__crumbs">
           <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>

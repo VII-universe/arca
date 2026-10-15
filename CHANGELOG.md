@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.55.0] - Oprava: zmizelá horní lišta v editoru zprávy na mobilu
+Druhá oprava mobilní verze. Obrazovky "nová zpráva" a "upravit zprávu" nepoužívají hlavní dashboard layout (jedou na vlastní celostránkové vrstvě, aby unikly postranní liště), takže nemají mobilní hlavičku dashboardu — ale CSS stejně schovávalo jejich vlastní horní lištu (`display: none` na mobilu, protože normální stránky ji nahrazují mobilní hlavičkou). Výsledek: na telefonu v editoru zprávy úplně zmizelo tlačítko zpět, přepínač typu balíčku (emotivní/praktický) a v editaci i tlačítko na výběr vzhledu — nedalo se nic z toho použít.
+
+### Opraveno
+- `app/globals.css` — nová třída `.arca-topbar--standalone` pro tyto dvě obrazovky: lišta zůstává viditelná, ale na mobilu se zalamuje (drobečková navigace jede vodorovně scrollovatelně, ovládací prvky jako přepínač typu balíčku nebo výběr vzhledu spadnou na vlastní řádek pod ní) místo aby mizela beze zbytku.
+- Odstraněn zastaralý `padding-top: 52px` hack v `.arca-compose-layout`, který počítal s mobilní hlavičkou, jež se v této obrazovce vůbec nevykresluje — teď, když je lišta skutečně vidět, kompenzace není potřeba.
+- `app/dashboard/arca/new/ComposeWizard.tsx`, `components/arca/ArcaEditorNew.tsx` — přidána třída `arca-topbar--standalone` na jejich tři horní lišty.
+- Při příležitosti opraveny i tři natvrdo dvou/čtyřsloupcové mřížky v `ComposeWizard.tsx` (výběr režimu zprávy, pole "kdo/věk" u spouštěče, mřížka fotek) — na mobilu se tísnily vedle sebe, protože nebyly pokryté stávajícím responzivním CSS blokem.
+
 ## [1.54.0] - Oprava: výběr vzhledu nešel použít na mobilu
 Uživatel nahlásil, že spousta věcí na telefonu nefunguje — začátek širší opravy mobilní verze. První a nejzávažnější nález: tlačítko na změnu vzhledu (téma, barva, pozadí) v mobilním menu nešlo vůbec použít — klik na libovolnou možnost menu jen zavřel. Nešlo o CSS, ale o konflikt s Radix Dialogem: panel výběru vzhledu se portáluje přímo do `<body>` (mimo strom mobilního menu, aby ho neoříznul `overflow`/`transform` postranní lišty), takže Radix ho vyhodnotil jako klik "mimo" dialog a hned zavřel celé menu.
 

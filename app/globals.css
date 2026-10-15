@@ -918,6 +918,27 @@ html[data-arca-glow="off"] {
   /* Desktop topbar breadcrumbs — replaced by mobile header */
   .arca-topbar { display: none !important; }
 
+  /* Full-page editor screens (compose wizard, message editor) render their
+     own .arca-topbar instead of DashboardShell's mobile header — there's no
+     substitute to replace it with, so keep it visible but let it wrap
+     instead of forcing desktop's single-row layout onto a narrow screen.
+     Breadcrumbs scroll horizontally rather than wrapping mid-sentence;
+     trailing controls (pack-type toggle, status chip, appearance button)
+     drop to their own row below. */
+  .arca-topbar--standalone {
+    display: flex !important;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .arca-topbar--standalone .arca-topbar__crumbs {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .arca-topbar--standalone .arca-grow { display: none; }
+
   /* Inner content padding — account for fixed bottom nav */
   .arca-inner { padding: 20px 16px 88px; max-width: 100%; }
 
@@ -939,8 +960,9 @@ html[data-arca-glow="off"] {
   /* Guardian page — stack 2-col grids */
   .arca-guardian-rule-grid { grid-template-columns: 1fr !important; align-items: start !important; }
   .arca-presence-grid      { grid-template-columns: 1fr !important; }
-  /* Compose full-page layout — push content below mobile header (52px) */
-  .arca-compose-layout     { padding-top: 52px !important; }
+  .arca-mode-grid          { grid-template-columns: 1fr !important; }
+  .arca-age-grid           { grid-template-columns: 1fr !important; }
+  .arca-photo-grid         { grid-template-columns: repeat(3, 1fr) !important; }
 
   /* Compose preview — un-sticky on mobile */
   .arca-compose-preview { position: static !important; }

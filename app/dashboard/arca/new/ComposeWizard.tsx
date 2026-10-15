@@ -406,7 +406,7 @@ function PhotoPicker({ photos, onChange }: { photos: File[]; onChange: (files: F
 
   return (
     <div className="arca-card" style={{ padding: 22 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+      <div className="arca-photo-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
         {photos.map((f, i) => (
           <button
             key={i}
@@ -531,7 +531,7 @@ function ModeSelect({ onChoose, onBack }: { onChoose: (m: MessageMode) => void; 
   }));
   return (
     <div data-arca-theme="" style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
-      <div className="arca-topbar">
+      <div className="arca-topbar arca-topbar--standalone">
         <div className="arca-topbar__crumbs">
           <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -553,7 +553,7 @@ function ModeSelect({ onChoose, onBack }: { onChoose: (m: MessageMode) => void; 
           <h1 className="arca-h1" style={{ marginTop: 8 }}>{t.rich("modeSelect.title", { em: (chunks) => <em>{chunks}</em> })}</h1>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div className="arca-mode-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           {MODES.map((m) => (
             <button
               key={m.id}
@@ -893,7 +893,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
   return (
     <div data-arca-theme="" style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--f-sans)", color: "var(--ink)" }}>
       {/* Topbar */}
-      <div className="arca-topbar">
+      <div className="arca-topbar arca-topbar--standalone">
         <div className="arca-topbar__crumbs">
           <span style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", color: "var(--accent)" }}>arca</span>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1170,7 +1170,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
               {trigger === "age" && (
                 <div className="arca-card" style={{ padding: 20, marginTop: 12 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                  <div className="arca-age-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
                     <div>
                       <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.whoLabel")}</label>
                       {primaryTarget ? (
@@ -1227,7 +1227,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
 
               {trigger === "relative" && (
                 <div className="arca-card" style={{ padding: 20, marginTop: 12 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="arca-date-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
                       <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.yearsLabel")}</label>
                       <input type="number" min={0} max={99} className="arca-input" value={relativeYears}
