@@ -55,6 +55,69 @@ function Topbar({ crumbs, dateLocale, syncedLabel }: { crumbs: string[]; dateLoc
   );
 }
 
+// ── Completeness score ───────────────────────────────────────────────────────
+const CheckIc = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4 4 10-10"/></svg>;
+
+function CompletenessCard({
+  score, items, labels, title, subtitle, doneSubtitle,
+}: {
+  score: number;
+  items: { key: string; done: boolean; href: string }[];
+  labels: Record<string, string>;
+  title: string;
+  subtitle: string;
+  doneSubtitle: string;
+}) {
+  const ringColor = score === 100 ? "var(--sage)" : "var(--accent)";
+  // Circular progress ring via conic-gradient — no SVG math needed, and it
+  // reads correctly in both themes since it's built from the same tokens
+  // the rest of the card uses.
+  const ringStyle: React.CSSProperties = {
+    width: 92, height: 92, borderRadius: "50%", flexShrink: 0,
+    background: `conic-gradient(${ringColor} ${score * 3.6}deg, var(--hairline-2) 0deg)`,
+    display: "grid", placeItems: "center",
+  };
+  return (
+    <div className="arca-card elev" style={{ padding: "26px 28px", marginBottom: 36, display: "flex", alignItems: "center", gap: 28, flexWrap: "wrap" }}>
+      <div style={ringStyle}>
+        <div style={{ width: 74, height: 74, borderRadius: "50%", background: "var(--surface)", display: "grid", placeItems: "center" }}>
+          <span style={{ fontFamily: "var(--f-serif)", fontSize: 26, color: ringColor }}>{score}%</span>
+        </div>
+      </div>
+      <div style={{ flex: "1 1 260px", minWidth: 220 }}>
+        <h3 className="arca-h3" style={{ marginBottom: 3 }}>{title}</h3>
+        <p className="arca-sub" style={{ fontSize: 12.5 }}>{score === 100 ? doneSubtitle : subtitle}</p>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, flex: "2 1 340px" }}>
+        {items.map((item) => (
+          <Link
+            key={item.key}
+            href={item.href}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 7,
+              padding: "6px 13px", borderRadius: "var(--r-pill)",
+              background: item.done ? "var(--sage-soft)" : "var(--surface-2)",
+              border: `1px solid ${item.done ? "transparent" : "var(--hairline-2)"}`,
+              fontSize: 12.5, fontWeight: 500, textDecoration: "none",
+              color: item.done ? "#3E5A3A" : "var(--ink-2)",
+            }}
+          >
+            <span style={{
+              width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
+              display: "grid", placeItems: "center",
+              background: item.done ? "var(--sage)" : "transparent",
+              border: item.done ? "none" : "1.5px solid var(--muted)",
+              color: "#fff",
+            }}>
+              {item.done && <CheckIc />}
+            </span>
+            {labels[item.key]}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default async function DashboardPage() {
   const t = await getTranslations("Dashboard");
@@ -70,7 +133,7 @@ export default async function DashboardPage() {
   const email = authUser.email ?? "";
   const isAdminEmail = ADMIN_EMAILS.has(email.toLowerCase());
 
-  const [dbUser, packs, guardians, allRecipients, unansweredSelfPack] = await Promise.all([
+  const [dbUser, packs, guardians, allRecipients, unansweredSelfPack, userSettings, blueprintItemCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
       select: { name: true, isPremium: true, role: true, lastActiveAt: true },
@@ -117,6 +180,11 @@ export default async function DashboardPage() {
       // date to show here.
       select: { id: true, title: true, triggerCondition: { select: { executeAtDate: true } } },
     }),
+    prisma.userSettings.findUnique({
+      where: { userId: authUser.id },
+      select: { switchEnabled: true },
+    }),
+    prisma.blueprintItem.count({ where: { ownerId: authUser.id } }),
   ]);
 
   const firstName = (dbUser?.name ?? email.split("@")[0] ?? t("greeting.fallbackName")).split(" ")[0];
@@ -124,6 +192,19 @@ export default async function DashboardPage() {
 
   const activePacks = packs.filter((p) => p.status === "ACTIVE").length;
   const totalRecipients = new Set(packs.flatMap((p) => p.recipients.map((r) => r.email ?? r.name))).size;
+
+  // ── Readiness checklist — how prepared is this account, end to end ──────
+  const hasRecipientContact = packs.some((p) => p.recipients.some((r) => r.email));
+  const completenessItems: { key: string; done: boolean; href: string }[] = [
+    { key: "message",    done: packs.length > 0,                     href: "/dashboard/arca/new" },
+    { key: "recipient",  done: hasRecipientContact,                  href: "/dashboard/vault" },
+    { key: "guardian",   done: guardians.length > 0,                 href: "/dashboard/guardians" },
+    { key: "switch",     done: userSettings?.switchEnabled === true, href: "/dashboard/settings" },
+    { key: "blueprint",  done: blueprintItemCount > 0,                href: "/dashboard/blueprint" },
+  ];
+  const completenessScore = Math.round(
+    (completenessItems.filter((i) => i.done).length / completenessItems.length) * 100
+  );
 
   const gracePacks = packs.filter((p) => p.status === "GRACE_PERIOD" || p.status === "PENDING_GUARDIAN_APPROVAL");
 
@@ -327,6 +408,22 @@ export default async function DashboardPage() {
             {activePacks > 0 && ` ${t("greeting.activeSuffix", { count: activePacks })}`}
           </p>
         </div>
+
+        {/* ── Completeness / readiness score ─────────────────────── */}
+        <CompletenessCard
+          score={completenessScore}
+          items={completenessItems}
+          labels={{
+            message: t("completeness.items.message"),
+            recipient: t("completeness.items.recipient"),
+            guardian: t("completeness.items.guardian"),
+            switch: t("completeness.items.switch"),
+            blueprint: t("completeness.items.blueprint"),
+          }}
+          title={t("completeness.title")}
+          subtitle={t("completeness.subtitle")}
+          doneSubtitle={t("completeness.doneSubtitle")}
+        />
 
         {/* ── Hero CTA card ───────────────────────────────────────── */}
         <div className="arca-card elev" style={{ overflow: "hidden", marginBottom: 36 }}>

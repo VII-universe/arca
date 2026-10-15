@@ -32,6 +32,18 @@
     "topbar": {
       "synced": "Vše synchronizováno"
     },
+    "completeness": {
+      "title": "Připravenost účtu",
+      "subtitle": "Doplň zbývající kroky, ať je všechno v bezpečí.",
+      "doneSubtitle": "Vše je nastavené — skvělá práce.",
+      "items": {
+        "message": "Zpráva",
+        "recipient": "Kontakt na příjemce",
+        "guardian": "Strážce",
+        "switch": "Nastavený spínač",
+        "blueprint": "Manuál k životu"
+      }
+    },
     "readyToOpen": {
       "selfTitleSingle": "Tvůj dopis „{title}\" je připraven k otevření",
       "selfTitleMultiple": "{count} dopisy jsou připravené k otevření",

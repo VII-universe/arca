@@ -32,6 +32,18 @@
     "topbar": {
       "synced": "All synced"
     },
+    "completeness": {
+      "title": "Account readiness",
+      "subtitle": "Finish the remaining steps to make sure everything's covered.",
+      "doneSubtitle": "Everything's set up — nice work.",
+      "items": {
+        "message": "Message",
+        "recipient": "Recipient contact",
+        "guardian": "Guardian",
+        "switch": "Switch configured",
+        "blueprint": "Life Manual"
+      }
+    },
     "readyToOpen": {
       "selfTitleSingle": "Your letter \"{title}\" is ready to open",
       "selfTitleMultiple": "{count} letters are ready to open",
