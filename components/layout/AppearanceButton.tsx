@@ -124,6 +124,26 @@ export default function AppearanceButton() {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  // On desktop, the trigger lives inside .arca-side — a hover/focus-
+  // expanding overlay rail (CSS :hover / :focus-within, see globals.css).
+  // The panel itself is portaled to <body> to escape that rail's own
+  // transform/overflow:hidden clipping, which means it's NOT a descendant
+  // of .arca-side — so the instant the pointer (or focus) moves off the
+  // trigger and onto the panel, .arca-side loses both :hover and
+  // :focus-within at once and starts sliding shut *underneath* the still-
+  // open panel, mid-interaction. That moving, semi-transparent surface
+  // sweeping under the cursor while someone's trying to click a mode/
+  // accent/background option is exactly what read as "clicking the panel
+  // actually clicks a link underneath it". Pin the sidebar open for as
+  // long as this panel is, via a toggled attribute (same mechanism
+  // AppearanceButton already uses for theme/accent/glow) — the matching
+  // CSS rule is `html[data-appearance-open] .arca-side`.
+  useEffect(() => {
+    if (open) document.documentElement.setAttribute("data-appearance-open", "");
+    else document.documentElement.removeAttribute("data-appearance-open");
+    return () => document.documentElement.removeAttribute("data-appearance-open");
+  }, [open]);
+
   // Auto theme observer
   useEffect(() => {
     if (theme !== "auto") return;

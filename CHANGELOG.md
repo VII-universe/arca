@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.57.2] - Oprava: na panel výběru vzhledu v postranní liště se nedalo kliknout
+Hned po předchozí opravě (panel byl mimo obrazovku) uživatel nahlásil navazující problém: teď panel jde vidět, ale kliknutí na něj nefungují — jakoby kliknutí propadlo na odkaz pod panelem a otevřela se jiná podstrana. Příčina: postranní lišta se rozbaluje/zabaluje přes CSS `:hover`/`:focus-within` (najetí myší nebo zaostření na cokoliv uvnitř ji drží rozbalenou). Panel výběru vzhledu se ale portáluje mimo lištu přímo do `<body>` (musí, jinak ho ořízne vlastní `overflow`/`transform` lišty — viz oprava #69). V momentě, kdy myš nebo fokus přejde z tlačítka na panel, lišta tím pádem ztratí `:hover` i `:focus-within` najednou a začne se zabalovat zpátky — přímo pod otevřeným panelem, uprostřed toho, co se uživatel snaží udělat.
+
+### Opraveno
+- `components/layout/AppearanceButton.tsx` — dokud je panel otevřený, nastaví se atribut na `<html>`, který lištu "připíchne" rozbalenou (stejný mechanismus appka už používá pro téma/barvu).
+- `app/globals.css` — nové pravidlo `html[data-appearance-open] .arca-side`, co lištu drží rozbalenou bez ohledu na hover/fokus.
+- Ověřeno automatizovaným testem (Playwright) — s opravou zůstává poloha odkazů v liště beze změny po celou dobu interakce s panelem a kliknutí na panel se správně zaregistruje.
+
 ## [1.57.1] - Oprava: panel výběru vzhledu v postranní liště byl mimo obrazovku
 Uživatel nahlásil, že po kliknutí na "Vzhled" v levém menu se panel otevře, ale "režim" (light/dark/auto) nejde zvolit, protože je "schovaný za horizontem". Příčina byla v logice z opravy #69 — tehdy jsem přidal pevný práh (`rect.top < 320`), který rozhodoval, jestli se panel otevře nahoru nebo dolů, ale u varianty "nahoru" se výška panelu ořezávala jen podle celé výšky okna, ne podle skutečně dostupného prostoru nad tlačítkem. Když tlačítko sedí níž v postranní liště a panel má dost obsahu (režim, barvy, vlastní barva, podsvícení, pozadí), horní část panelu (právě výběr režimu, protože je v panelu první) se vykreslila nad horní okraj obrazovky.
 
