@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.50.0] - Bezpečnost: šifrování obsahu Manuálu k životu na uložišti
+Začátek redesignu "Manuálu k životu" (Blueprint) — uživatel chce dokonalejší formu, top UX a features, co lidi ocení. Než do toho sekce stavět cokoliv dalšího, nejdřív základ: `BlueprintItem.content` (kam appka nabádá ukládat přístupové údaje a hesla) se dosud ukládal v databázi čistým textem, bez jakéhokoliv šifrování na úrovni appky. Appka navíc nepoužívá Supabase RLS (všechen přístup je jen ruční `ownerId` filtr v kódu) — únik service-role klíče nebo chyba v dotazu by znamenaly čitelná hesla všech uživatelů.
+
+### Přidáno
+- `lib/crypto/blueprint-encryption.ts` — AES-256-GCM, klíč z `BLUEPRINT_ENCRYPTION_KEY` (32 bajtů, base64). Verzovaný formát (`v1.<iv>.<authTag>.<ciphertext>`) místo hádání podle délky — jednoznačné, umožní budoucí změnu formátu. Fail-safe: poškozený/padělaný ciphertext vrátí prázdný řetězec místo pádu appky.
+- `lib/crypto/blueprint-encryption.test.ts` — 8 jednotkových testů (round-trip s diakritikou, náhodné IV při každém šifrování, legacy plaintext fallback, odolnost vůči poškozenému/padělanému obsahu, chybějící/špatně dlouhý klíč).
+- `BLUEPRINT_ENCRYPTION_KEY` nastaven na Vercelu (Production+Preview) i lokálně, doplněn do `.env.example`.
+
+### Opraveno
+- `app/actions/blueprint.ts` — `createBlueprintItem`/`updateBlueprintItem` teď šifrují při zápisu; `createBlueprintItem` vrací klientovi otevřený text (co uživatel zrovna napsal), ne uloženou šifru.
+- `app/dashboard/blueprint/page.tsx` — dešifruje při čtení pro zobrazení vlastníkovi.
+- `app/actions/sanctuary.ts` — **našel jsem při auditu druhé čtecí místo**: `getSanctuaryContent` (doručení PRACTICAL balíčku příjemci přes `/s/[token]`) posílalo `blueprintItems` bez dešifrování — příjemce by po odemčení viděl nečitelnou šifru místo hesel/instrukcí, které potřebuje. Opraveno.
+
+### Zpětná kompatibilita
+Žádná hromadná migrace existujících řádků (lokální `DATABASE_URL` je stále rozbité, nešlo by to spustit ani kdybych chtěl) — staré nezašifrované položky se zobrazují normálně (detekovány podle chybějící `v1.` předpony) a zašifrují se samy při příštím uložení vlastníkem. Žádné funkční přerušení pro stávající uživatele.
+
+### Ověřeno
+- Živě otestován round-trip (včetně české diakritiky), fail-safe chování na poškozeném ciphertextu, legacy plaintext fallback — přes dočasnou debug route, ne jen přes testy.
+
 ## [1.49.0] - Feature: spoluautorství zprávy
 Pátá a poslední položka z druhé vlny feature backlogu. Vlastník zprávy teď může pozvat někoho dalšího (ne nutně příjemce), aby ke zprávě přidal vlastní slova — odkazem, bez nutnosti účtu.
 

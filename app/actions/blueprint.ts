@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { encryptBlueprintContent, decryptBlueprintContent } from "@/lib/crypto/blueprint-encryption";
 
 const PATH = "/dashboard/blueprint";
 
@@ -32,11 +33,13 @@ export async function createBlueprintItem(formData: FormData): Promise<
   if (!content)  return { error: "Popis je povinný." };
 
   const item = await prisma.blueprintItem.create({
-    data: { category, title, content, isCritical, ownerId: user.id },
+    data: { category, title, content: encryptBlueprintContent(content), isCritical, ownerId: user.id },
   });
 
   revalidatePath(PATH);
-  return item;
+  // Return the plaintext the owner just typed, not the stored ciphertext —
+  // the client uses this response directly to render the new card.
+  return { ...item, content };
 }
 
 // ── updateBlueprintItem ────────────────────────────────────────────────────────
@@ -59,7 +62,7 @@ export async function updateBlueprintItem(
 
   await prisma.blueprintItem.update({
     where: { id },
-    data: { title, content, isCritical },
+    data: { title, content: encryptBlueprintContent(content), isCritical },
   });
 
   revalidatePath(PATH);
