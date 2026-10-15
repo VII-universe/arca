@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import {
@@ -216,7 +217,15 @@ function Sheet({
   if (!open) return null;
   const cat = catMap[category];
 
-  return (
+  // Portaled to <body> — this panel is position:fixed to pin it to the
+  // viewport, but .arca-inner (an ancestor) runs a transform-based entrance
+  // animation on page load. Per the CSS spec, an element with a transform
+  // animation (even one that finishes at `transform: none` via
+  // animation-fill-mode: both) becomes the containing block for its
+  // fixed-position descendants — so without this portal, "fixed" ends up
+  // anchored to .arca-inner's box instead of the viewport, and the panel
+  // renders above the visible area once the page is scrolled down.
+  return createPortal(
     <>
       {/* Overlay */}
       <div
@@ -374,7 +383,8 @@ function Sheet({
           </button>
         </form>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
