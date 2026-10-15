@@ -32,6 +32,9 @@
     "topbar": {
       "synced": "Vše synchronizováno"
     },
+    "attention": {
+      "title": "Vyžaduje pozornost"
+    },
     "completeness": {
       "title": "Připravenost účtu",
       "subtitle": "Doplň zbývající kroky, ať je všechno v bezpečí.",

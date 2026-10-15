@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.58.0] - Dashboard: sjednocená upozornění
+Druhý krok redesignu dashboardu. Tři samostatné plné karty (dopis připravený k otevření, grace period u spínače, narozeninové/výroční připomínky) se dřív stavěly pod sebe — teď jsou jeden panel "Vyžaduje pozornost" se sjednoceným vzhledem řádků (ikona, text, případně pulzující tečka u urgentních položek, tlačítko akce), seřazený podle naléhavosti: nejdřív připravené dopisy, pak grace period, pak připomínky.
+
+### Přidáno
+- `app/dashboard/page.tsx` — nové komponenty `AttentionPanel`/`AttentionRow`, data sestavena do jednoho pole `attentionItems` místo tří oddělených bloků JSX.
+
 ## [1.57.2] - Oprava: na panel výběru vzhledu v postranní liště se nedalo kliknout
 Hned po předchozí opravě (panel byl mimo obrazovku) uživatel nahlásil navazující problém: teď panel jde vidět, ale kliknutí na něj nefungují — jakoby kliknutí propadlo na odkaz pod panelem a otevřela se jiná podstrana. Příčina: postranní lišta se rozbaluje/zabaluje přes CSS `:hover`/`:focus-within` (najetí myší nebo zaostření na cokoliv uvnitř ji drží rozbalenou). Panel výběru vzhledu se ale portáluje mimo lištu přímo do `<body>` (musí, jinak ho ořízne vlastní `overflow`/`transform` lišty — viz oprava #69). V momentě, kdy myš nebo fokus přejde z tlačítka na panel, lišta tím pádem ztratí `:hover` i `:focus-within` najednou a začne se zabalovat zpátky — přímo pod otevřeným panelem, uprostřed toho, co se uživatel snaží udělat.
 
