@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.57.0] - Dashboard: přehled připravenosti účtu
+První krok redesignu dashboardu. Nová karta nahoře (hned pod pozdravem) ukazuje procentuální "připravenost" účtu — kombinuje pět věcí: aspoň jedna zpráva, kontakt na příjemce, strážce, nastavený spínač (dead-man's switch) a vyplněný Manuál k životu. Každá položka je klikatelná a vede přímo tam, kde se dá doplnit.
+
+### Přidáno
+- `app/dashboard/page.tsx` — nová `CompletenessCard` komponenta (kruhový ukazatel procent + klikatelné "pilulky" pro každou podmínku), data dotažena paralelně se zbytkem stránky (`UserSettings.switchEnabled`, počet položek Manuálu k životu).
+
 ## [1.56.2] - Oprava: formulář pro novou položku v Manuálu k životu byl mimo obrazovku
 Uživatel nahlásil, že formulář pro přidání nové položky (např. předplatného) "je někde nahoře za horizontem" — nešlo ho vidět ani vyplnit. Příčina: formulář (Sheet) je vykreslený jako `position: fixed`, aby zůstal přilepený k pravému okraji obrazovky bez ohledu na scroll — ale obalující `.arca-inner` má animaci vstupu stránky, která používá `transform`. Podle CSS specifikace prvek s transform animací (i taková, co skončí na `transform: none` s `animation-fill-mode: both`) vytváří vlastní "containing block" pro fixed potomky — takže "fixed" formulář se ve skutečnosti přilepil k `.arca-inner`, ne k oknu prohlížeče. Jakmile uživatel sjel stránku dolů (což je běžné, pokud má v manuálu víc položek), formulář zůstal "přilepený" ke starému místu nahoře a zmizel z dohledu. Stejný mechanismus a stejné řešení (portál do `document.body`) byl použit o pár oprav zpátky u výběru vzhledu (#69).
 
