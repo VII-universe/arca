@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.57.1] - Oprava: panel výběru vzhledu v postranní liště byl mimo obrazovku
+Uživatel nahlásil, že po kliknutí na "Vzhled" v levém menu se panel otevře, ale "režim" (light/dark/auto) nejde zvolit, protože je "schovaný za horizontem". Příčina byla v logice z opravy #69 — tehdy jsem přidal pevný práh (`rect.top < 320`), který rozhodoval, jestli se panel otevře nahoru nebo dolů, ale u varianty "nahoru" se výška panelu ořezávala jen podle celé výšky okna, ne podle skutečně dostupného prostoru nad tlačítkem. Když tlačítko sedí níž v postranní liště a panel má dost obsahu (režim, barvy, vlastní barva, podsvícení, pozadí), horní část panelu (právě výběr režimu, protože je v panelu první) se vykreslila nad horní okraj obrazovky.
+
+### Opraveno
+- `components/layout/AppearanceButton.tsx` — místo pevného prahu se teď spočítá skutečný volný prostor nad i pod tlačítkem, panel se otevře tam, kde je ho víc, a jeho výška se omezí přesně na tento prostor (zbytek obsahu jede scrollováním uvnitř panelu, ne mimo obrazovku). Ověřeno screenshotem porovnávajícím starou a novou logiku.
+
 ## [1.57.0] - Dashboard: přehled připravenosti účtu
 První krok redesignu dashboardu. Nová karta nahoře (hned pod pozdravem) ukazuje procentuální "připravenost" účtu — kombinuje pět věcí: aspoň jedna zpráva, kontakt na příjemce, strážce, nastavený spínač (dead-man's switch) a vyplněný Manuál k životu. Každá položka je klikatelná a vede přímo tam, kde se dá doplnit.
 

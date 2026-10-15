@@ -84,7 +84,7 @@ export default function AppearanceButton() {
   const [customColor, setCustomColor] = useState(DEFAULT_CUSTOM);
   const [glowOn, setGlowOn]   = useState(true);
   const [open, setOpen]       = useState(false);
-  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, direction: "up" as "up" | "down" });
+  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, direction: "up" as "up" | "down", maxHeight: 400 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef   = useRef<HTMLDivElement>(null);
   const customColorRef = useRef<HTMLInputElement>(null);
@@ -137,18 +137,29 @@ export default function AppearanceButton() {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const PANEL_W = 300;
-    // On a short/mobile viewport there isn't always 300px+ of room above the
-    // trigger (e.g. inside the mobile nav drawer, where the button sits near
-    // the top) — open downward instead so the panel doesn't get clipped
-    // above the top of the screen.
-    const direction: "up" | "down" = rect.top < 320 ? "down" : "up";
+    const MARGIN = 16;
+    // The panel's content height varies a lot (custom background image URL
+    // set or not, how long the glow hint wraps, etc.), so rather than guess
+    // a fixed breakpoint for "is there enough room above the trigger", pick
+    // whichever side of the trigger actually has more room and cap the
+    // panel's height to exactly that — it scrolls internally
+    // (overflowY: auto, already set below) instead of ever extending past
+    // the screen edge. A fixed threshold here previously let the panel's
+    // top (the mode selector, i.e. the first thing in it) render above
+    // y=0 and off-screen whenever the trigger sat low enough that "up" was
+    // chosen but the panel was still taller than the room available.
+    const spaceAbove = rect.top - MARGIN;
+    const spaceBelow = window.innerHeight - rect.bottom - MARGIN;
+    const direction: "up" | "down" = spaceAbove >= spaceBelow ? "up" : "down";
+    const maxHeight = Math.max(200, direction === "up" ? spaceAbove : spaceBelow);
     const top = direction === "up" ? rect.top - 8 : rect.bottom + 8;
-    // Start at button's left, but clamp so it doesn't overflow right edge
+    // Start at button's left, but clamp so it doesn't overflow either edge
     let left = rect.left;
     if (left + PANEL_W > window.innerWidth - 12) {
       left = window.innerWidth - PANEL_W - 12;
     }
-    setPanelPos({ top, left, direction });
+    if (left < 12) left = 12;
+    setPanelPos({ top, left, direction, maxHeight });
     setOpen((o) => !o);
   }, []);
 
@@ -211,7 +222,7 @@ export default function AppearanceButton() {
               transform: panelPos.direction === "up" ? "translateY(-100%)" : undefined,
               width: 300,
               maxWidth: "calc(100vw - 24px)",
-              maxHeight: "calc(100vh - 32px)",
+              maxHeight: panelPos.maxHeight,
               overflowY: "auto",
               zIndex: 1000,
               padding: 18,
