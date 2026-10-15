@@ -84,7 +84,7 @@ export default function AppearanceButton() {
   const [customColor, setCustomColor] = useState(DEFAULT_CUSTOM);
   const [glowOn, setGlowOn]   = useState(true);
   const [open, setOpen]       = useState(false);
-  const [panelPos, setPanelPos] = useState({ top: 0, left: 0 });
+  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, direction: "up" as "up" | "down" });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef   = useRef<HTMLDivElement>(null);
   const customColorRef = useRef<HTMLInputElement>(null);
@@ -137,14 +137,18 @@ export default function AppearanceButton() {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const PANEL_W = 300;
-    // Place panel above the button
-    const top = rect.top - 8; // will be set as bottom via transform
+    // On a short/mobile viewport there isn't always 300px+ of room above the
+    // trigger (e.g. inside the mobile nav drawer, where the button sits near
+    // the top) — open downward instead so the panel doesn't get clipped
+    // above the top of the screen.
+    const direction: "up" | "down" = rect.top < 320 ? "down" : "up";
+    const top = direction === "up" ? rect.top - 8 : rect.bottom + 8;
     // Start at button's left, but clamp so it doesn't overflow right edge
     let left = rect.left;
     if (left + PANEL_W > window.innerWidth - 12) {
       left = window.innerWidth - PANEL_W - 12;
     }
-    setPanelPos({ top, left });
+    setPanelPos({ top, left, direction });
     setOpen((o) => !o);
   }, []);
 
@@ -199,12 +203,14 @@ export default function AppearanceButton() {
             ref={panelRef}
             className="arca-card elev"
             data-arca-theme=""
+            data-arca-portal-panel=""
             style={{
               position: "fixed",
               left: panelPos.left,
               top: panelPos.top,
-              transform: "translateY(-100%)",
+              transform: panelPos.direction === "up" ? "translateY(-100%)" : undefined,
               width: 300,
+              maxWidth: "calc(100vw - 24px)",
               maxHeight: "calc(100vh - 32px)",
               overflowY: "auto",
               zIndex: 1000,

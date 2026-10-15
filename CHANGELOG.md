@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.54.0] - Oprava: výběr vzhledu nešel použít na mobilu
+Uživatel nahlásil, že spousta věcí na telefonu nefunguje — začátek širší opravy mobilní verze. První a nejzávažnější nález: tlačítko na změnu vzhledu (téma, barva, pozadí) v mobilním menu nešlo vůbec použít — klik na libovolnou možnost menu jen zavřel. Nešlo o CSS, ale o konflikt s Radix Dialogem: panel výběru vzhledu se portáluje přímo do `<body>` (mimo strom mobilního menu, aby ho neoříznul `overflow`/`transform` postranní lišty), takže Radix ho vyhodnotil jako klik "mimo" dialog a hned zavřel celé menu.
+
+### Opraveno
+- `components/ui/sheet.tsx` — `Dialog.Content` teď ignoruje kliky uvnitř panelů opt-in přes `data-arca-portal-panel` (obecný mechanismus pro jakýkoliv budoucí komponent portálující mimo Sheet, ne jen pro výběr vzhledu).
+- `components/layout/AppearanceButton.tsx` — panel má nový atribut `data-arca-portal-panel`; navíc doplněno chybějící vertikální ořezání (panel se dřív mohl vykreslit nad horním okrajem obrazovky, pokud tlačítko sedí blízko vrcholu) — panel se teď otevírá dolů místo nahoru, pokud by jinak přetekl mimo obrazovku.
+
+### Rozsah
+- Toto je první z několika oprav mobilní verze; další v plánu: zmizelá horní lišta v editoru zprávy na mobilu a pár mřížek, co se nesbalují na malé obrazovce.
+
 ## [1.53.0] - Manuál k životu: skrytý obsah a upozornění na neaktuálnost
 Čtvrtý a poslední krok redesignu Manuálu k životu — čistě UI polish, žádné změny v databázi/API. Obsah položky (hesla, instrukce) se teď v seznamu karet nezobrazuje čistým textem hned po otevření stránky, ale skrytý za maskou (teček) — dává to smysl i vizuálně, teď když je obsah skutečně šifrovaný na uložišti (1.50.0). Druhá věc: karta ukazuje odznak "Aktualizováno před X dny", pokud se položka déle neupravovala (nad 180 dní), výrazněji pokud nad 365 dní — upomínka, že třeba heslo nebo info o předplatném může být zastaralé.
 
