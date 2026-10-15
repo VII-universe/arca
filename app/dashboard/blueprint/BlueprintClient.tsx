@@ -100,6 +100,13 @@ const IcSparkle= () => <svg width={16} height={16} viewBox="0 0 24 24" fill="non
 const IcPaperclip = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>;
 const IcDownload = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>;
 const IcLink = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07L13 19"/></svg>;
+const IcEye = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>;
+const IcEyeOff = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 4.22-5.19M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>;
+
+// Days since the item was last touched — used for the "last updated" badge.
+function daysSince(date: Date) {
+  return Math.floor((Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24));
+}
 
 // ── Sheet ─────────────────────────────────────────────────────────────────────
 
@@ -384,6 +391,7 @@ function ItemCard({
   const { catMap } = useCategories();
   const [confirming, setConfirming] = useState(false);
   const [expanded,   setExpanded]   = useState(false);
+  const [revealed,   setRevealed]   = useState(false);
   const [deleting,   startDel]      = useTransition();
   const [opening,    setOpening]    = useState(false);
 
@@ -409,7 +417,12 @@ function ItemCard({
 
   const cat = catMap[item.category as Category];
   const preview = item.content.length > 130 ? item.content.slice(0, 130) + "…" : item.content;
+  const masked = "•".repeat(Math.min(Math.max(preview.length, 18), 60));
   const barColor = item.isCritical ? "var(--danger)" : (cat?.color ?? "var(--hairline)");
+
+  const staleDays = daysSince(item.updatedAt);
+  const isStale = staleDays > 180;
+  const isVeryStale = staleDays > 365;
 
   return (
     <div
@@ -430,6 +443,14 @@ function ItemCard({
             <span style={{ opacity: .8, display: "flex" }}>{cat?.icon}</span>
             <span className="arca-mono" style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em" }}>{cat?.label}</span>
           </span>
+          {isStale && (
+            <span
+              title={t("card.staleTitle")}
+              style={{ fontSize: 10.5, color: isVeryStale ? "var(--danger-deep)" : "var(--muted)", background: isVeryStale ? "var(--danger-tint)" : "var(--surface-2)", padding: "2px 8px", borderRadius: 20, fontFamily: "var(--f-mono)" }}
+            >
+              {t("card.staleBadge", { days: staleDays })}
+            </span>
+          )}
           {item.isCritical && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 600, color: "var(--danger-deep)", background: "var(--danger-tint)", padding: "2px 8px", borderRadius: 20, fontFamily: "var(--f-mono)", marginLeft: "auto" }}>
               <IcAlert /> {t("card.urgentBadge")}
@@ -440,18 +461,34 @@ function ItemCard({
         {/* Title + body */}
         <div>
           <div style={{ fontWeight: 600, fontSize: 14.5, lineHeight: 1.35 }}>{item.title}</div>
-          <p style={{ margin: "5px 0 0", fontSize: 12.5, color: "var(--muted)", lineHeight: 1.55 }}>
-            {expanded ? item.content : preview}
+          <p
+            style={{
+              margin: "5px 0 0", fontSize: 12.5, lineHeight: 1.55,
+              color: revealed ? "var(--muted)" : "var(--hairline-2)",
+              letterSpacing: revealed ? undefined : "1px",
+              userSelect: revealed ? undefined : "none",
+            }}
+          >
+            {revealed ? (expanded ? item.content : preview) : masked}
           </p>
-          {item.content.length > 130 && (
+          <div style={{ display: "flex", gap: 14, marginTop: 2 }}>
             <button
               type="button"
-              onClick={() => setExpanded(v => !v)}
-              style={{ fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: "5px 0 0", fontFamily: "var(--f-sans)" }}
+              onClick={() => setRevealed(v => !v)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: "5px 0 0", fontFamily: "var(--f-sans)" }}
             >
-              {expanded ? t("card.less") : t("card.fullText")}
+              {revealed ? <IcEyeOff /> : <IcEye />} {revealed ? t("card.hide") : t("card.reveal")}
             </button>
-          )}
+            {revealed && item.content.length > 130 && (
+              <button
+                type="button"
+                onClick={() => setExpanded(v => !v)}
+                style={{ fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: "5px 0 0", fontFamily: "var(--f-sans)" }}
+              >
+                {expanded ? t("card.less") : t("card.fullText")}
+              </button>
+            )}
+          </div>
           {(item.attachmentName || item.url) && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
               {item.url && (

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.53.0] - Manuál k životu: skrytý obsah a upozornění na neaktuálnost
+Čtvrtý a poslední krok redesignu Manuálu k životu — čistě UI polish, žádné změny v databázi/API. Obsah položky (hesla, instrukce) se teď v seznamu karet nezobrazuje čistým textem hned po otevření stránky, ale skrytý za maskou (teček) — dává to smysl i vizuálně, teď když je obsah skutečně šifrovaný na uložišti (1.50.0). Druhá věc: karta ukazuje odznak "Aktualizováno před X dny", pokud se položka déle neupravovala (nad 180 dní), výrazněji pokud nad 365 dní — upomínka, že třeba heslo nebo info o předplatném může být zastaralé.
+
+### Přidáno
+- `app/dashboard/blueprint/BlueprintClient.tsx` — tlačítko "Zobrazit/Skrýt" nad obsahem položky (výchozí stav: skryto, maskováno tečkami); odznak neaktuálnosti v meta řádku karty založený na `updatedAt`.
+
 ## [1.52.0] - Manuál k životu: strukturované odkazy
 Třetí krok redesignu Manuálu k životu. Nové volitelné pole `url` u položky — pro odkaz na zrušení předplatného, portál dokumentu apod. Na rozdíl od `content` (hesla/instrukce) se nejedná o citlivé pole, takže zůstává nešifrované v databázi. Validace na serveru (musí být platná http/https adresa), zobrazeno jako klikatelný chip na kartě položky. Doplněno i do `getSanctuaryContent` (doručení balíčku příjemci) — příjemce uvidí odkaz stejně jako vlastník.
 
