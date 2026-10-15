@@ -70,6 +70,18 @@ export function Sheet({
           // ARCA themed content lives outside the .arca-app DOM tree (Radix Portal),
           // so we re-attach the theme attribute here.
           {...(isArca ? { "data-arca-theme": "" } : {})}
+          // Some children (e.g. AppearanceButton) portal their own popover
+          // straight to <body> instead of nesting inside this Dialog.Content —
+          // otherwise they'd be clipped by an ancestor's overflow/transform.
+          // Radix's outside-click detection only looks at DOM containment, so
+          // without this guard a tap inside such a popover reads as "outside"
+          // and immediately closes this sheet. Panels opt in via
+          // data-arca-portal-panel.
+          onInteractOutside={(e) => {
+            if ((e.target as HTMLElement | null)?.closest("[data-arca-portal-panel]")) {
+              e.preventDefault();
+            }
+          }}
         >
 
           {/* ── Optional header ──────────────────────────────── */}
