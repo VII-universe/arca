@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.56.2] - Oprava: formulář pro novou položku v Manuálu k životu byl mimo obrazovku
+Uživatel nahlásil, že formulář pro přidání nové položky (např. předplatného) "je někde nahoře za horizontem" — nešlo ho vidět ani vyplnit. Příčina: formulář (Sheet) je vykreslený jako `position: fixed`, aby zůstal přilepený k pravému okraji obrazovky bez ohledu na scroll — ale obalující `.arca-inner` má animaci vstupu stránky, která používá `transform`. Podle CSS specifikace prvek s transform animací (i taková, co skončí na `transform: none` s `animation-fill-mode: both`) vytváří vlastní "containing block" pro fixed potomky — takže "fixed" formulář se ve skutečnosti přilepil k `.arca-inner`, ne k oknu prohlížeče. Jakmile uživatel sjel stránku dolů (což je běžné, pokud má v manuálu víc položek), formulář zůstal "přilepený" ke starému místu nahoře a zmizel z dohledu. Stejný mechanismus a stejné řešení (portál do `document.body`) byl použit o pár oprav zpátky u výběru vzhledu (#69).
+
+### Opraveno
+- `app/dashboard/blueprint/BlueprintClient.tsx` — formulář pro přidání/úpravu položky se teď portáluje přes `createPortal` přímo do `document.body`, mimo dosah `.arca-inner`, takže zůstává skutečně přilepený k viewportu. Ověřeno screenshoty před/po při simulovaném scrollu dlouhé stránky.
+
 ## [1.56.1] - Oprava: obsah v Manuálu k životu byl neviditelný (hesla "zmizela")
 Uživatel nahlásil, že v Manuálu k životu nejde nic přidat a nikde nevidí uložená hesla ani jiný obsah — stránka vypadala prázdná. Příčina: funkce "skrýt obsah ťuknutím" z verze 1.53.0 obarvovala skryté tečky barvou `var(--hairline-2)`, což je téměř průhledný tón určený pro jemné okraje karet, ne pro čitelný text. Výsledek: skrytý obsah (i nově přidaný) byl fakticky neviditelný — splynul s pozadím karty, takže to vypadalo, jako by položka vůbec neměla žádný obsah nebo jako by přidání položky nic neudělalo. Žádná data se přitom neztratila, šlo čistě o barvu textu.
 
