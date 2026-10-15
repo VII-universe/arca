@@ -6,6 +6,7 @@ import { scryptSync } from "crypto";
 import { prisma } from "@/lib/prisma/client";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { signUnlockToken, isUnlocked } from "@/lib/unlock-token";
+import { decryptBlueprintContent } from "@/lib/crypto/blueprint-encryption";
 
 // ── Exported types ────────────────────────────────────────────────────────────
 
@@ -162,7 +163,7 @@ export async function getSanctuaryContent(token: string): Promise<SanctuaryResul
     createdAt: pack.createdAt.toISOString(),
     contents,
     memories,
-    blueprintItems: pack.owner.blueprintItems,
+    blueprintItems: pack.owner.blueprintItems.map((b) => ({ ...b, content: decryptBlueprintContent(b.content) })),
   };
 }
 

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { decryptBlueprintContent } from "@/lib/crypto/blueprint-encryption";
 import BlueprintClient from "./BlueprintClient";
 import type { BlueprintItem } from "./BlueprintClient";
 
@@ -30,10 +31,11 @@ export default async function BlueprintPage() {
   const { data: { user: authUser } } = await supabase.auth.getUser();
   if (!authUser) redirect("/login");
 
-  const items = await prisma.blueprintItem.findMany({
+  const rawItems = await prisma.blueprintItem.findMany({
     where: { ownerId: authUser.id },
     orderBy: [{ isCritical: "desc" }, { createdAt: "asc" }],
   });
+  const items = rawItems.map((i) => ({ ...i, content: decryptBlueprintContent(i.content) }));
 
   return (
     <>
