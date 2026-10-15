@@ -963,6 +963,7 @@ html[data-arca-glow="off"] {
   .arca-mode-grid          { grid-template-columns: 1fr !important; }
   .arca-age-grid           { grid-template-columns: 1fr !important; }
   .arca-photo-grid         { grid-template-columns: repeat(3, 1fr) !important; }
+  .arca-steps-grid         { grid-template-columns: 1fr !important; }
 
   /* Compose preview — un-sticky on mobile */
   .arca-compose-preview { position: static !important; }

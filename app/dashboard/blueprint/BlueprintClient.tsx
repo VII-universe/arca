@@ -740,7 +740,7 @@ export default function BlueprintClient({ initialItems }: { initialItems: Bluepr
       </div>
 
       {/* ── Quick-add cards ────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
+      <div className="arca-kind-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
         {categories.map(cat => (
           <button
             key={cat.id}

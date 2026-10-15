@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.56.0] - Oprava: tísnivé mřížky na mobilu (nastavení, manuál, strážci)
+Třetí oprava mobilní verze — poslední z prioritního seznamu z auditu. Několik stránek používalo natvrdo 2-4sloupcové CSS mřížky přímo v inline stylu, takže je nezachytil stávající mobilní CSS blok (ten cílí podle třídy, ne podle vlastnosti) a na telefonu se tak tísnily vedle sebe. Hlavní dashboard layout (postranní lišta, spodní navigace) a login stránka byly při kontrole v pořádku už teď.
+
+### Opraveno
+- `app/dashboard/settings/SettingsClient.tsx` — výběr typu spínače (2 karty), pole dnů/data a statistika uplynulo/limit/zbývá teď používají sdílené responzivní třídy (`arca-mode-grid`, `arca-date-grid`, `arca-stats-row`).
+- `app/dashboard/blueprint/BlueprintClient.tsx` — rychlé přidání kategorie (4 karty) teď stačí na 2 sloupce na mobilu (`arca-kind-grid`).
+- `app/dashboard/guardians/page.tsx` — tři kroky "jak funguje ping" (`arca-steps-grid`, nová třída) se teď na mobilu sbalí pod sebe místo tří úzkých sloupců textu.
+- Ostatní nahlášené mřížky (kalendářový výběr měsíce, pole ve vault/strážci s pevným sloupcem pro ikonu) byly po kontrole v pořádku — buď jsou uvnitř úzkého popoveru s vlastní šířkou, nebo mají jen malý pevný sloupec (ikonové tlačítko), který se netísní.
+
+### Rozsah
+- Tím je uzavřen prioritní seznam ze vstupního auditu mobilní verze (4 položky: výběr vzhledu, horní lišta editoru, tyto mřížky, kontrola login stránky).
+
 ## [1.55.0] - Oprava: zmizelá horní lišta v editoru zprávy na mobilu
 Druhá oprava mobilní verze. Obrazovky "nová zpráva" a "upravit zprávu" nepoužívají hlavní dashboard layout (jedou na vlastní celostránkové vrstvě, aby unikly postranní liště), takže nemají mobilní hlavičku dashboardu — ale CSS stejně schovávalo jejich vlastní horní lištu (`display: none` na mobilu, protože normální stránky ji nahrazují mobilní hlavičkou). Výsledek: na telefonu v editoru zprávy úplně zmizelo tlačítko zpět, přepínač typu balíčku (emotivní/praktický) a v editaci i tlačítko na výběr vzhledu — nedalo se nic z toho použít.
 

@@ -366,7 +366,7 @@ export default function SettingsClient({ user, daysSinceActive }: Props) {
               </p>
 
               {/* Type picker */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+              <div className="arca-mode-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
                 {([
                   ["INACTIVITY",    t("switch.typeInactivity"), t("switch.typeInactivitySub")],
                   ["SPECIFIC_DATE", t("switch.typeDate"),       t("switch.typeDateSub")],
@@ -391,7 +391,7 @@ export default function SettingsClient({ user, daysSinceActive }: Props) {
 
               {/* Inactivity params */}
               {switchType === "INACTIVITY" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="arca-date-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                   <div>
                     <Label>{t("switch.inactivityDaysLabel")}</Label>
                     <input type="number" className="arca-input" value={inactivityDays} min={7} max={3650}
@@ -413,7 +413,7 @@ export default function SettingsClient({ user, daysSinceActive }: Props) {
 
               {/* Date params */}
               {switchType === "SPECIFIC_DATE" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="arca-date-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                   <div>
                     <Label>{t("switch.deliveryDateLabel")}</Label>
                     <input type="date" className="arca-input" value={executeAt}
@@ -438,7 +438,7 @@ export default function SettingsClient({ user, daysSinceActive }: Props) {
                 <p className="arca-mono" style={{ fontSize: 11, color: "var(--muted)", margin: "0 0 14px", letterSpacing: ".08em", textTransform: "uppercase" }}>
                   {t("switch.monitorTitle")}
                 </p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
+                <div className="arca-stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
                   {[
                     [t("switch.elapsed"), daysSinceActive, t("switch.days")],
                     [t("switch.limit"),    inactivityDays,  t("switch.days")],
