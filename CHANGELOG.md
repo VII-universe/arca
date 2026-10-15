@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.56.1] - Oprava: obsah v Manuálu k životu byl neviditelný (hesla "zmizela")
+Uživatel nahlásil, že v Manuálu k životu nejde nic přidat a nikde nevidí uložená hesla ani jiný obsah — stránka vypadala prázdná. Příčina: funkce "skrýt obsah ťuknutím" z verze 1.53.0 obarvovala skryté tečky barvou `var(--hairline-2)`, což je téměř průhledný tón určený pro jemné okraje karet, ne pro čitelný text. Výsledek: skrytý obsah (i nově přidaný) byl fakticky neviditelný — splynul s pozadím karty, takže to vypadalo, jako by položka vůbec neměla žádný obsah nebo jako by přidání položky nic neudělalo. Žádná data se přitom neztratila, šlo čistě o barvu textu.
+
+### Opraveno
+- `app/dashboard/blueprint/BlueprintClient.tsx` — skryté tečky teď používají ztlumenou, ale čitelnou barvu (`color-mix` s `var(--muted)`) místo `var(--hairline-2)`. Ověřeno screenshotem vedle sebe (původní vs. opravená barva) — rozdíl je na první pohled vidět.
+
 ## [1.56.0] - Oprava: tísnivé mřížky na mobilu (nastavení, manuál, strážci)
 Třetí oprava mobilní verze — poslední z prioritního seznamu z auditu. Několik stránek používalo natvrdo 2-4sloupcové CSS mřížky přímo v inline stylu, takže je nezachytil stávající mobilní CSS blok (ten cílí podle třídy, ne podle vlastnosti) a na telefonu se tak tísnily vedle sebe. Hlavní dashboard layout (postranní lišta, spodní navigace) a login stránka byly při kontrole v pořádku už teď.
 
