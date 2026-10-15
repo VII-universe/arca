@@ -32,6 +32,9 @@
     "topbar": {
       "synced": "All synced"
     },
+    "attention": {
+      "title": "Needs attention"
+    },
     "completeness": {
       "title": "Account readiness",
       "subtitle": "Finish the remaining steps to make sure everything's covered.",

@@ -119,6 +119,81 @@ function CompletenessCard({
   );
 }
 
+// ── Unified attention panel ──────────────────────────────────────────────────
+// Replaces three separate full-width cards (ready-to-open, grace period,
+// smart reminders) that used to stack on top of each other — one panel,
+// one consistent row shape, ordered by urgency.
+interface AttentionItem {
+  key: string;
+  icon: string;
+  title: React.ReactNode;
+  subtitle: string;
+  href: string;
+  btnLabel: string;
+  external?: boolean;
+  urgent?: boolean;
+}
+
+function AttentionRow({ icon, title, subtitle, href, btnLabel, external, urgent }: Omit<AttentionItem, "key">) {
+  return (
+    <div
+      style={{
+        display: "flex", alignItems: "center", gap: 14,
+        background: urgent ? "var(--accent-tint)" : "var(--bg-tint)",
+        borderRadius: "var(--r-lg)", padding: "12px 18px",
+        border: `1px solid ${urgent ? "var(--accent-soft)" : "var(--hairline)"}`,
+        position: "relative", overflow: "hidden",
+      }}
+    >
+      {urgent && (
+        <span style={{
+          position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
+          background: "var(--accent)", borderRadius: "var(--r-lg) 0 0 var(--r-lg)",
+        }} />
+      )}
+      <span style={{ fontSize: 18, width: 22, textAlign: "center", flexShrink: 0, paddingLeft: urgent ? 3 : 0 }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 550 }}>{title}</div>
+        <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 1 }}>{subtitle}</div>
+      </div>
+      {urgent && (
+        <span style={{
+          width: 8, height: 8, borderRadius: "50%", background: "var(--accent)",
+          flexShrink: 0, boxShadow: "0 0 0 3px var(--accent-tint)",
+          animation: "arca-reminder-pulse 2s ease-in-out infinite",
+        }} />
+      )}
+      <Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="arca-btn arca-btn--clay sm">
+        {btnLabel}
+      </Link>
+    </div>
+  );
+}
+
+const IcAttention = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>;
+
+function AttentionPanel({ items, title }: { items: AttentionItem[]; title: string }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="arca-card" style={{ padding: "20px 22px", marginBottom: 36 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <span style={{ color: "var(--accent)" }}><IcAttention /></span>
+        <h3 className="arca-h3">{title}</h3>
+        <span className="arca-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{items.length}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {items.map(({ key, ...row }) => <AttentionRow key={key} {...row} />)}
+      </div>
+      <style>{`
+        @keyframes arca-reminder-pulse {
+          0%, 100% { box-shadow: 0 0 0 3px var(--accent-tint); }
+          50% { box-shadow: 0 0 0 7px transparent; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default async function DashboardPage() {
   const t = await getTranslations("Dashboard");
   const tNav = await getTranslations("Nav");
@@ -281,6 +356,49 @@ export default async function DashboardPage() {
   }
   reminders.sort((a, b) => a.days - b.days);
 
+  // ── Unified "needs attention" list — ready-to-open, grace period, then
+  // reminders, in that priority order ──────────────────────────────────
+  const attentionItems: AttentionItem[] = [];
+  for (const mode of ["SELF", "LEGACY"] as const) {
+    const modePacks = readyToOpenPacks.filter((p) => p.messageMode === mode);
+    if (modePacks.length === 0) continue;
+    const single = modePacks.length === 1 ? modePacks[0] : null;
+    attentionItems.push({
+      key: `ready-${mode}`,
+      icon: mode === "SELF" ? "✉️" : "◈",
+      title: mode === "SELF"
+        ? (single ? t("readyToOpen.selfTitleSingle", { title: single.title }) : t("readyToOpen.selfTitleMultiple", { count: modePacks.length }))
+        : (single ? t("readyToOpen.legacyTitleSingle") : t("readyToOpen.legacyTitleMultiple", { count: modePacks.length })),
+      subtitle: mode === "SELF" ? t("readyToOpen.selfSubtitle") : t("readyToOpen.legacySubtitle"),
+      href: single ? `${APP_URL}/arca/${single.livingLinkHash}` : "/dashboard/vault",
+      btnLabel: mode === "SELF" ? t("readyToOpen.openBtn") : t("readyToOpen.viewBtn"),
+      external: !!single,
+      urgent: true,
+    });
+  }
+  if (gracePacks.length > 0) {
+    attentionItems.push({
+      key: "grace",
+      icon: "⚠️",
+      title: gracePacks.length === 1 ? t("gracePeriod.titleSingle") : t("gracePeriod.titleMultiple", { count: gracePacks.length }),
+      subtitle: t("gracePeriod.subtitle"),
+      href: "/dashboard/vault",
+      btnLabel: t("gracePeriod.viewBtn"),
+      urgent: true,
+    });
+  }
+  for (const r of reminders) {
+    attentionItems.push({
+      key: `reminder-${r.recipientId}-${r.occasion}`,
+      icon: r.occasion === "birthday" ? "🎂" : "🎉",
+      title: `${r.name.split(" ")[0]}${r.relationship ? ` (${r.relationship})` : ""} · ${r.label}`,
+      subtitle: t("reminders.inDays", { days: r.days }),
+      href: `/dashboard/arca/new?recipientId=${r.recipientId}&occasion=${r.occasion}`,
+      btnLabel: t("reminders.writeMessageBtn"),
+      urgent: r.urgent,
+    });
+  }
+
   const now = new Date();
   const dayName = now.toLocaleDateString(dateLocale, { weekday: "long" });
   const dayNameCap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
@@ -294,104 +412,8 @@ export default async function DashboardPage() {
       <Topbar crumbs={[tNav("overview")]} dateLocale={dateLocale} syncedLabel={t("topbar.synced")} />
       <div className="arca-inner arca-fade-in">
 
-        {/* ── Ready-to-open alert — split by mode so a LEGACY delivery      ──
-             (owner is their own recipient, e.g. Guardian-confirmed) never    ──
-             reads as the cheerful "your letter is ready" SELF framing.   ──── */}
-        {["SELF", "LEGACY"].map((mode) => {
-          const modePacks = readyToOpenPacks.filter((p) => p.messageMode === mode);
-          if (modePacks.length === 0) return null;
-          const single = modePacks.length === 1 ? modePacks[0] : null;
-          const href = single ? `${APP_URL}/arca/${single.livingLinkHash}` : "/dashboard/vault";
-          return (
-            <div key={mode} className="arca-card" style={{ background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", padding: "16px 22px", marginBottom: 28, display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{ fontSize: 20 }}>{mode === "SELF" ? "✉️" : "◈"}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 550, fontSize: 14 }}>
-                  {mode === "SELF"
-                    ? (single ? t("readyToOpen.selfTitleSingle", { title: single.title }) : t("readyToOpen.selfTitleMultiple", { count: modePacks.length }))
-                    : (single ? t("readyToOpen.legacyTitleSingle") : t("readyToOpen.legacyTitleMultiple", { count: modePacks.length }))}
-                </div>
-                <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 2 }}>
-                  {mode === "SELF" ? t("readyToOpen.selfSubtitle") : t("readyToOpen.legacySubtitle")}
-                </div>
-              </div>
-              <Link href={href} target={single ? "_blank" : undefined} rel={single ? "noopener noreferrer" : undefined} className="arca-btn arca-btn--clay sm">
-                {mode === "SELF" ? t("readyToOpen.openBtn") : t("readyToOpen.viewBtn")}
-              </Link>
-            </div>
-          );
-        })}
-
-        {/* ── Grace period alert ─────────────────────────────────── */}
-        {gracePacks.length > 0 && (
-          <div className="arca-card" style={{ background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", padding: "16px 22px", marginBottom: 28, display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ fontSize: 20 }}>⚠️</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 550, fontSize: 14 }}>
-                {gracePacks.length === 1 ? t("gracePeriod.titleSingle") : t("gracePeriod.titleMultiple", { count: gracePacks.length })}
-              </div>
-              <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 2 }}>
-                {t("gracePeriod.subtitle")}
-              </div>
-            </div>
-            <Link href="/dashboard/vault" className="arca-btn arca-btn--clay sm">{t("gracePeriod.viewBtn")}</Link>
-          </div>
-        )}
-
-        {/* ── Smart Reminders ────────────────────────────────────── */}
-        {reminders.length > 0 && (
-          <div style={{ marginBottom: 28, display: "flex", flexDirection: "column", gap: 8 }}>
-            {reminders.map((r) => (
-              <div
-                key={`${r.recipientId}-${r.occasion}`}
-                style={{
-                  display: "flex", alignItems: "center", gap: 14,
-                  background: "var(--bg-tint)", borderRadius: "var(--r-lg)",
-                  padding: "12px 18px",
-                  border: r.urgent ? "1px solid var(--accent-soft)" : "1px solid var(--hairline)",
-                  position: "relative", overflow: "hidden",
-                }}
-              >
-                {r.urgent && (
-                  <span style={{
-                    position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
-                    background: "var(--accent)", borderRadius: "var(--r-lg) 0 0 var(--r-lg)",
-                    boxShadow: r.urgent ? "0 0 8px var(--accent)" : "none",
-                  }} />
-                )}
-                <div style={{ flex: 1, paddingLeft: r.urgent ? 6 : 0 }}>
-                  <span style={{ fontSize: 13.5, fontWeight: 550 }}>
-                    {r.name.split(" ")[0]}{r.relationship ? ` (${r.relationship})` : ""} · {r.label}
-                  </span>
-                  {" "}
-                  <span className="arca-sub" style={{ fontSize: 13 }}>
-                    {t("reminders.inDays", { days: r.days })}
-                  </span>
-                </div>
-                {r.urgent && (
-                  <span style={{
-                    width: 8, height: 8, borderRadius: "50%", background: "var(--accent)",
-                    flexShrink: 0,
-                    boxShadow: "0 0 0 3px var(--accent-tint)",
-                    animation: "arca-reminder-pulse 2s ease-in-out infinite",
-                  }} />
-                )}
-                <Link
-                  href={`/dashboard/arca/new?recipientId=${r.recipientId}&occasion=${r.occasion}`}
-                  className="arca-btn sm arca-btn--clay"
-                >
-                  {t("reminders.writeMessageBtn")}
-                </Link>
-              </div>
-            ))}
-          </div>
-        )}
-        <style>{`
-          @keyframes arca-reminder-pulse {
-            0%, 100% { box-shadow: 0 0 0 3px var(--accent-tint); }
-            50% { box-shadow: 0 0 0 7px transparent; }
-          }
-        `}</style>
+        {/* ── Needs attention — ready-to-open, grace period, reminders ── */}
+        <AttentionPanel items={attentionItems} title={t("attention.title")} />
 
         {/* ── Greeting ───────────────────────────────────────────── */}
         <div style={{ marginBottom: 36 }}>
