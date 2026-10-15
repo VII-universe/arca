@@ -123,9 +123,24 @@ function CompletenessCard({
 // Replaces three separate full-width cards (ready-to-open, grace period,
 // smart reminders) that used to stack on top of each other — one panel,
 // one consistent row shape, ordered by urgency.
+//
+// Icons are small stroke SVGs, not emoji — matches the stroke-icon language
+// used everywhere else in the app (sidebar nav, Blueprint category icons,
+// AppearanceButton), rather than introducing a visually inconsistent,
+// platform-dependent emoji set just for this one panel.
+type AttentionIcon = "mail" | "delivered" | "warning" | "cake" | "heart";
+
+const ATTENTION_ICONS: Record<AttentionIcon, React.ReactNode> = {
+  mail: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>,
+  delivered: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3Z"/><path d="M9 12l2 2 4-4"/></svg>,
+  warning: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>,
+  cake: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M4 21v-6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6"/><path d="M4 21h16"/><path d="M4 17h16"/><path d="M8 13V9M12 13V9M16 13V9"/><path d="M12 6V3M9.5 4.5c0-1 2.5-1 2.5-2.5 0 1.5 2.5 1.5 2.5 2.5"/></svg>,
+  heart: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"><path d="M12 20s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 5c-2.5 4.6-9.5 9-9.5 9Z"/></svg>,
+};
+
 interface AttentionItem {
   key: string;
-  icon: string;
+  icon: AttentionIcon;
   title: React.ReactNode;
   subtitle: string;
   href: string;
@@ -151,7 +166,9 @@ function AttentionRow({ icon, title, subtitle, href, btnLabel, external, urgent 
           background: "var(--accent)", borderRadius: "var(--r-lg) 0 0 var(--r-lg)",
         }} />
       )}
-      <span style={{ fontSize: 18, width: 22, textAlign: "center", flexShrink: 0, paddingLeft: urgent ? 3 : 0 }}>{icon}</span>
+      <span style={{ display: "grid", placeItems: "center", width: 22, flexShrink: 0, paddingLeft: urgent ? 3 : 0, color: urgent ? "var(--accent-deep)" : "var(--muted)" }}>
+        {ATTENTION_ICONS[icon]}
+      </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 550 }}>{title}</div>
         <div className="arca-sub" style={{ fontSize: 12.5, marginTop: 1 }}>{subtitle}</div>
@@ -365,7 +382,7 @@ export default async function DashboardPage() {
     const single = modePacks.length === 1 ? modePacks[0] : null;
     attentionItems.push({
       key: `ready-${mode}`,
-      icon: mode === "SELF" ? "✉️" : "◈",
+      icon: mode === "SELF" ? "mail" : "delivered",
       title: mode === "SELF"
         ? (single ? t("readyToOpen.selfTitleSingle", { title: single.title }) : t("readyToOpen.selfTitleMultiple", { count: modePacks.length }))
         : (single ? t("readyToOpen.legacyTitleSingle") : t("readyToOpen.legacyTitleMultiple", { count: modePacks.length })),
@@ -379,7 +396,7 @@ export default async function DashboardPage() {
   if (gracePacks.length > 0) {
     attentionItems.push({
       key: "grace",
-      icon: "⚠️",
+      icon: "warning",
       title: gracePacks.length === 1 ? t("gracePeriod.titleSingle") : t("gracePeriod.titleMultiple", { count: gracePacks.length }),
       subtitle: t("gracePeriod.subtitle"),
       href: "/dashboard/vault",
@@ -390,7 +407,7 @@ export default async function DashboardPage() {
   for (const r of reminders) {
     attentionItems.push({
       key: `reminder-${r.recipientId}-${r.occasion}`,
-      icon: r.occasion === "birthday" ? "🎂" : "🎉",
+      icon: r.occasion === "birthday" ? "cake" : "heart",
       title: `${r.name.split(" ")[0]}${r.relationship ? ` (${r.relationship})` : ""} · ${r.label}`,
       subtitle: t("reminders.inDays", { days: r.days }),
       href: `/dashboard/arca/new?recipientId=${r.recipientId}&occasion=${r.occasion}`,

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.58.1] - Dashboard: sjednocené ikony (konec redesignu dashboardu)
+Třetí a poslední krok redesignu dashboardu — vizuální doladění. Panel "Vyžaduje pozornost" (předchozí krok) používal barevné emoji (✉️⚠️🎂🎉) pro ikony jednotlivých řádků — jediné místo na dashboardu, co je používalo. Zbytek appky (postranní lišta, Manuál k životu, výběr vzhledu) důsledně používá jednobarevné obrysové SVG ikonky. Nahrazeno vlastní sadou SVG ikon (obálka, štít, výstražný trojúhelník, dort, srdce) ve stejném stylu, jaký appka používá všude jinde.
+
+### Opraveno
+- `app/dashboard/page.tsx` — `AttentionRow`/`AttentionItem` teď berou klíč ikony (`"mail" | "delivered" | "warning" | "cake" | "heart"`) místo emoji řetězce, vykreslený přes novou mapu `ATTENTION_ICONS`.
+
+Tímto je dokončen celý schválený 3-krokový plán redesignu dashboardu (přehled připravenosti, sjednocená upozornění, vizuální doladění).
+
 ## [1.58.0] - Dashboard: sjednocená upozornění
 Druhý krok redesignu dashboardu. Tři samostatné plné karty (dopis připravený k otevření, grace period u spínače, narozeninové/výroční připomínky) se dřív stavěly pod sebe — teď jsou jeden panel "Vyžaduje pozornost" se sjednoceným vzhledem řádků (ikona, text, případně pulzující tečka u urgentních položek, tlačítko akce), seřazený podle naléhavosti: nejdřív připravené dopisy, pak grace period, pak připomínky.
 
