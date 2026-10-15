@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.51.0] - Manuál k životu: skutečné přílohy dokumentů
+Druhý krok redesignu Manuálu k životu (po šifrování v 1.50.0). Appka dosud u položek jen popisovala dokument textem — teď lze k položce reálně nahrát soubor (smlouva, scan dokladu, potvrzení o předplatném...), uložený do privátního Supabase Storage (bucket `arca-media`, stejný vzor jako u avatarů). Přístup k přílohám je přes krátkodobě platné podepsané URL (10 min) generované až po ověření vlastnictví položky na serveru.
+
+### Přidáno
+- `BlueprintItem.attachmentPath` / `attachmentName` — nová pole v DB (ruční migrace, lokální `DATABASE_URL` je stále rozbité).
+- `app/actions/blueprint.ts` — `uploadBlueprintAttachment` (ověření vlastnictví, limit 10 MB, nahrazení starého souboru při re-uploadu), `removeBlueprintAttachment`, `getBlueprintAttachmentUrl` (podepsaná URL, ověřená proti cestě vlastníka). `deleteBlueprintItem` teď při mazání položky smaže i přiloženou přílohu z úložiště.
+- `app/dashboard/blueprint/BlueprintClient.tsx` — ve formuláři přidání/úpravy lze přiložit/odstranit soubor; na kartě položky tlačítko pro otevření přílohy přes podepsanou URL.
+
+### Rozsah (vědomě vynechané)
+- Binární obsah přílohy se nešifruje (jen textové pole `content` je šifrované od 1.50.0) — privátní bucket + ownership-scoped podepsané URL odpovídá úrovni ochrany ostatních médií v appce (avatary, fotky příjemců).
+
 ## [1.50.0] - Bezpečnost: šifrování obsahu Manuálu k životu na uložišti
 Začátek redesignu "Manuálu k životu" (Blueprint) — uživatel chce dokonalejší formu, top UX a features, co lidi ocení. Než do toho sekce stavět cokoliv dalšího, nejdřív základ: `BlueprintItem.content` (kam appka nabádá ukládat přístupové údaje a hesla) se dosud ukládal v databázi čistým textem, bez jakéhokoliv šifrování na úrovni appky. Appka navíc nepoužívá Supabase RLS (všechen přístup je jen ruční `ownerId` filtr v kódu) — únik service-role klíče nebo chyba v dotazu by znamenaly čitelná hesla všech uživatelů.
 

@@ -3,10 +3,21 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { prisma } from "@/lib/prisma/client";
 import { encryptBlueprintContent, decryptBlueprintContent } from "@/lib/crypto/blueprint-encryption";
 
 const PATH = "/dashboard/blueprint";
+const ATTACHMENT_BUCKET = "arca-media";
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10 MB — documents/photos of accounts, not videos.
+
+function sanitizeFilename(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9.\-_]/g, "_")
+    .replace(/_+/g, "_")
+    .slice(0, 100);
+}
 
 async function getUser() {
   const supabase = await createClient();
@@ -79,7 +90,92 @@ export async function deleteBlueprintItem(
   const existing = await prisma.blueprintItem.findUnique({ where: { id } });
   if (!existing || existing.ownerId !== user.id) return { error: "Položka nenalezena." };
 
+  if (existing.attachmentPath) {
+    await supabaseAdmin.storage.from(ATTACHMENT_BUCKET).remove([existing.attachmentPath]);
+  }
+
   await prisma.blueprintItem.delete({ where: { id } });
   revalidatePath(PATH);
   return { ok: true };
+}
+
+// ── uploadBlueprintAttachment ──────────────────────────────────────────────────
+
+export async function uploadBlueprintAttachment(
+  itemId: string,
+  formData: FormData
+): Promise<{ error: string } | { ok: true; attachmentName: string }> {
+  const user = await getUser();
+
+  const existing = await prisma.blueprintItem.findFirst({ where: { id: itemId, ownerId: user.id } });
+  if (!existing) return { error: "Položka nenalezena." };
+
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { error: "Vyber soubor." };
+  if (file.size > MAX_ATTACHMENT_BYTES) return { error: "Soubor je příliš velký (max 10 MB)." };
+
+  const safeName = sanitizeFilename(file.name || "attachment");
+  const path = `${user.id}/blueprint/${itemId}/${Date.now()}_${safeName}`;
+  const bytes = Buffer.from(await file.arrayBuffer());
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from(ATTACHMENT_BUCKET)
+    .upload(path, bytes, { contentType: file.type || "application/octet-stream", upsert: false });
+  if (uploadError) return { error: "Nahrání se nezdařilo." };
+
+  if (existing.attachmentPath) {
+    await supabaseAdmin.storage.from(ATTACHMENT_BUCKET).remove([existing.attachmentPath]);
+  }
+
+  await prisma.blueprintItem.update({
+    where: { id: itemId },
+    data: { attachmentPath: path, attachmentName: file.name || safeName },
+  });
+
+  revalidatePath(PATH);
+  return { ok: true, attachmentName: file.name || safeName };
+}
+
+// ── removeBlueprintAttachment ──────────────────────────────────────────────────
+
+export async function removeBlueprintAttachment(
+  itemId: string
+): Promise<{ error: string } | { ok: true }> {
+  const user = await getUser();
+
+  const existing = await prisma.blueprintItem.findFirst({ where: { id: itemId, ownerId: user.id } });
+  if (!existing) return { error: "Položka nenalezena." };
+  if (!existing.attachmentPath) return { ok: true };
+
+  await supabaseAdmin.storage.from(ATTACHMENT_BUCKET).remove([existing.attachmentPath]);
+
+  await prisma.blueprintItem.update({
+    where: { id: itemId },
+    data: { attachmentPath: null, attachmentName: null },
+  });
+
+  revalidatePath(PATH);
+  return { ok: true };
+}
+
+// ── getBlueprintAttachmentUrl ───────────────────────────────────────────────────
+
+export async function getBlueprintAttachmentUrl(itemId: string): Promise<{ error: string } | { url: string }> {
+  const user = await getUser();
+
+  const existing = await prisma.blueprintItem.findFirst({ where: { id: itemId, ownerId: user.id } });
+  if (!existing || !existing.attachmentPath) return { error: "Příloha nenalezena." };
+
+  // Defensive: the path is namespaced by owner at write time, but re-check
+  // before issuing a signed URL in case a row is ever reassigned.
+  if (!existing.attachmentPath.startsWith(`${user.id}/blueprint/`)) {
+    return { error: "Příloha nenalezena." };
+  }
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(ATTACHMENT_BUCKET)
+    .createSignedUrl(existing.attachmentPath, 60 * 10);
+  if (error || !data) return { error: "Nepodařilo se vygenerovat odkaz." };
+
+  return { url: data.signedUrl };
 }

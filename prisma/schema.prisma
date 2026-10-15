@@ -531,6 +531,14 @@ model BlueprintItem {
   content    String
   isCritical Boolean  @default(false)
 
+  // Optional real file attachment (scanned ID, will, insurance policy...) —
+  // stored in the existing "arca-media" private Supabase Storage bucket,
+  // same signed-URL access pattern as message media. attachmentName is the
+  // original filename, kept separately since attachmentPath is a
+  // content-addressed storage key, not human-readable.
+  attachmentPath String?
+  attachmentName String?
+
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId String
 
