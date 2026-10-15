@@ -167,7 +167,7 @@ export default async function GuardiansPage() {
             <p className="arca-sub" style={{ fontSize: 12.5, marginBottom: 16 }}>
               {t("pingSteps.subtitle")}
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+            <div className="arca-steps-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
               <PingStep n="01" label={t("pingSteps.step1Label")} sub={t("pingSteps.step1Sub")} />
               <PingStep n="02" label={t("pingSteps.step2Label")} sub={t("pingSteps.step2Sub")} />
               <PingStep n="03" label={t("pingSteps.step3Label")} sub={t("pingSteps.step3Sub")} />
