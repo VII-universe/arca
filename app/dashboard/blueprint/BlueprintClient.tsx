@@ -20,6 +20,7 @@ export interface BlueprintItem {
   isCritical: boolean;
   attachmentPath?: string | null;
   attachmentName?: string | null;
+  url?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -98,6 +99,7 @@ const IcSpin   = () => <svg width={13} height={13} viewBox="0 0 24 24" fill="non
 const IcSparkle= () => <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2.8 2.8M14.7 14.7l2.8 2.8M17.5 6.5l-2.8 2.8M9.3 14.7L6.5 17.5"/></svg>;
 const IcPaperclip = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>;
 const IcDownload = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>;
+const IcLink = () => <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07L13 19"/></svg>;
 
 // ── Sheet ─────────────────────────────────────────────────────────────────────
 
@@ -174,6 +176,7 @@ function Sheet({
           title: formData.get("title") as string,
           content: formData.get("content") as string,
           isCritical,
+          url: (formData.get("url") as string)?.trim() || null,
           updatedAt: new Date(),
         };
       } else {
@@ -292,6 +295,19 @@ function Sheet({
               className="arca-input"
               rows={7}
               style={{ fontSize: 13.5, resize: "vertical", minHeight: 140 }}
+            />
+          </div>
+
+          {/* Link */}
+          <div>
+            <label className="arca-mono" style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 6 }}>{t("sheet.urlLabel")}</label>
+            <input
+              name="url"
+              type="url"
+              defaultValue={editItem?.url ?? ""}
+              placeholder={t("sheet.urlPlaceholder")}
+              className="arca-input"
+              style={{ fontSize: 13.5 }}
             />
           </div>
 
@@ -436,16 +452,31 @@ function ItemCard({
               {expanded ? t("card.less") : t("card.fullText")}
             </button>
           )}
-          {item.attachmentName && (
-            <button
-              type="button"
-              onClick={handleOpenAttachment}
-              disabled={opening}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "var(--accent-tint)", border: "none", borderRadius: "var(--r-pill)", cursor: "pointer", padding: "4px 10px", marginTop: 6, fontFamily: "var(--f-sans)", alignSelf: "flex-start" }}
-            >
-              {opening ? <IcSpin /> : <IcDownload />}
-              <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>{item.attachmentName}</span>
-            </button>
+          {(item.attachmentName || item.url) && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+              {item.url && (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "var(--accent-tint)", borderRadius: "var(--r-pill)", padding: "4px 10px", fontFamily: "var(--f-sans)", textDecoration: "none" }}
+                >
+                  <IcLink />
+                  <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>{t("card.linkLabel")}</span>
+                </a>
+              )}
+              {item.attachmentName && (
+                <button
+                  type="button"
+                  onClick={handleOpenAttachment}
+                  disabled={opening}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--accent)", fontWeight: 500, background: "var(--accent-tint)", border: "none", borderRadius: "var(--r-pill)", cursor: "pointer", padding: "4px 10px", fontFamily: "var(--f-sans)" }}
+                >
+                  {opening ? <IcSpin /> : <IcDownload />}
+                  <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>{item.attachmentName}</span>
+                </button>
+              )}
+            </div>
           )}
         </div>
 
