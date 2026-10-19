@@ -85,6 +85,7 @@ export default function AppearanceButton() {
   const [glowOn, setGlowOn]   = useState(true);
   const [open, setOpen]       = useState(false);
   const [panelPos, setPanelPos] = useState({ top: 0, left: 0, direction: "up" as "up" | "down", maxHeight: 400 });
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef   = useRef<HTMLDivElement>(null);
   const customColorRef = useRef<HTMLInputElement>(null);
@@ -180,6 +181,22 @@ export default function AppearanceButton() {
     }
     if (left < 12) left = 12;
     setPanelPos({ top, left, direction, maxHeight });
+    // Portal into the nearest ancestor Radix Dialog (the mobile nav drawer)
+    // when there is one, otherwise fall back to <body> (the desktop
+    // sidebar case — see the comment on the portal below). A
+    // position:fixed element already escapes any ancestor's
+    // overflow:hidden on its own, so nesting inside the dialog doesn't
+    // reintroduce the clipping problem the <body> portal exists to avoid
+    // — but it DOES keep the panel as a true descendant of the dialog's
+    // own stacking context, instead of a separate sibling portal. Mixing
+    // two independent <body>-level portals (the Sheet's own Dialog.Portal
+    // and this one) turned out to make the panel visually correct but
+    // untappable on real phones: taps were swallowed by the dialog
+    // instead of reaching the panel's buttons, even though z-index said
+    // the panel should win — nesting inside the dialog's own portal
+    // sidesteps whatever cross-portal stacking quirk caused that.
+    const dialog = triggerRef.current.closest('[role="dialog"]');
+    setPortalTarget(dialog ?? document.body);
     setOpen((o) => !o);
   }, []);
 
@@ -223,13 +240,10 @@ export default function AppearanceButton() {
         <span style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--accent)", boxShadow: "inset 0 0 0 2px var(--surface-2)", flexShrink: 0, marginLeft: "auto" }} />
       </button>
 
-      {open && createPortal(
+      {open && portalTarget && createPortal(
         <>
-          {/* Panel — fixed, above trigger. Portaled to <body> because the
-              hover-expanding sidebar has `transform` on itself (for the
-              slide animation), which makes it the containing block for
-              any position:fixed descendant — trapping this panel inside
-              the sidebar's own overflow:hidden and clipping it. */}
+          {/* Panel — fixed, above trigger. Portaled to the nearest ancestor
+              dialog (mobile) or <body> (desktop) — see handleOpen for why. */}
           <div
             ref={panelRef}
             className="arca-card elev"
@@ -419,7 +433,7 @@ export default function AppearanceButton() {
             </div>
           </div>
         </>,
-        document.body
+        portalTarget
       )}
     </>
   );
