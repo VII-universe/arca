@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.58.2] - Oprava: panel vzhledu na mobilu šel vidět, ale nešel použít
+Uživatel po předchozích dvou opravách (#75 pozice, #76 zabalující se lišta) stále hlásil, že na mobilu "panel se otevře, ale kliknutí na volby nic nedělá". Příčina byla jiná, hlubší verze stejného tématu: panel výběru vzhledu se portáluje mimo svého rodiče (aby unikl oříznutí), ale na mobilu je tím rodičem mobilní menu, což je samo o sobě portálované okno (Radix Dialog). Panel se tak portáloval jako NEZÁVISLÉ druhé okno vedle mobilního menu, ne dovnitř něj — a z důvodu, který se nepodařilo přesně vystopovat na úrovni CSS specifikace (pravděpodobně souvislost s `backdrop-filter` a způsobem, jakým prohlížeč skládá dvě nezávisle portálovaná okna), se dotyky na panelu "ztrácely" a propadaly na mobilní menu pod ním — i když panel byl vizuálně nahoře a měl vyšší z-index.
+
+Ověřil jsem to skutečným testem (Playwright se simulací reálného dotyku na mobilním zařízení přes skutečné komponenty appky, ne jen simulaci CSS) — potvrdilo se, že dotyk na tlačítko "Tmavý" appku vůbec nezasáhl.
+
+### Opraveno
+- `components/layout/AppearanceButton.tsx` — panel se teď portáluje dovnitř nejbližšího rodičovského dialogu (mobilní menu), pokud existuje, místo vždy do `<body>`. Protože `position: fixed` uniká oříznutí (`overflow: hidden`) libovolného rodiče samo o sobě, tohle neobnovuje původní problém s oříznutím — jen panel dělá skutečným potomkem mobilního menu místo nezávislého souběžného portálu. Na počítači (kde žádný dialog není) se chování nemění.
+- Po opravě ověřeno týmž automatizovaným testem — dotyk teď skutečně změní téma, uloží se do localStorage a menu zůstane otevřené.
+
 ## [1.58.1] - Dashboard: sjednocené ikony (konec redesignu dashboardu)
 Třetí a poslední krok redesignu dashboardu — vizuální doladění. Panel "Vyžaduje pozornost" (předchozí krok) používal barevné emoji (✉️⚠️🎂🎉) pro ikony jednotlivých řádků — jediné místo na dashboardu, co je používalo. Zbytek appky (postranní lišta, Manuál k životu, výběr vzhledu) důsledně používá jednobarevné obrysové SVG ikonky. Nahrazeno vlastní sadou SVG ikon (obálka, štít, výstražný trojúhelník, dort, srdce) ve stejném stylu, jaký appka používá všude jinde.
 
