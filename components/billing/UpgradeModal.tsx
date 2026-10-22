@@ -38,7 +38,6 @@ export function useUpgradeModal() {
 
 const PRO_FEATURES = [
   { icon: <InfinityIcon className="size-3.5" />, text: "Unlimited Arcas" },
-  { icon: <ShieldCheck className="size-3.5" />, text: "Zero-Knowledge Encryption" },
   { icon: <Mic className="size-3.5" />, text: "Voice & Video recording" },
   { icon: <Video className="size-3.5" />, text: "Drip chapter delivery" },
   { icon: <Mail className="size-3.5" />, text: "Physical letter delivery" },

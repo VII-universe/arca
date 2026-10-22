@@ -5,7 +5,6 @@ import {
   Check,
   ArrowLeft,
   Infinity as InfinityIcon,
-  ShieldCheck,
   Mic,
   Video,
   Mail,
@@ -32,12 +31,6 @@ const COMPARISON = [
   { feature: "Delivery triggers", free: true, pro: true },
   { feature: "Trusted Guardians", free: true, pro: true },
   { feature: "Smart Heartbeat webhook", free: true, pro: true },
-  {
-    feature: "Zero-Knowledge Encryption",
-    free: false,
-    pro: true,
-    proHighlight: true,
-  },
   { feature: "Voice & Video recording", free: false, pro: true },
   { feature: "Drip chapter delivery", free: false, pro: true },
   { feature: "Physical letter delivery", free: false, pro: true },
@@ -123,8 +116,8 @@ export default async function BillingPage({
                 Your words deserve<br />no limits.
               </h1>
               <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-                Upgrade once. Preserve everything — with encryption, video,
-                unlimited Arcas, and physical delivery.
+                Upgrade once. Preserve everything — with video, unlimited
+                Arcas, and physical delivery.
               </p>
             </>
           )}
@@ -176,7 +169,6 @@ export default async function BillingPage({
                 {[
                   { icon: <InfinityIcon className="size-3.5" />, text: "Unlimited Arcas" },
                   { icon: <Zap className="size-3.5" />, text: "5 GB media storage" },
-                  { icon: <ShieldCheck className="size-3.5" />, text: "Zero-Knowledge Encryption" },
                   { icon: <Mic className="size-3.5" />, text: "Voice & Video recording" },
                   { icon: <Video className="size-3.5" />, text: "Drip chapter delivery" },
                   { icon: <Mail className="size-3.5" />, text: "Physical letter delivery" },

@@ -91,7 +91,7 @@
     },
     "proUpsell": {
       "title": "ARCA Pro — without limits",
-      "subtitle": "Unlimited messages, voice and video recording, end-to-end encryption, and physical letters.",
+      "subtitle": "Unlimited messages, voice and video recording, and physical letters.",
       "upgradeBtn": "Upgrade →"
     },
     "filter": {
@@ -482,7 +482,7 @@
     "reassurance": {
       "titlePlain": "You can relax.",
       "titleItalic": "We've got this.",
-      "body": "Your messages are encrypted and delivered exactly when you wanted. Not sooner, not later.",
+      "body": "Your messages are stored securely and delivered exactly when you wanted. Not sooner, not later.",
       "explorePlanBtn": "Explore the plan"
     },
     "groupPicker": { "noGroup": "No group" },
@@ -864,7 +864,7 @@
       "saveDraft": "Save as draft",
       "aiTitle": "Not sure how to start?",
       "aiSub": "Describe a few thoughts and AI will draft a letter from them.",
-      "encryptedHint": "End-to-end encrypted. Only the intended recipients hold the key."
+      "encryptedHint": "Encrypted in transit and at rest. It can only be opened after delivery, through a personal link."
     },
     "errors": {
       "sessionExpired": "Session expired — media wasn't uploaded.",
@@ -898,7 +898,7 @@
       "subheadline": "A highly secure digital time capsule and dead-man switch for your most important messages, documents, and memories — delivered precisely when they matter most.",
       "ctaPrimary": "Start building your Arca",
       "ctaSecondary": "See how it works",
-      "trustEncrypted": "End-to-end encrypted",
+      "trustEncrypted": "Encrypted in transit and at rest",
       "trustFree": "Free to start",
       "trustNoCard": "No credit card required",
       "trustVoice": "Voice & video recording"
@@ -920,9 +920,9 @@
       "titleItalic": "for trust.",
       "items": [
         {
-          "title": "Military-Grade Security",
-          "body": "Zero-Knowledge Encryption means your content is encrypted before it ever leaves your device. Not even we can read it. Your secrets stay yours.",
-          "pills": ["AES-256-GCM", "End-to-end encrypted", "Zero knowledge"]
+          "title": "Stored securely",
+          "body": "Connections are encrypted (HTTPS) and data is stored with our infrastructure provider, encrypted at the storage level. The most sensitive details in the Vault get an extra layer of encryption with our own key.",
+          "pills": ["HTTPS", "Encrypted storage", "AES-256-GCM for the Vault"]
         },
         {
           "title": "Trusted Guardians",
@@ -938,11 +938,11 @@
     },
     "security": {
       "label": "Security",
-      "titlePlain": "We can't read your messages.",
-      "titleItalic": "That's the point.",
-      "body": "Zero-Knowledge Encryption means your content is encrypted client-side before it ever reaches our servers. We store only ciphertext. Even in the event of a breach, your legacy remains private.",
+      "titlePlain": "Plainly, without hype.",
+      "titleItalic": "This is how we protect your data.",
+      "body": "Connections are encrypted (HTTPS) and data is stored with our infrastructure provider, encrypted at the storage level. The most sensitive details in the Vault (passwords, account access) get an extra layer of encryption with our own key (AES-256-GCM). Messages are not end-to-end encrypted.",
       "items": [
-        "AES-256-GCM encryption at rest",
+        "Encrypted storage, Vault additionally AES-256-GCM",
         "TLS 1.3 in transit",
         "Tamper-proof delivery audit trail",
         "HMAC-signed recipient tokens",
@@ -951,10 +951,10 @@
       "cardPath": "arca://vault/status",
       "cardRows": [
         { "label": "Status", "value": "Sealed" },
-        { "label": "Encryption", "value": "AES-256-GCM" },
-        { "label": "Key storage", "value": "Client only" },
+        { "label": "Storage", "value": "Encrypted" },
+        { "label": "Vault", "value": "AES-256-GCM" },
         { "label": "Guardian approval", "value": "Required" },
-        { "label": "Our access", "value": "None" },
+        { "label": "Connection", "value": "HTTPS" },
         { "label": "Delivery status", "value": "Pending trigger" }
       ]
     },
@@ -980,7 +980,6 @@
         "features": [
           { "text": "Unlimited Arcas", "highlight": true },
           { "text": "5 GB media storage", "highlight": true },
-          { "text": "Zero-Knowledge Encryption", "highlight": true },
           { "text": "Voice & video recording", "highlight": true },
           { "text": "Drip chapter delivery", "highlight": true },
           { "text": "Physical letter delivery", "highlight": true },
@@ -1015,7 +1014,7 @@
       "headingItalic": "preserved",
       "headingLine2": "with care.",
       "body": "ARCA is a secure vault for the messages that matter most — delivered precisely when they're needed.",
-      "featureEncrypted": "End-to-end encrypted",
+      "featureEncrypted": "Encrypted in transit and at rest",
       "featureGuardians": "Guardians as a failsafe",
       "featureDelivery": "Delivered exactly as you intend"
     },
@@ -1201,7 +1200,7 @@
       "title": "Not sure how to start?",
       "sub": "Describe a few thoughts and AI will draft a letter from them."
     },
-    "encrypted": "End-to-end encrypted.",
+    "encrypted": "Encrypted in transit and at rest.",
     "statusChip": {
       "DRAFT": "Draft",
       "ACTIVE": "Active",

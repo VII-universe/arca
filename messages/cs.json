@@ -91,7 +91,7 @@
     },
     "proUpsell": {
       "title": "ARCA Pro — bez hranic",
-      "subtitle": "Neomezené zprávy, hlasové a video nahrávky, šifrování end-to-end a fyzické dopisy.",
+      "subtitle": "Neomezené zprávy, hlasové a video nahrávky a fyzické dopisy.",
       "upgradeBtn": "Upgradovat →"
     },
     "filter": {
@@ -482,7 +482,7 @@
     "reassurance": {
       "titlePlain": "Můžeš si oddechnout.",
       "titleItalic": "Máme to.",
-      "body": "Tvoje zprávy jsou šifrované a doručí se přesně tehdy, kdy jsi to chtěl. Ani dříve, ani později.",
+      "body": "Tvoje zprávy jsou bezpečně uložené a doručí se přesně tehdy, kdy jsi to chtěl. Ani dříve, ani později.",
       "explorePlanBtn": "Prozkoumat plán"
     },
     "groupPicker": { "noGroup": "Bez skupiny" },
@@ -864,7 +864,7 @@
       "saveDraft": "Uložit jako koncept",
       "aiTitle": "Nevíš, jak začít?",
       "aiSub": "Popiš pár myšlenek a AI z nich napíše návrh dopisu.",
-      "encryptedHint": "Šifrováno end-to-end. Klíč drží jen ti, kterým je zpráva určená."
+      "encryptedHint": "Šifrované spojení a úložiště. Otevřít ji půjde až po doručení, přes osobní odkaz."
     },
     "errors": {
       "sessionExpired": "Přihlášení vypršelo — média se nenahrála.",
@@ -898,7 +898,7 @@
       "subheadline": "Vysoce zabezpečená digitální schránka a pojistka pro tvé nejdůležitější zprávy, dokumenty a vzpomínky — doručené přesně tehdy, kdy na nich záleží nejvíc.",
       "ctaPrimary": "Začít vytvářet svou Arcu",
       "ctaSecondary": "Jak to funguje",
-      "trustEncrypted": "Šifrováno end-to-end",
+      "trustEncrypted": "Šifrované spojení a úložiště",
       "trustFree": "Zdarma na začátek",
       "trustNoCard": "Bez platební karty",
       "trustVoice": "Nahrávání hlasu a videa"
@@ -920,9 +920,9 @@
       "titleItalic": "pro důvěru.",
       "items": [
         {
-          "title": "Zabezpečení vojenské úrovně",
-          "body": "Šifrování se znalostí nuly znamená, že tvůj obsah je zašifrovaný dřív, než opustí tvoje zařízení. Nepřečteme ho ani my. Tvá tajemství zůstávají tvoje.",
-          "pills": ["AES-256-GCM", "End-to-end šifrováno", "Zero knowledge"]
+          "title": "Bezpečně uložené",
+          "body": "Spojení je šifrované (HTTPS) a data jsou uložená u poskytovatele infrastruktury šifrovaně na úrovni úložiště. Nejcitlivější údaje v Trezoru šifrujeme navíc vlastním klíčem.",
+          "pills": ["HTTPS", "Šifrované úložiště", "AES-256-GCM pro Trezor"]
         },
         {
           "title": "Důvěryhodní strážci",
@@ -938,11 +938,11 @@
     },
     "security": {
       "label": "Zabezpečení",
-      "titlePlain": "Tvoje zprávy nepřečteme.",
-      "titleItalic": "V tom je to celé.",
-      "body": "Šifrování se znalostí nuly znamená, že tvůj obsah je zašifrovaný na tvém zařízení dřív, než se vůbec dostane na naše servery. Ukládáme jen zašifrovaná data. I v případě úniku zůstává tvůj odkaz soukromý.",
+      "titlePlain": "Jasně a bez přehánění.",
+      "titleItalic": "Takhle chráníme tvá data.",
+      "body": "Spojení je šifrované (HTTPS) a data jsou uložená u poskytovatele infrastruktury šifrovaně na úrovni úložiště. Nejcitlivější údaje v Trezoru (hesla, přístupy) šifrujeme navíc vlastním klíčem (AES-256-GCM). Zprávy nejsou šifrované end-to-end.",
       "items": [
-        "Šifrování AES-256-GCM v klidu",
+        "Šifrované úložiště, Trezor navíc AES-256-GCM",
         "TLS 1.3 při přenosu",
         "Nezfalšovatelný záznam o doručení",
         "HMAC-podepsané tokeny příjemců",
@@ -951,10 +951,10 @@
       "cardPath": "arca://schranka/stav",
       "cardRows": [
         { "label": "Stav", "value": "Zapečetěno" },
-        { "label": "Šifrování", "value": "AES-256-GCM" },
-        { "label": "Uložení klíče", "value": "Jen u tebe" },
+        { "label": "Úložiště", "value": "Šifrované" },
+        { "label": "Trezor", "value": "AES-256-GCM" },
         { "label": "Schválení strážci", "value": "Vyžadováno" },
-        { "label": "Náš přístup", "value": "Žádný" },
+        { "label": "Spojení", "value": "HTTPS" },
         { "label": "Stav doručení", "value": "Čeká na spouštěč" }
       ]
     },
@@ -980,7 +980,6 @@
         "features": [
           { "text": "Neomezené Arcy", "highlight": true },
           { "text": "5 GB úložiště pro média", "highlight": true },
-          { "text": "Šifrování se znalostí nuly", "highlight": true },
           { "text": "Nahrávání hlasu a videa", "highlight": true },
           { "text": "Postupné doručení kapitol", "highlight": true },
           { "text": "Doručení fyzického dopisu", "highlight": true },
@@ -1015,7 +1014,7 @@
       "headingItalic": "zachovaná",
       "headingLine2": "s péčí.",
       "body": "ARCA je bezpečná schránka pro zprávy, které záleží nejvíc — doručená přesně tehdy, kdy je zapotřebí.",
-      "featureEncrypted": "Šifrováno end-to-end",
+      "featureEncrypted": "Šifrované spojení a úložiště",
       "featureGuardians": "Strážci jako pojistka",
       "featureDelivery": "Doručeno přesně, jak si přeješ"
     },
@@ -1201,7 +1200,7 @@
       "title": "Nevíš, jak začít?",
       "sub": "Popiš pár myšlenek a AI z nich napíše návrh dopisu."
     },
-    "encrypted": "Šifrováno end-to-end.",
+    "encrypted": "Šifrované spojení a úložiště.",
     "statusChip": {
       "DRAFT": "Návrh",
       "ACTIVE": "Aktivní",

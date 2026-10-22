@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.58.4] - Oprava: nepravdivá tvrzení o šifrování end-to-end
+Aplikace a web na několika místech tvrdily „šifrováno end-to-end“, „zero-knowledge“ a „tvoje zprávy nepřečteme“. Ve skutečnosti se text zpráv a média ukládají bez šifrování na úrovni aplikace (spojení je HTTPS, úložiště u poskytovatele infrastruktury je šifrované na úrovni disku). Navíc vlastním klíčem (AES-256-GCM, klíč na serveru) se šifrují jen položky Trezoru / Manuálu k životu. Nic z toho není end-to-end ani zero-knowledge.
+
+### Opraveno
+- `messages/cs.json`, `messages/en.json` — composer (náhled i editor), login, dashboard (upsell, uklidňující karta) a současný landing teď říkají přesně: šifrované spojení a úložiště, Trezor navíc AES-256-GCM, zprávy nejsou šifrované end-to-end. Z karty „Stav schránky“ na landingu zmizely řádky „Uložení klíče: jen u tebe“ a „Náš přístup: žádný“.
+- `app/dashboard/billing/page.tsx`, `components/billing/UpgradeModal.tsx` — „Zero-Knowledge Encryption“ odstraněno ze seznamu funkcí Pro i ze srovnávací tabulky.
 ## [1.58.3] - Oprava: zprávy s pevným datem chodily o den později a globální spínač je doručoval předčasně
 Dvě chyby v doručování nalezené při auditu pro nový web.
 
