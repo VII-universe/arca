@@ -140,6 +140,13 @@ export async function createPackFull(
     triggerType = TriggerType.SPECIFIC_DATE;
   }
 
+  // "Seal and save" without a resolvable trigger used to fall through to a
+  // silent DRAFT (the pack looked sealed but could never be delivered) — e.g.
+  // the old "Při události" option, or a date card left empty. Refuse instead.
+  if (!isDraft && !triggerType) {
+    return { error: "Vyber, kdy se má zpráva doručit, nebo ji ulož jako koncept." };
+  }
+
   // A pack whose trigger is actually armed (non-draft, triggerType resolved)
   // but that would end up with zero recipients can never be opened by anyone
   // — the cron will fire it into TRIGGERED and it'll just sit there forever.
