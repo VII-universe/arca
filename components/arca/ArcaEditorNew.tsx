@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { upsertContent, updatePackTitle } from "@/app/actions/arca";
 import ArcaRichEditor, { type ArcaRichEditorHandle } from "./ArcaRichEditor";
-import { upsertTrigger, activatePack, cancelDelivery, addRecipient, removeRecipient } from "@/app/actions/delivery";
+import { upsertTrigger, activatePack, deactivatePack, addRecipient, removeRecipient } from "@/app/actions/delivery";
 import { createContributionInvite } from "@/app/actions/contribution";
 import AppearanceButton from "@/components/layout/AppearanceButton";
 
@@ -240,9 +240,14 @@ export default function ArcaEditorNew({
     });
   };
 
+  // Only show the draft state once the server has actually stopped the
+  // delivery — never optimistically (it used to flip to DRAFT even when the
+  // server refused, so the message stayed scheduled while looking cancelled).
   const handleDeactivate = () => {
+    setError(null);
     startTransition(async () => {
-      await cancelDelivery(packId);
+      const r = await deactivatePack(packId);
+      if ("error" in r) { setError(r.error); return; }
       setStatus("DRAFT");
       router.refresh();
     });
@@ -637,7 +642,7 @@ export default function ArcaEditorNew({
                     {t("sealAndActivate")} <IcArrow />
                   </button>
                 )}
-                {(status === "ACTIVE" || status === "GRACE_PERIOD") && (
+                {(status === "ACTIVE" || status === "GRACE_PERIOD" || status === "PENDING_GUARDIAN_APPROVAL") && (
                   <button type="button" onClick={handleDeactivate} disabled={isPending}
                     className="arca-btn arca-btn--ghost"
                     style={{ width: "100%", justifyContent: "center", marginBottom: 6, fontSize: 12 }}>

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.58.7] - Oprava: „Zrušit doručení“ v editoru ukazovalo zrušení, které se nestalo
+Tlačítko „Zrušit doručení“ v editoru zprávy volalo `cancelDelivery`, které aktivní zprávu odmítne (umí jen zprávy v ochranné lhůtě) — ale editor výsledek ignoroval a zprávu rovnou zobrazil jako koncept. Autor si tak myslel, že doručení zastavil, a zpráva dál čekala na svůj den.
+
+### Opraveno
+- `app/actions/delivery.ts` — nová akce `deactivatePack`: aktivní zprávu, i zprávu v ochranné lhůtě nebo čekající na strážce, vrátí do konceptu (crony koncepty nezpracovávají), resetuje spouštěč a zneplatní nevyužité odkazy strážců. Přechod je hlídaný stavem, takže zpráva, kterou cron právě doručil, se nepřepne zpátky.
+- `components/arca/ArcaEditorNew.tsx` — editor ukáže koncept až po úspěchu na serveru, jinak chybu; tlačítko je dostupné i ve stavu „čeká na strážce“.
+
 ## [1.58.6] - Oprava: adresát se nedostal ke zprávě přes kontrolní otázku
 Osoba přidaná přes Schránku → „Přidat osobu“ s kontrolní otázkou měla odpověď uloženou jako nesolený SHA-256 hash, ale všechna místa, která odpověď ověřují (stránka doručení `/arca/…` i `/s/…`), čekala formát `sůl:scrypt`. Ověření tak vždy selhalo a adresát svou zprávu neotevřel ani se správnou odpovědí.
 
