@@ -42,7 +42,7 @@ const IcShield   = () => <Ic><path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Kind = "text" | "voice" | "video" | "photo";
-type Trigger = "date" | "event" | "sealed" | "age" | "relative";
+type Trigger = "date" | "sealed" | "age" | "relative";
 type PackType = "EMOTIONAL" | "PRACTICAL";
 type MessageMode = "SELF" | "LEGACY";
 
@@ -1115,7 +1115,6 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                 )}
                 {messageMode === "LEGACY" && (
                   <>
-                    <TriggerCard active={trigger === "event"}  onClick={() => setTrigger("event")}  Ic={IcHeart}   title={t("trigger.event.title")} sub={t("trigger.event.sub")} />
                     <TriggerCard active={trigger === "sealed"} onClick={() => setTrigger("sealed")} Ic={IcLock}    title={t("trigger.sealed.title")}   sub={t("trigger.sealed.sub")} />
                   </>
                 )}
@@ -1138,21 +1137,6 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                       <option value="year">{t("trigger.repeatYearly")}</option>
                     </select>
                   </div>
-                </div>
-              )}
-
-              {trigger === "event" && (
-                <div className="arca-card" style={{ padding: 18, marginTop: 12 }}>
-                  <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.eventTriggerLabel")}</label>
-                  <select className="arca-input">
-                    <option>{t("trigger.eventOption18")}</option>
-                    <option>{t("trigger.eventOptionWedding")}</option>
-                    <option>{t("trigger.eventOptionFirstChild")}</option>
-                    <option>{t("trigger.eventOptionCustom")}</option>
-                  </select>
-                  <p className="arca-sub" style={{ fontSize: 12.5, marginTop: 10 }}>
-                    {t("trigger.eventHint")}
-                  </p>
                 </div>
               )}
 
@@ -1308,7 +1292,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                 {[
                   [t("preview.formLabel"), t(`titleKindLabels.${kind}`)],
                   [t("preview.typeLabel"), packType === "EMOTIONAL" ? t("packType.emotionalPlain") : t("packType.practicalPlain")],
-                  [t("preview.triggerLabel"), trigger === "date" ? t("preview.triggerDate") : trigger === "age" ? t("preview.triggerAge") : trigger === "relative" ? t("preview.triggerRelative") : trigger === "event" ? t("preview.triggerEvent") : t("preview.triggerSealed")],
+                  [t("preview.triggerLabel"), trigger === "date" ? t("preview.triggerDate") : trigger === "age" ? t("preview.triggerAge") : trigger === "relative" ? t("preview.triggerRelative") : t("preview.triggerSealed")],
                   ...(trigger === "age" ? [[t("preview.computedDateLabel"), primaryBirthdayIso && ageComputedDate ? formatCzDate(ageComputedDate, dateLocale) : "—"]] : []),
                   ...(trigger === "relative" ? [[t("preview.computedDateLabel"), formatCzDate(relativeComputedDate, dateLocale)]] : []),
                 ].map(([label, value]) => (

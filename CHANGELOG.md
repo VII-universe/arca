@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.58.8] - Oprava: volba „Při události“ slibovala doručení, které neexistovalo
+Composer v režimu „Odkaz pro blízké“ nabízel spouštěč „Při události“ (18 let, svatba, narození prvního dítěte) s textem „Strážci potvrdí, že okamžik nastal. ARCA pak zprávu doručí.“ Žádný takový mechanismus v aplikaci není: výběr události se ani neodesílal, server nevytvořil žádný spouštěč a zpráva se po „Zapečetit a uložit“ tiše uložila jako koncept, který se nikdy nedoručí.
+
+### Opraveno
+- `app/dashboard/arca/new/ComposeWizard.tsx`, `messages/*.json` — volba „Při události“ odstraněna (včetně slibu o strážcích). Zůstávají funkční možnosti: konkrétní den a „Zapečetit, až tu nebudu“.
+- `app/actions/arca.ts` — „Zapečetit a uložit“ bez platného spouštěče server odmítne s hláškou místo tichého uložení konceptu.
+
+Existující data: dotčené zprávy jsou uložené jako koncepty — nic se nemění, autor je může dál upravit a aktivovat s funkčním spouštěčem.
+
 ## [1.58.7] - Oprava: „Zrušit doručení“ v editoru ukazovalo zrušení, které se nestalo
 Tlačítko „Zrušit doručení“ v editoru zprávy volalo `cancelDelivery`, které aktivní zprávu odmítne (umí jen zprávy v ochranné lhůtě) — ale editor výsledek ignoroval a zprávu rovnou zobrazil jako koncept. Autor si tak myslel, že doručení zastavil, a zpráva dál čekala na svůj den.
 
