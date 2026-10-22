@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.58.3] - Oprava: zprávy s pevným datem chodily o den později a globální spínač je doručoval předčasně
+Dvě chyby v doručování nalezené při auditu pro nový web.
+
+1. **Zpoždění o den.** Zpráva na konkrétní datum se ukládá s časem (výchozí 08:00, čas serveru = UTC), ale doručovací cron `process-triggers` běžel jen jednou denně ve 03:00 UTC. V den doručení tak ve 03:00 ještě nebyl čas, a zpráva odešla až další den ráno — přání k narozeninám by přišlo den po narozeninách. Milníky podle věku (ukládají se na půlnoc) postižené nebyly.
+2. **Globální spínač.** Když se spustil globální spínač (nastavení → neaktivita nebo datum), `pulse` přesunul do ochranné lhůty **všechny** aktivní zprávy uživatele — i ty s vlastním pevným datem (např. „k 18. narozeninám“). Po lhůtě se doručily roky předčasně.
+
+### Opraveno
+- `vercel.json` — `process-triggers` běží každou hodinu (`0 * * * *`) místo jednou denně. Zpráva odejde nejpozději do hodiny po nastaveném čase. Sweepy jsou na hodinové spouštění připravené (každý přechod stavu je jednorázový, e-maily se neopakují).
+- `app/api/cron/pulse/route.ts` — globální spínač vynechává zprávy se spouštěčem `SPECIFIC_DATE` (časové kapsle, milníky podle věku). Ty čekají na své datum a doručí je `process-triggers`. Zprávy s neaktivitou, „zapečetěné“ a zprávy bez spouštěče spínač zpracuje jako dřív.
+
 ## [1.58.2] - Oprava: panel vzhledu na mobilu šel vidět, ale nešel použít
 Uživatel po předchozích dvou opravách (#75 pozice, #76 zabalující se lišta) stále hlásil, že na mobilu "panel se otevře, ale kliknutí na volby nic nedělá". Příčina byla jiná, hlubší verze stejného tématu: panel výběru vzhledu se portáluje mimo svého rodiče (aby unikl oříznutí), ale na mobilu je tím rodičem mobilní menu, což je samo o sobě portálované okno (Radix Dialog). Panel se tak portáloval jako NEZÁVISLÉ druhé okno vedle mobilního menu, ne dovnitř něj — a z důvodu, který se nepodařilo přesně vystopovat na úrovni CSS specifikace (pravděpodobně souvislost s `backdrop-filter` a způsobem, jakým prohlížeč skládá dvě nezávisle portálovaná okna), se dotyky na panelu "ztrácely" a propadaly na mobilní menu pod ním — i když panel byl vizuálně nahoře a měl vyšší z-index.
 
