@@ -179,6 +179,70 @@ export async function activatePack(
   return { ok: true };
 }
 
+// ─── deactivatePack ───────────────────────────────────────────────────────────
+// The editor's "Cancel delivery": takes a pack that is ACTIVE — or already
+// counting down (GRACE_PERIOD / PENDING_GUARDIAN_APPROVAL) — back to DRAFT.
+// The crons only ever pick up ACTIVE packs, so a DRAFT is never delivered
+// until the owner activates it again. Unlike cancelDelivery (dashboard: "I'm
+// still here", back to ACTIVE), this stops the message altogether.
+const DEACTIVATABLE: string[] = [PackStatus.ACTIVE, PackStatus.GRACE_PERIOD, PackStatus.PENDING_GUARDIAN_APPROVAL];
+
+export async function deactivatePack(
+  packId: string
+): Promise<{ ok: true } | { error: string }> {
+  const user = await requireUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const pack = await prisma.messagePack.findUnique({
+    where: { id: packId, ownerId: user.id },
+    select: { status: true, triggerCondition: { select: { id: true } } },
+  });
+  if (!pack) return { error: "Pack not found." };
+  if (!DEACTIVATABLE.includes(pack.status))
+    return { error: "This Arca can no longer be cancelled." };
+
+  const wasCountingDown = pack.status !== PackStatus.ACTIVE;
+  const now = new Date();
+
+  const changed = await prisma.$transaction(async (tx) => {
+    // Status-guarded so a delivery the cron triggered a moment ago isn't
+    // silently flipped back to a draft.
+    const { count } = await tx.messagePack.updateMany({
+      where: { id: packId, status: pack.status },
+      data: { status: PackStatus.DRAFT },
+    });
+    if (count === 0) return false;
+    if (pack.triggerCondition) {
+      await tx.triggerCondition.update({
+        where: { id: pack.triggerCondition.id },
+        data: { status: "PENDING", triggeredAt: null },
+      });
+    }
+    await tx.guardianToken.updateMany({
+      where: { packId, usedAt: null },
+      data: { usedAt: now },
+    });
+    if (wasCountingDown) {
+      // The owner is evidently here — restart the inactivity clock too.
+      await tx.user.update({ where: { id: user.id }, data: { lastActiveAt: now } });
+      await tx.activityLog.create({
+        data: {
+          userId: user.id,
+          source: ActivitySource.MANUAL_CHECK_IN,
+          timestamp: now,
+          metadata: { action: "deactivate_pack", packId },
+        },
+      });
+    }
+    return true;
+  });
+  if (!changed) return { error: "This Arca's status just changed — reload the page and try again." };
+
+  revalidatePath(`/dashboard/arca/${packId}/edit`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 // ─── cancelDelivery ───────────────────────────────────────────────────────────
 // Reverts a pack from GRACE_PERIOD or PENDING_GUARDIAN_APPROVAL → ACTIVE,
 // resets the trigger, and records a check-in so inactivity timers restart
