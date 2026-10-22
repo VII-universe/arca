@@ -3,8 +3,10 @@
 //
 // Design principles:
 //  - All PKs use cuid() (swap to uuid() if you need RFC-4122 UUIDs)
-//  - Encrypted fields (textBody, challengeAnswerHash) are stored as ciphertext
-//    strings; encryption/decryption is handled at the application layer
+//  - Application-layer encryption: only BlueprintItem.content (AES-256-GCM,
+//    lib/crypto/blueprint-encryption.ts). MessageContent.textBody is stored as
+//    plain HTML (the database/storage provider encrypts at rest, nothing more);
+//    challengeAnswerHash is a hash, not ciphertext.
 //  - Every column touched by a background cron job has an explicit index
 //  - 1-to-1 relations use @unique on the FK side (TriggerCondition → MessagePack)
 
@@ -292,8 +294,8 @@ model MessageContent {
 
   type ContentType
 
-  // textBody MUST be encrypted (e.g. AES-256-GCM) before writing to the DB.
-  // Store as base64-encoded ciphertext. Decryption happens in the service layer.
+  // textBody is the editor's HTML, stored as-is — NOT application-encrypted
+  // (see the header note). Don't describe it as encrypted anywhere in the UI.
   textBody  String? // for TEXT type
   s3FileKey String? // for VIDEO / AUDIO / FILE — object key inside S3/R2 bucket
 

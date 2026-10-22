@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Mic,
   Video,
-  Mail,
   X,
   Check,
   Loader2,
@@ -38,13 +37,10 @@ export function useUpgradeModal() {
 
 const PRO_FEATURES = [
   { icon: <InfinityIcon className="size-3.5" />, text: "Unlimited Arcas" },
-  { icon: <ShieldCheck className="size-3.5" />, text: "Zero-Knowledge Encryption" },
   { icon: <Mic className="size-3.5" />, text: "Voice & Video recording" },
   { icon: <Video className="size-3.5" />, text: "Drip chapter delivery" },
-  { icon: <Mail className="size-3.5" />, text: "Physical letter delivery" },
   { icon: <Zap className="size-3.5" />, text: "5 GB media storage" },
   { icon: <ShieldCheck className="size-3.5" />, text: "Trusted Guardians system" },
-  { icon: <Sparkles className="size-3.5" />, text: "Priority support" },
 ];
 
 const FREE_LIMITS = [
