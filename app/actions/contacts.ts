@@ -1,15 +1,12 @@
 "use server";
 
 import { randomBytes } from "crypto";
-import { createHash } from "crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { hashChallengeAnswer } from "@/lib/challenge-answer";
 
-function hashAnswer(answer: string) {
-  return createHash("sha256").update(answer.trim().toLowerCase()).digest("hex");
-}
 
 export async function createContact(formData: FormData): Promise<
   | { error: string }
@@ -61,7 +58,7 @@ export async function createContact(formData: FormData): Promise<
       anniversary: annivRaw     ? new Date(annivRaw)     : null,
       challengeQuestion,
       challengeAnswerHash: challengeQuestion && challengeAnswer
-        ? hashAnswer(challengeAnswer)
+        ? hashChallengeAnswer(challengeAnswer)
         : null,
     },
   });

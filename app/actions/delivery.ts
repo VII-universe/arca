@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { scryptSync, randomBytes } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { hashChallengeAnswer } from "@/lib/challenge-answer";
 import { TriggerType, PackStatus, ActivitySource } from "@/lib/prisma/generated";
 import { render } from "@react-email/render";
 import { resend, FROM_EMAIL, APP_URL } from "@/lib/resend";
@@ -17,16 +17,6 @@ async function requireUser() {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
-}
-
-// ─── Challenge answer hashing ─────────────────────────────────────────────────
-// Uses scrypt (Node built-in) — no extra deps. The answer is case-folded and
-// trimmed so "Buddy" and "buddy " hash to the same value.
-
-function hashAnswer(raw: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(raw.toLowerCase().trim(), salt, 32).toString("hex");
-  return `${salt}:${hash}`;
 }
 
 // ─── addRecipient ─────────────────────────────────────────────────────────────
@@ -71,7 +61,7 @@ export async function addRecipient(
       // Only store a hash when both question and answer are provided
       challengeAnswerHash:
         challengeQuestion && challengeAnswer
-          ? hashAnswer(challengeAnswer)
+          ? hashChallengeAnswer(challengeAnswer)
           : null,
     },
   });

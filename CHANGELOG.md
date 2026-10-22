@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.58.6] - Oprava: adresát se nedostal ke zprávě přes kontrolní otázku
+Osoba přidaná přes Schránku → „Přidat osobu“ s kontrolní otázkou měla odpověď uloženou jako nesolený SHA-256 hash, ale všechna místa, která odpověď ověřují (stránka doručení `/arca/…` i `/s/…`), čekala formát `sůl:scrypt`. Ověření tak vždy selhalo a adresát svou zprávu neotevřel ani se správnou odpovědí.
+
+### Opraveno
+- `lib/challenge-answer.ts` (nové) — jedno místo pro hashování i ověření odpovědí; staré nesolené hashe se dál přijímají, takže dotčení adresáti zprávu otevřou bez migrace dat.
+- `app/actions/contacts.ts` — ukládá odpověď ve stejném formátu jako zbytek appky.
+- `app/actions/delivery.ts`, `app/actions/unlock.ts`, `app/actions/sanctuary.ts` — používají sdílený modul místo tří kopií.
+
+### Přidáno
+- `lib/challenge-answer.test.ts`.
+
 ## [1.58.5] - Oprava: „Zapečetit, až tu nebudu“ teď prochází strážci
 Nejdůležitější slib produktu nefungoval. Zpráva vytvořená v composeru volbou „Zapečetit, doručit, až tu nebudu“ dostala spouštěč `MANUAL_EMERGENCY`, který doručovací cron vůbec nezpracovával. Doručit ji uměl jen globální spínač v nastavení (ve výchozím stavu vypnutý), a ten obcházel strážce a autorovi nic nepsal. Composer navíc sliboval „otevře se až poté, co tři strážci nezávisle potvrdí, předtím nikdo, ani my, neuvidí obsah“, což nebyla pravda ani zčásti.
 

@@ -2,11 +2,11 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { scryptSync } from "crypto";
 import { prisma } from "@/lib/prisma/client";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { signUnlockToken, isUnlocked } from "@/lib/unlock-token";
 import { decryptBlueprintContent } from "@/lib/crypto/blueprint-encryption";
+import { checkChallengeAnswer } from "@/lib/challenge-answer";
 
 // ── Exported types ────────────────────────────────────────────────────────────
 
@@ -170,22 +170,6 @@ export async function getSanctuaryContent(token: string): Promise<SanctuaryResul
 
 // ── verifySanctuaryChallengeAnswer ────────────────────────────────────────────
 
-function verifyAnswer(raw: string, stored: string): boolean {
-  const [salt, expected] = stored.split(":");
-  if (!salt || !expected) return false;
-  try {
-    const actual = scryptSync(raw.toLowerCase().trim(), salt, 32).toString("hex");
-    if (actual.length !== expected.length) return false;
-    let mismatch = 0;
-    for (let i = 0; i < actual.length; i++) {
-      mismatch |= actual.charCodeAt(i) ^ expected.charCodeAt(i);
-    }
-    return mismatch === 0;
-  } catch {
-    return false;
-  }
-}
-
 export async function verifySanctuaryChallengeAnswer(
   packId: string,
   token: string,
@@ -200,7 +184,7 @@ export async function verifySanctuaryChallengeAnswer(
 
   const verified =
     recipients.length === 0 ||
-    recipients.some((r) => r.challengeAnswerHash && verifyAnswer(answer, r.challengeAnswerHash));
+    recipients.some((r) => r.challengeAnswerHash && checkChallengeAnswer(answer, r.challengeAnswerHash));
 
   if (!verified) return { error: "That answer doesn't match. Please try again." };
 
