@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.60.0] - Nový web, milník M2: světelná scéna se skleněnými orby
+Pozadí celého webu je teď živá WebGL scéna: světelné pole v barvách zvolené atmosféry, skleněné orby (zprávy, které čekají) s lomem světla, jemnou barevnou disperzí, fresnelovým okrajem a vlastním světlem uvnitř, a drobná vzdálená světla. Pomalu plují, reagují jemně na pohyb myši a scroll (bližší orby víc, vzdálenější míň) a při přepnutí atmosféry plynule přejdou do nových barev.
+
+### Přidáno
+- `components/marketing/scene/` — holé WebGL 1 (jeden fragment shader, bez three.js; celá scéna má ~5 kB gzip v samostatném chunku), načítané přes `next/dynamic` bez SSR.
+- Adaptivní kvalita: rozlišení vykreslování je omezené (DPR max 1,5, 42–70 % CSS pixelů), slabší zařízení startují níž, při pomalých snímcích scéna sama sníží úroveň; na nejnižší úrovni vypne `backdrop-filter` na skle, a když nepomůže ani to, zůstane statický snímek. Zařízení zamčené na 30 fps (úsporný režim) se za pomalé nepovažuje.
+- Smyčka se zastaví ve skryté záložce. `prefers-reduced-motion`: žádná smyčka ani parallaxa, jen statický snímek.
+- Fallback: bez WebGL (nebo při ztrátě kontextu) zůstává CSS pozadí z M1 — zároveň slouží jako placeholder stejné velikosti, plátno se plynule objeví až po prvním vykresleném snímku.
+
 ## [1.59.0] - Nový web, milník M1: kostra všech sekcí
 První milník nového veřejného webu („Světlo, které cestuje časem“). Všechny sekce stojí staticky a responzivně (375–1920 px), v češtině i angličtině, na design tokenech aplikace. Animace, WebGL scéna a předání konceptu zprávy do editoru přijdou v dalších milnících.
 

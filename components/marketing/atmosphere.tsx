@@ -1,6 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useVibe, type Vibe } from "@/contexts/vibe-context";
+
+// WebGL light scene — client-only and split into its own chunk, so it never
+// blocks the first paint. Until it has drawn a frame (or forever, without
+// WebGL) the static CSS sky below stands in at exactly the same size.
+const LightScene = dynamic(() => import("./scene/LightScene"), { ssr: false });
 
 // The atmospheres the marketing scene can render — the subset of the app's
 // background picker (components/layout/AppearanceButton) that is light, not
@@ -32,6 +38,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mk" data-atmosphere={atmosphere}>
       <div className="mk-sky" aria-hidden="true" />
+      <LightScene />
       <div className="mk-grain" aria-hidden="true" />
       {children}
     </div>

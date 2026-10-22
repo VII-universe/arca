@@ -125,6 +125,28 @@
   opacity: .8;
 }
 
+/* WebGL light scene (components/marketing/scene). Sits over the CSS sky and
+   fades in only after its first frame, so there is never a flash. */
+.mk-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s var(--mk-ease);
+}
+.mk-canvas[data-ready="true"] { opacity: 1; }
+
+/* Lowest scene tier: the GPU is busy enough — drop backdrop-filter, which
+   would otherwise re-blur the animated scene behind every glass panel. */
+.mk[data-glass="solid"] .mk-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--mk-glass-fallback);
+}
+
 /* 2–3 % grain against gradient banding. */
 .mk-grain {
   position: fixed;
