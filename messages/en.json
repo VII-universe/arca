@@ -733,6 +733,7 @@
     "footerNote": "The look is yours. Your loved ones will see their own when it's delivered."
   },
   "Compose": {
+    "landingDraft": {"kicker": "Your message from the website", "use": "Continue with it", "discard": "Discard"},
     "dashboard": "Dashboard",
     "newMessage": "New message",
     "modeSelect": {
@@ -1006,7 +1007,7 @@
         },
         {
           "title": "Pick guardians",
-          "body": "For messages meant to arrive after a long silence, choose people ARCA asks first."
+          "body": "For \"when I'm gone\" messages, choose people ARCA asks before anything is delivered."
         },
         {
           "title": "ARCA delivers",
@@ -1035,9 +1036,9 @@
     "guardians": {
       "label": "Guardians",
       "title": "People you trust. For the moment nobody plans.",
-      "lead": "You can set a message to be delivered after a long silence from you. Guardians make sure nothing goes out by mistake.",
+      "lead": "\"When I'm gone\" messages don't follow a date. They follow a long silence from you. Guardians make sure nothing goes out by mistake.",
       "steps": [
-        "For each message, you set how many days without signing in before ARCA reaches out.",
+        "You set how many days without any activity in ARCA before it reaches out (90 by default).",
         "When that time passes, we email your guardians two links: \"They're fine\" and \"Release the messages\". The links are valid for 72 hours.",
         "One guardian confirming you're fine is enough, and the countdown starts over.",
         "If nobody responds, the messages are delivered after a grace period you choose."
@@ -1088,7 +1089,7 @@
       "whatIf": [
         {
           "q": "…I go quiet for a long time?",
-          "a": "Messages set to deliver after inactivity go through your guardians first. If you have none, we email you. Messages with a fixed date wait for their day; a long silence won't send them early."
+          "a": "\"When I'm gone\" messages go through your guardians first. If you have none, we email you. Messages with a fixed date wait for their day; a long silence won't send them early."
         },
         {
           "q": "…I change my mind?",
@@ -1106,7 +1107,7 @@
       "lead": "No credit card. Upgrade for more messages and recordings whenever you want.",
       "free": {
         "name": "Free",
-          "tagline": "For a first message, waiting for its day.",
+        "tagline": "For a first message, waiting for its day.",
         "messages": "{count, plural, one {# message} other {# messages}}",
         "features": [
           "Text and photos",
@@ -1140,7 +1141,7 @@
         },
         {
           "q": "How do guardians know it's time to deliver?",
-          "a": "They don't decide on their own. When a message is set to deliver after inactivity and you don't sign in for a long time, ARCA emails them two links: \"They're fine\" and \"Release the messages\". If nobody responds, the messages are delivered after a grace period."
+          "a": "They don't decide on their own. When you go quiet for a long time, ARCA emails them two links: \"They're fine\" and \"Release the messages\". If nobody responds, the messages are delivered after a grace period."
         },
         {
           "q": "Can I edit or cancel a message?",

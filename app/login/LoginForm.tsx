@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
+import { NEXT_COOKIE, safeNextPath } from "@/lib/auth/safe-next";
 
 type Mode = "login" | "signup";
 
@@ -12,13 +13,17 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
+  // ?next= (same-site only) — where to continue after signing in, e.g. the
+  // composer when someone comes from "keep this message for real" on the
+  // landing page. ?mode=signup opens straight on the sign-up tab.
+  const next = safeNextPath(searchParams.get("next"));
 
   const ERROR_MESSAGES: Record<string, string> = {
     missing_code: t("errors.missing_code"),
     auth_failed: t("errors.auth_failed"),
   };
 
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>(searchParams.get("mode") === "signup" ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<{ type: "error" | "success"; message: string } | null>(
@@ -27,6 +32,13 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
+
+  // Email confirmation and Google come back through /api/auth/callback; the
+  // destination rides along in a short-lived cookie rather than the Supabase
+  // redirect URL, so that URL keeps matching the allow-list exactly.
+  function rememberNext() {
+    if (next) document.cookie = `${NEXT_COOKIE}=${encodeURIComponent(next)}; Max-Age=3600; Path=/; SameSite=Lax`;
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,6 +52,7 @@ export default function LoginForm() {
 
     try {
       if (mode === "signup") {
+        rememberNext();
         const { error } = await supabase.auth.signUp({
           email: emailVal,
           password: passwordVal,
@@ -51,7 +64,7 @@ export default function LoginForm() {
         const { error } = await supabase.auth.signInWithPassword({ email: emailVal, password: passwordVal });
         if (error) throw error;
         fetch("/api/auth/sync-user", { method: "POST" }).catch(() => {});
-        router.push("/dashboard");
+        router.push(next ?? "/dashboard");
         router.refresh();
       }
     } catch (err: unknown) {
@@ -64,6 +77,7 @@ export default function LoginForm() {
   async function handleGoogle() {
     setStatus(null);
     setLoading(true);
+    rememberNext();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/api/auth/callback` },

@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, LOCALE_HEADER, type Locale } from "@/i18n/config";
 import { MARKETING_LOCALE_PATHS, isMarketingPath } from "@/lib/marketing/paths";
+import { safeNextPath } from "@/lib/auth/safe-next";
 
 // i18n first-visit language detection — "without i18n routing" (see the i18n
 // design review), so this only ever sets a cookie, never redirects or
@@ -123,10 +124,16 @@ export async function proxy(request: NextRequest) {
     return res;
   }
 
-  // Redirect authenticated users away from auth pages
+  // Redirect authenticated users away from auth pages — to ?next= when it's a
+  // same-site path (e.g. "keep this message for real" from the landing page
+  // while already signed in), otherwise to the dashboard.
   if (user && AUTH_PATHS.some((p) => pathname.startsWith(p))) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    const next = safeNextPath(request.nextUrl.searchParams.get("next"));
+    const url = next ? new URL(next, request.url) : request.nextUrl.clone();
+    if (!next) {
+      url.pathname = "/dashboard";
+      url.search = "";
+    }
     const res = NextResponse.redirect(url);
     applyLocaleCookie(request, res);
     return res;

@@ -733,6 +733,7 @@
     "footerNote": "Vzhled je tvůj. Tvoji blízcí uvidí ten svůj při doručení."
   },
   "Compose": {
+    "landingDraft": {"kicker": "Rozepsaná zpráva z webu", "use": "Pokračovat v ní", "discard": "Zahodit"},
     "dashboard": "Dashboard",
     "newMessage": "Nová zpráva",
     "modeSelect": {
@@ -1006,7 +1007,7 @@
         },
         {
           "title": "Urči strážce",
-          "body": "U zpráv, které se mají doručit po dlouhé odmlce, vybereš lidi, kterých se ARCA nejdřív zeptá."
+          "body": "U zpráv „až tu nebudu“ vybereš lidi, kterých se ARCA zeptá, než cokoli doručí."
         },
         {
           "title": "ARCA doručí",
@@ -1035,9 +1036,9 @@
     "guardians": {
       "label": "Strážci",
       "title": "Lidé, kterým věříš. Pro chvíli, kterou nikdo neplánuje.",
-      "lead": "Zprávu můžeš nastavit tak, aby se doručila, až se dlouho neozveš. Aby nic neodešlo omylem, máš strážce.",
+      "lead": "Zprávy „až tu nebudu“ se neřídí datem, ale tím, že se dlouho neozveš. Aby nic neodešlo omylem, máš strážce.",
       "steps": [
-        "U zprávy nastavíš, po kolika dnech bez přihlášení se má ARCA ozvat.",
+        "Nastavíš, po kolika dnech bez tvé aktivity v ARCA se má ozvat (výchozí je 90 dní).",
         "Když ta doba uplyne, napíšeme tvým strážcům. Dostanou dva odkazy: „Je v pořádku“ a „Uvolnit zprávy“. Platí 72 hodin.",
         "Stačí jeden strážce, který potvrdí, že jsi v pořádku, a odpočet začne znovu.",
         "Když nikdo nezareaguje, zprávy se doručí po ochranné lhůtě, kterou si zvolíš."
@@ -1088,7 +1089,7 @@
       "whatIf": [
         {
           "q": "…se dlouho neozvu?",
-          "a": "Zprávy nastavené na doručení po neaktivitě nejdřív projdou tvými strážci. Když žádné nemáš, napíšeme tobě. Zprávy s pevným datem čekají na svůj den, dlouhé ticho je neuspíší."
+          "a": "Zprávy „až tu nebudu“ nejdřív projdou tvými strážci. Když žádné nemáš, napíšeme tobě. Zprávy s pevným datem čekají na svůj den, dlouhé ticho je neuspíší."
         },
         {
           "q": "…si to rozmyslím?",
@@ -1106,7 +1107,7 @@
       "lead": "Bez platební karty. Na víc zpráv a nahrávky přejdeš, až budeš chtít.",
       "free": {
         "name": "Zdarma",
-          "tagline": "Na první zprávu, která čeká na svůj den.",
+        "tagline": "Na první zprávu, která čeká na svůj den.",
         "messages": "{count, plural, one {# zpráva} few {# zprávy} other {# zpráv}}",
         "features": [
           "Text a fotky",
@@ -1140,7 +1141,7 @@
         },
         {
           "q": "Jak strážci poznají, že je čas doručit?",
-          "a": "Nepoznávají to sami. Když má zpráva doručení po neaktivitě a ty se dlouho nepřihlásíš, ARCA jim pošle e-mail se dvěma odkazy: „Je v pořádku“ a „Uvolnit zprávy“. Když nikdo nezareaguje, zprávy se doručí po ochranné lhůtě."
+          "a": "Nepoznávají to sami. Když se dlouho neozveš, ARCA jim pošle e-mail se dvěma odkazy: „Je v pořádku“ a „Uvolnit zprávy“. Když nikdo nezareaguje, zprávy se doručí po ochranné lhůtě."
         },
         {
           "q": "Můžu zprávu upravit nebo zrušit?",

@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.61.0] - Nový web, milník M3: zapečetění zprávy v hero
+Hero je teď celý zážitek: návštěvník napíše zprávu, vybere komu a kdy — a při tažení posuvníkem let se mění barva světla za hero (blízká budoucnost ranní a teplá, vzdálená hluboce modrá, „až tu nebudu“ noční). Po „Zapečetit“ se v kartě shromáždí světlo, slova se v něm rozpustí, karta se složí do zářícího orbu, ten převezme WebGL scéna (skutečný lom světla) a orb pomalu stoupá a mizí v hloubce mezi ostatními světly, které se na okamžik rozzáří. Rok mezitím doroluje na zvolený rok. Nic se neodesílá.
+
+### Přidáno
+- `components/marketing/HeroComposer.tsx` — sekvence v GSAP (`@gsap/react`); orb se animuje přes `clip-path`/`transform`, takže žádný posun layoutu (CLS 0). Bez WebGL letí DOM orb; `prefers-reduced-motion` = jen tiché prolnutí. Výsledek ohlášen přes `aria-live`, fokus přejde na „Ulož ji doopravdy“. Na mobilu se orb i výsledek drží ve viditelné části karty.
+- `components/marketing/Odometer.tsx` — rok rolující po číslicích v pevných sloupcích (znovu použije časová osa v M4).
+- `lib/marketing/landing-draft.ts` — rozepsaná zpráva v `localStorage` (vše v try/catch, platnost 30 dní).
+- `app/dashboard/arca/new/ComposeWizard.tsx` — po registraci composer nabídne „Rozepsanou zprávu z webu“: text, režim i spouštěč (rok → „za X let“, 18. narozeniny → věkový milník, „až tu nebudu“ → zapečetit); použije se jen po kliknutí.
+- `app/login/LoginForm.tsx` — `?mode=signup` otevře rovnou registraci; `?next=` (jen cesty v rámci webu) určí, kam pokračovat. Pro potvrzení e-mailem a Google jede cíl v krátké cookie, ne v návratové adrese Supabase — ta tak dál přesně odpovídá allow-listu.
+- `lib/auth/safe-next.ts` — kontrola, že `next` je cesta na tomto webu.
+
+### Změněno
+- `app/api/auth/callback/route.ts` — vedle `?next=` (ověřeného od 1.58.9) čte cíl i z krátké cookie `arca_next` a po použití ji smaže.
+- `proxy.ts` — přihlášený uživatel na `/login?next=…` pokračuje rovnou na `next` (dřív vždy na dashboard).
+
+### Změněno
+- `messages/*.json` — texty o strážcích na webu platí pro všechny zprávy „až tu nebudu“ (od opravy 1.58.5 je to pravda).
+- Závislosti: `gsap@3.15.0`, `@gsap/react@2.1.2` (přesně připnuté).
+
 ## [1.60.0] - Nový web, milník M2: světelná scéna se skleněnými orby
 Pozadí celého webu je teď živá WebGL scéna: světelné pole v barvách zvolené atmosféry, skleněné orby (zprávy, které čekají) s lomem světla, jemnou barevnou disperzí, fresnelovým okrajem a vlastním světlem uvnitř, a drobná vzdálená světla. Pomalu plují, reagují jemně na pohyb myši a scroll (bližší orby víc, vzdálenější míň) a při přepnutí atmosféry plynule přejdou do nových barev.
 

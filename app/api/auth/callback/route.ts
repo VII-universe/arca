@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import { safeNextPath } from "@/lib/auth/safe-next";
+import { NEXT_COOKIE, safeNextPath } from "@/lib/auth/safe-next";
 
 // This route is called by Supabase after:
 //   - Email confirmation (sign-up flow)
@@ -13,9 +14,16 @@ import { safeNextPath } from "@/lib/auth/safe-next";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  // Only same-site paths: `${origin}${next}` with next="@evil.com" would be
-  // https://host@evil.com — a redirect to another site.
-  const next = safeNextPath(searchParams.get("next")) ?? "/dashboard";
+  // Where to land: an explicit ?next=, else the short-lived cookie the login
+  // form sets (e.g. "continue to the composer" after signing up from the
+  // landing page — kept out of the Supabase redirect URL so it always matches
+  // the allow-list), else the dashboard. Only same-site paths are honoured.
+  const cookieStore = await cookies();
+  const cookieNext = cookieStore.get(NEXT_COOKIE)?.value;
+  const next =
+    safeNextPath(searchParams.get("next")) ??
+    safeNextPath(cookieNext ? decodeURIComponent(cookieNext) : null) ??
+    "/dashboard";
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
@@ -48,5 +56,7 @@ export async function GET(request: Request) {
     },
   });
 
-  return NextResponse.redirect(`${origin}${next}`);
+  const res = NextResponse.redirect(`${origin}${next}`);
+  if (cookieNext) res.cookies.delete(NEXT_COOKIE);
+  return res;
 }

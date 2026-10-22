@@ -55,6 +55,7 @@ export async function MarketingPage() {
       <MarketingNav />
       <main id="main">
         <section className="mk-hero" aria-labelledby="mk-hero-title">
+          <div className="mk-timelight" aria-hidden="true" />
           <div className="mk-container mk-hero__grid">
             <div>
               <p className="mk-kicker">{t("kicker")}</p>

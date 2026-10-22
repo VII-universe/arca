@@ -10,6 +10,7 @@ import ArcaRichEditor, { type ArcaRichEditorHandle } from "@/components/arca/Arc
 import { Avatar } from "@/components/arca/Avatar";
 import { computeAgeMilestoneDate, computeRelativeOffsetDate, isFutureDate, nextValidTargetAge } from "@/lib/triggers/milestone";
 import { parseContactsCsv } from "@/lib/csv";
+import { readLandingDraft, clearLandingDraft, draftTextToHtml, type LandingDraft } from "@/lib/marketing/landing-draft";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -519,7 +520,13 @@ function TriggerCard({ active, onClick, Ic: IconComp, title, sub }: {
 
 // ── Mode select — the very first screen, before any other step ────────────────
 
-function ModeSelect({ onChoose, onBack }: { onChoose: (m: MessageMode) => void; onBack: () => void }) {
+interface DraftOffer {
+  preview: string;
+  onUse: () => void;
+  onDiscard: () => void;
+}
+
+function ModeSelect({ onChoose, onBack, draft }: { onChoose: (m: MessageMode) => void; onBack: () => void; draft?: DraftOffer | null }) {
   const t = useTranslations("Compose");
   const MODES = MODE_META.map(m => ({
     ...m,
@@ -552,6 +559,21 @@ function ModeSelect({ onChoose, onBack }: { onChoose: (m: MessageMode) => void; 
           <div className="arca-kicker">{t("modeSelect.kicker")}</div>
           <h1 className="arca-h1" style={{ marginTop: 8 }}>{t.rich("modeSelect.title", { em: (chunks) => <em>{chunks}</em> })}</h1>
         </div>
+
+        {/* A message started on the landing page (kept in this browser's
+            localStorage) — offered first, never applied without a click. */}
+        {draft && (
+          <div className="arca-card" style={{ padding: "22px 24px", marginBottom: 24, border: "1.5px solid color-mix(in srgb, var(--accent) 45%, var(--hairline))" }}>
+            <div className="arca-kicker">{t("landingDraft.kicker")}</div>
+            <p style={{ fontFamily: "var(--f-serif)", fontStyle: "italic", fontSize: 19, lineHeight: 1.45, margin: "10px 0 16px", color: "var(--ink)" }}>
+              „{draft.preview}“
+            </p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button type="button" className="arca-btn" onClick={draft.onUse}>{t("landingDraft.use")}</button>
+              <button type="button" className="arca-btn arca-btn--ghost" onClick={draft.onDiscard}>{t("landingDraft.discard")}</button>
+            </div>
+          </div>
+        )}
 
         <div className="arca-mode-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           {MODES.map((m) => (
@@ -657,6 +679,37 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [photos, setPhotos] = useState<File[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+
+  // A message the visitor started on the landing page, if any — read after
+  // mount (localStorage), offered on the mode screen, applied only on click.
+  const [landingDraft, setLandingDraft] = useState<LandingDraft | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!replyToMessageId) setLandingDraft(readLandingDraft());
+  }, [replyToMessageId]);
+
+  function applyLandingDraft(d: LandingDraft) {
+    setText(draftTextToHtml(d.text));
+    if (d.when === "gone") {
+      setMessageMode("LEGACY");
+      setTrigger("sealed");
+    } else {
+      setMessageMode("SELF");
+      if (d.when === "eighteen") {
+        setTrigger("age");
+        setTargetAge(18);
+      } else {
+        setTrigger("relative");
+        setRelativeYears(Math.max(1, d.year - new Date().getFullYear()));
+        setRelativeMonths(0);
+      }
+    }
+    // Only "me in 10 years" says who it's for; for anyone else the visitor
+    // still adds the real person (name, email) in step 01.
+    if (d.recipient === "self") addMyself();
+    clearLandingDraft();
+    setLandingDraft(null);
+  }
 
   // Sync date from URL param — handles App Router component reuse across
   // navigations, so `prefilledDate` can genuinely change post-mount; a
@@ -875,6 +928,11 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
   if (!messageMode) {
     return (
       <ModeSelect
+        draft={landingDraft && {
+          preview: landingDraft.text.length > 220 ? `${landingDraft.text.slice(0, 220).trimEnd()}…` : landingDraft.text,
+          onUse: () => applyLandingDraft(landingDraft),
+          onDiscard: () => { clearLandingDraft(); setLandingDraft(null); },
+        }}
         onBack={() => router.back()}
         onChoose={(m) => {
           setMessageMode(m);
