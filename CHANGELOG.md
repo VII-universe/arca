@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.58.10] - Oprava: volba „Opakování: každý rok“ nic nedělala
+U doručení „V daný den“ composer nabízel výběr „Opakování: Jednorázově / Každý rok“. Výběr se nikam neodesílal a opakované doručení v aplikaci neexistuje — kdo zvolil „Každý rok“, dostal jedno doručení a myslel si, že jich bude víc.
+
+### Opraveno
+- `app/dashboard/arca/new/ComposeWizard.tsx`, `messages/*.json` — výběr opakování odstraněn (stejně jako dřív „Při události“). Doručení na datum je jednorázové, jak vždy fungovalo.
+
 ## [1.58.9] - Oprava: otevřené přesměrování v přihlašovacím callbacku
 `/api/auth/callback` skládal cíl jako `${origin}${next}` bez kontroly parametru `next`. Hodnota `@evil.com` z toho udělala `https://arca…@evil.com`, tedy přesměrování na cizí web hned po přihlášení.
 

@@ -1121,7 +1121,7 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
               </div>
 
               {trigger === "date" && (
-                <div className="arca-card arca-date-grid" style={{ padding: 18, marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                <div className="arca-card arca-date-grid" style={{ padding: 18, marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
                     <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.dateLabel")}</label>
                     <input type="date" className="arca-input" value={dateVal} onChange={(e) => setDateVal(e.target.value)} />
@@ -1129,13 +1129,6 @@ export default function ComposeWizard({ recipients, contactGroups, isPro, curren
                   <div>
                     <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.timeLabel")}</label>
                     <input type="time" className="arca-input" value={timeVal} onChange={(e) => setTimeVal(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="arca-mono" style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 6 }}>{t("trigger.repeatLabel")}</label>
-                    <select className="arca-input">
-                      <option value="once">{t("trigger.repeatOnce")}</option>
-                      <option value="year">{t("trigger.repeatYearly")}</option>
-                    </select>
                   </div>
                 </div>
               )}
