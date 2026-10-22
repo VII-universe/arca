@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.58.5] - Oprava: „Zapečetit, až tu nebudu“ teď prochází strážci
+Nejdůležitější slib produktu nefungoval. Zpráva vytvořená v composeru volbou „Zapečetit, doručit, až tu nebudu“ dostala spouštěč `MANUAL_EMERGENCY`, který doručovací cron vůbec nezpracovával. Doručit ji uměl jen globální spínač v nastavení (ve výchozím stavu vypnutý), a ten obcházel strážce a autorovi nic nepsal. Composer navíc sliboval „otevře se až poté, co tři strážci nezávisle potvrdí, předtím nikdo, ani my, neuvidí obsah“, což nebyla pravda ani zčásti.
+
+### Opraveno
+- `lib/triggers/inactivity.ts` (nové) — jedna cesta pro všechno, co se doručuje „po dlouhém tichu“: když má autor strážce, dostanou e-mail s odkazy „je v pořádku“ / „uvolnit“ (72 h); bez strážců dostane varování autor. Zpráva se atomicky „zabere“ (jen z `ACTIVE`), takže dva crony běžící ve stejnou minutu nepošlou e-maily dvakrát.
+- `app/api/cron/process-triggers/route.ts` — sweep B zpracovává i zapečetěné zprávy (`MANUAL_EMERGENCY`); limit nečinnosti bere ze spouštěče, jinak z nastavení uživatele (výchozí 90 dní).
+- `app/api/cron/pulse/route.ts` — globální spínač na neaktivitu jde stejnou cestou přes strážce (dřív rovnou do ochranné lhůty bez e-mailu). Spínač na konkrétní datum beze změny.
+- `app/actions/delivery.ts` — `cancelDelivery` zruší doručení i ve stavu „čeká na strážce“ (dashboard tyhle zprávy nabízel ke zrušení, ale akce je odmítla) a zneplatní nevyužité odkazy strážců.
+- `lib/auth/activity.ts` (nové) + `app/dashboard/layout.tsx` — používání dashboardu se počítá jako aktivita (nejvýš jeden zápis za 12 h). Dřív se `lastActiveAt` obnovovalo jen při přihlášení heslem / přes e-mail, check-inu a heartbeatu — uživatel s dlouhou session by po 90 dnech vypadal neaktivní a strážcům by odešly e-maily, i když appku normálně používá.
+- `messages/*.json` — pravdivý popis volby „Zapečetit“ v composeru.
+- `AUDIT.md` — zapsán known issue: zrušení po globálním spínači „na datum“ zprávu nezastaví.
+
+### Přidáno
+- `lib/triggers/inactivity.test.ts` — strážci / ochranná lhůta / souběh dvou cronů.
+
 ## [1.58.4] - Oprava: nepravdivá tvrzení o šifrování end-to-end
 Aplikace a web na několika místech tvrdily „šifrováno end-to-end“, „zero-knowledge“ a „tvoje zprávy nepřečteme“. Ve skutečnosti se text zpráv a média ukládají bez šifrování na úrovni aplikace (spojení je HTTPS, úložiště u poskytovatele infrastruktury je šifrované na úrovni disku). Navíc vlastním klíčem (AES-256-GCM, klíč na serveru) se šifrují jen položky Trezoru / Manuálu k životu. Nic z toho není end-to-end ani zero-knowledge.
 

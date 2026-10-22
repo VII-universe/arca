@@ -3,17 +3,23 @@
 //
 // Logic:
 //  1. Find users whose GLOBAL switch has fired (inactivity OR specific date)
-//  2. Move their ACTIVE packs to GRACE_PERIOD — except packs with their own
-//     SPECIFIC_DATE trigger (time capsules, age milestones): those wait for
-//     their own date and are delivered by process-triggers sweep A, never
-//     early just because the owner went quiet.
-//  3. Upsert a TriggerCondition so the hourly cron can deliver after grace period
+//  2. Take their ACTIVE packs — except packs with their own SPECIFIC_DATE
+//     trigger (time capsules, age milestones): those wait for their own date
+//     and are delivered by process-triggers sweep A, never early just because
+//     the owner went quiet.
+//  3. Upsert a TriggerCondition so the hourly cron can finish the job, then:
+//     - INACTIVITY switch: the same guardian-first path as per-pack inactivity
+//       (lib/triggers/inactivity.ts) — guardians are asked, or the owner is
+//       warned, before anything is delivered.
+//     - SPECIFIC_DATE switch: a date the owner chose — straight to
+//       GRACE_PERIOD, as before.
 //
 // Auth: Authorization: Bearer <CRON_SECRET>
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma/client";
 import { PackStatus, TriggerStatus, ActivitySource } from "@/lib/prisma/generated";
+import { startInactivityDelivery, DEFAULT_INACTIVITY_DAYS } from "@/lib/triggers/inactivity";
 
 // ── Auth (constant-time compare) ──────────────────────────────────────────────
 
@@ -48,6 +54,7 @@ export async function GET(req: NextRequest) {
       email: true,
       name: true,
       lastActiveAt: true,
+      guardians: { select: { id: true, name: true, email: true } },
       settings: {
         select: {
           switchType: true,
@@ -66,7 +73,7 @@ export async function GET(req: NextRequest) {
             { triggerCondition: { type: { not: "SPECIFIC_DATE" } } },
           ],
         },
-        select: { id: true },
+        select: { id: true, title: true },
       },
     },
   });
@@ -76,7 +83,7 @@ export async function GET(req: NextRequest) {
     const sw = u.settings!;
     if (sw.switchType === "INACTIVITY") {
       const days = (now.getTime() - u.lastActiveAt.getTime()) / 86_400_000;
-      return days >= (sw.inactivityDays ?? 90);
+      return days >= (sw.inactivityDays ?? DEFAULT_INACTIVITY_DAYS);
     }
     if (sw.switchType === "SPECIFIC_DATE" && sw.executeAt) {
       return sw.executeAt <= now;
@@ -86,6 +93,8 @@ export async function GET(req: NextRequest) {
 
   let usersProcessed = 0;
   let packsEnteredGrace = 0;
+  let packsToGuardians = 0;
+  let emailsSent = 0;
   const errors: string[] = [];
 
   for (const u of triggered) {
@@ -96,52 +105,79 @@ export async function GET(req: NextRequest) {
     const trigType = u.settings?.switchType === "SPECIFIC_DATE" ? "SPECIFIC_DATE" : "INACTIVITY";
 
     try {
-      await prisma.$transaction(async tx => {
-        // Move ACTIVE packs to GRACE_PERIOD
-        await tx.messagePack.updateMany({
-          where: { id: { in: packIds }, status: PackStatus.ACTIVE },
-          data: { status: PackStatus.GRACE_PERIOD },
-        });
-
-        // Upsert TriggerCondition so the delivery cron can finish the job
-        for (const packId of packIds) {
-          await tx.triggerCondition.upsert({
-            where: { messagePackId: packId },
-            update: {
-              status: TriggerStatus.IN_GRACE_PERIOD,
-              triggeredAt: now,
-              gracePeriodDays: grace,
-            },
+      if (trigType === "INACTIVITY") {
+        for (const pack of u.messagePacks) {
+          const trigger = await prisma.triggerCondition.upsert({
+            where: { messagePackId: pack.id },
+            update: { gracePeriodDays: grace },
             create: {
-              messagePackId: packId,
-              type: trigType,
-              status: TriggerStatus.IN_GRACE_PERIOD,
-              triggeredAt: now,
+              messagePackId: pack.id,
+              type: "INACTIVITY",
+              status: TriggerStatus.PENDING,
               gracePeriodDays: grace,
-              ...(trigType === "SPECIFIC_DATE" && u.settings?.executeAt
-                ? { executeAtDate: u.settings.executeAt }
-                : {}),
             },
+            select: { id: true },
           });
-        }
-
-        // Audit
-        await tx.activityLog.create({
-          data: {
-            userId: u.id,
-            source: ActivitySource.PASSIVE_API_SYNC,
-            timestamp: now,
-            metadata: {
-              event: "global_switch_fired",
-              switchType: trigType,
-              packCount: packIds.length,
+          const started = await startInactivityDelivery(
+            {
+              id: pack.id,
+              title: pack.title,
+              triggerConditionId: trigger.id,
+              gracePeriodDays: grace,
+              owner: { email: u.email, name: u.name, guardians: u.guardians },
             },
-          },
+            now
+          );
+          if (started.mode === "guardians") packsToGuardians++;
+          if (started.mode === "grace") packsEnteredGrace++;
+          emailsSent += started.emailsSent;
+        }
+      } else {
+        await prisma.$transaction(async tx => {
+          // Move ACTIVE packs to GRACE_PERIOD
+          await tx.messagePack.updateMany({
+            where: { id: { in: packIds }, status: PackStatus.ACTIVE },
+            data: { status: PackStatus.GRACE_PERIOD },
+          });
+
+          // Upsert TriggerCondition so the delivery cron can finish the job
+          for (const packId of packIds) {
+            await tx.triggerCondition.upsert({
+              where: { messagePackId: packId },
+              update: {
+                status: TriggerStatus.IN_GRACE_PERIOD,
+                triggeredAt: now,
+                gracePeriodDays: grace,
+              },
+              create: {
+                messagePackId: packId,
+                type: trigType,
+                status: TriggerStatus.IN_GRACE_PERIOD,
+                triggeredAt: now,
+                gracePeriodDays: grace,
+                ...(u.settings?.executeAt ? { executeAtDate: u.settings.executeAt } : {}),
+              },
+            });
+          }
         });
+        packsEnteredGrace += packIds.length;
+      }
+
+      // Audit
+      await prisma.activityLog.create({
+        data: {
+          userId: u.id,
+          source: ActivitySource.PASSIVE_API_SYNC,
+          timestamp: now,
+          metadata: {
+            event: "global_switch_fired",
+            switchType: trigType,
+            packCount: packIds.length,
+          },
+        },
       });
 
       usersProcessed++;
-      packsEnteredGrace += packIds.length;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "unknown";
       errors.push(`user:${u.id} – ${msg}`);
@@ -157,6 +193,8 @@ export async function GET(req: NextRequest) {
       usersTriggered: triggered.length,
       usersProcessed,
       packsEnteredGrace,
+      packsToGuardians,
+      emailsSent,
       ...(errors.length ? { errors } : {}),
     },
     { status: errors.length ? 207 : 200 }
