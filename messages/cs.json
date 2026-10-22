@@ -91,7 +91,7 @@
     },
     "proUpsell": {
       "title": "ARCA Pro — bez hranic",
-      "subtitle": "Neomezené zprávy, hlasové a video nahrávky a fyzické dopisy.",
+      "subtitle": "Neomezené zprávy a hlasové a video nahrávky.",
       "upgradeBtn": "Upgradovat →"
     },
     "filter": {
@@ -982,10 +982,8 @@
           { "text": "5 GB úložiště pro média", "highlight": true },
           { "text": "Nahrávání hlasu a videa", "highlight": true },
           { "text": "Postupné doručení kapitol", "highlight": true },
-          { "text": "Doručení fyzického dopisu", "highlight": true },
           { "text": "Důvěryhodní strážci", "highlight": false },
-          { "text": "Chytrý Heartbeat webhook", "highlight": false },
-          { "text": "Prioritní podpora", "highlight": false }
+          { "text": "Chytrý Heartbeat webhook", "highlight": false }
         ],
         "cta": "Odemknout Pro",
         "footnote": "Zabezpečená platba přes Stripe · Zrušitelné kdykoliv"

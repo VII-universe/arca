@@ -91,7 +91,7 @@
     },
     "proUpsell": {
       "title": "ARCA Pro — without limits",
-      "subtitle": "Unlimited messages, voice and video recording, and physical letters.",
+      "subtitle": "Unlimited messages and voice and video recording.",
       "upgradeBtn": "Upgrade →"
     },
     "filter": {
@@ -982,10 +982,8 @@
           { "text": "5 GB media storage", "highlight": true },
           { "text": "Voice & video recording", "highlight": true },
           { "text": "Drip chapter delivery", "highlight": true },
-          { "text": "Physical letter delivery", "highlight": true },
           { "text": "Trusted Guardians", "highlight": false },
-          { "text": "Smart Heartbeat webhook", "highlight": false },
-          { "text": "Priority support", "highlight": false }
+          { "text": "Smart Heartbeat webhook", "highlight": false }
         ],
         "cta": "Unlock Pro",
         "footnote": "Secure checkout via Stripe · Cancel anytime"

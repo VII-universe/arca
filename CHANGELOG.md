@@ -6,6 +6,8 @@ Aplikace a web na několika místech tvrdily „šifrováno end-to-end“, „ze
 ### Opraveno
 - `messages/cs.json`, `messages/en.json` — composer (náhled i editor), login, dashboard (upsell, uklidňující karta) a současný landing teď říkají přesně: šifrované spojení a úložiště, Trezor navíc AES-256-GCM, zprávy nejsou šifrované end-to-end. Z karty „Stav schránky“ na landingu zmizely řádky „Uložení klíče: jen u tebe“ a „Náš přístup: žádný“.
 - `app/dashboard/billing/page.tsx`, `components/billing/UpgradeModal.tsx` — „Zero-Knowledge Encryption“ odstraněno ze seznamu funkcí Pro i ze srovnávací tabulky.
+- Stejná místa + `messages/*.json` — odstraněny i další sliby bez implementace: „Physical letter delivery“ / „fyzické dopisy“ a „Priority support“.
+- `prisma/schema.prisma` — komentáře tvrdily, že `textBody` je šifrovaný ciphertext; opraveno na skutečný stav (jen komentář, schéma beze změny).
 ## [1.58.3] - Oprava: zprávy s pevným datem chodily o den později a globální spínač je doručoval předčasně
 Dvě chyby v doručování nalezené při auditu pro nový web.
 

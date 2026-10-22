@@ -7,7 +7,6 @@ import {
   Infinity as InfinityIcon,
   Mic,
   Video,
-  Mail,
   Zap,
   Crown,
   Shield,
@@ -33,9 +32,7 @@ const COMPARISON = [
   { feature: "Smart Heartbeat webhook", free: true, pro: true },
   { feature: "Voice & Video recording", free: false, pro: true },
   { feature: "Drip chapter delivery", free: false, pro: true },
-  { feature: "Physical letter delivery", free: false, pro: true },
   { feature: "Grief journal for recipients", free: false, pro: true },
-  { feature: "Priority support", free: false, pro: true },
 ];
 
 export default async function BillingPage({
@@ -116,8 +113,8 @@ export default async function BillingPage({
                 Your words deserve<br />no limits.
               </h1>
               <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-                Upgrade once. Preserve everything — with video, unlimited
-                Arcas, and physical delivery.
+                Upgrade once. Preserve everything — with voice, video,
+                and unlimited Arcas.
               </p>
             </>
           )}
@@ -171,7 +168,6 @@ export default async function BillingPage({
                   { icon: <Zap className="size-3.5" />, text: "5 GB media storage" },
                   { icon: <Mic className="size-3.5" />, text: "Voice & Video recording" },
                   { icon: <Video className="size-3.5" />, text: "Drip chapter delivery" },
-                  { icon: <Mail className="size-3.5" />, text: "Physical letter delivery" },
                   { icon: <Shield className="size-3.5" />, text: "Trusted Guardians + Heartbeat" },
                 ].map((f) => (
                   <li key={f.text} className="flex items-center gap-2.5 text-sm text-zinc-200">
