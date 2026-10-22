@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.58.9] - Oprava: otevřené přesměrování v přihlašovacím callbacku
+`/api/auth/callback` skládal cíl jako `${origin}${next}` bez kontroly parametru `next`. Hodnota `@evil.com` z toho udělala `https://arca…@evil.com`, tedy přesměrování na cizí web hned po přihlášení.
+
+### Opraveno
+- `lib/auth/safe-next.ts` (nové) — povolí jen cesty v rámci webu (`/…`), ne `//…`, `/\…`, `@…` ani celé URL; `app/api/auth/callback/route.ts` ho používá, jinak `/dashboard`.
+
 ## [1.58.8] - Oprava: volba „Při události“ slibovala doručení, které neexistovalo
 Composer v režimu „Odkaz pro blízké“ nabízel spouštěč „Při události“ (18 let, svatba, narození prvního dítěte) s textem „Strážci potvrdí, že okamžik nastal. ARCA pak zprávu doručí.“ Žádný takový mechanismus v aplikaci není: výběr události se ani neodesílal, server nevytvořil žádný spouštěč a zpráva se po „Zapečetit a uložit“ tiše uložila jako koncept, který se nikdy nedoručí.
 

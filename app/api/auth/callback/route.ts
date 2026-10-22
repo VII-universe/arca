@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { safeNextPath } from "@/lib/auth/safe-next";
 
 // This route is called by Supabase after:
 //   - Email confirmation (sign-up flow)
@@ -12,7 +13,9 @@ import { prisma } from "@/lib/prisma/client";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  // Only same-site paths: `${origin}${next}` with next="@evil.com" would be
+  // https://host@evil.com — a redirect to another site.
+  const next = safeNextPath(searchParams.get("next")) ?? "/dashboard";
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
