@@ -733,6 +733,7 @@
     "footerNote": "Vzhled je tvůj. Tvoji blízcí uvidí ten svůj při doručení."
   },
   "Compose": {
+    "landingDraft": {"kicker": "Rozepsaná zpráva z webu", "use": "Pokračovat v ní", "discard": "Zahodit"},
     "dashboard": "Dashboard",
     "newMessage": "Nová zpráva",
     "modeSelect": {
@@ -867,129 +868,305 @@
     "recipientFallback": "příjemce",
     "editorPlaceholder": "Milý {name},\n\nkdyž si tohle čteš…"
   },
-  "Landing": {
+  "Marketing": {
     "meta": {
-      "title": "ARCA — Tvůj odkaz, uchovaný pro budoucnost.",
-      "description": "Vysoce zabezpečená digitální schránka a pojistka pro tvé nejdůležitější zprávy, dokumenty a vzpomínky."
+      "title": "ARCA — Slova, která počkají na svůj den",
+      "description": "Napiš zprávu dítěti, partnerovi nebo sobě a vyber den, kdy ji dostanou: k narozeninám, za deset let, nebo až tu nebudeš."
     },
     "nav": {
-      "features": "Funkce",
-      "security": "Zabezpečení",
+      "primary": "Hlavní navigace",
+      "skip": "Přeskočit na obsah",
+      "home": "ARCA — úvod",
+      "howItWorks": "Jak to funguje",
+      "forWhom": "Pro koho",
+      "security": "Bezpečnost",
       "pricing": "Ceník",
       "signIn": "Přihlásit se",
-      "cta": "Vytvořit svou Arcu"
+      "start": "Začít zdarma",
+      "menu": "Menu",
+      "closeMenu": "Zavřít menu",
+      "language": "Jazyk"
     },
     "hero": {
-      "eyebrow": "Bezpečně · Soukromě · Navždy",
-      "titleLine1": "Tvůj odkaz,",
-      "titleItalic": "uchovaný",
-      "titleLine2": "pro budoucnost.",
-      "subheadline": "Vysoce zabezpečená digitální schránka a pojistka pro tvé nejdůležitější zprávy, dokumenty a vzpomínky — doručené přesně tehdy, kdy na nich záleží nejvíc.",
-      "ctaPrimary": "Začít vytvářet svou Arcu",
-      "ctaSecondary": "Jak to funguje",
-      "trustEncrypted": "Šifrované spojení a úložiště",
-      "trustFree": "Zdarma na začátek",
-      "trustNoCard": "Bez platební karty",
-      "trustVoice": "Nahrávání hlasu a videa"
+      "kicker": "Zprávy do budoucna",
+      "title": "Slova, která počkají <em>na svůj den.</em>",
+      "lead": "Napiš zprávu dítěti, partnerovi nebo sobě. Vyber den, kdy ji dostanou: k narozeninám, za deset let, nebo až tu nebudeš. ARCA ji do té doby uchová a pak doručí.",
+      "composer": {
+        "label": "Ukázka: napiš zprávu do budoucna",
+        "question": "Komu chceš něco říct?",
+        "recipients": {
+          "child": "Mému dítěti",
+          "partner": "Partnerovi",
+          "self": "Sobě za 10 let",
+          "mom": "Mámě",
+          "other": "Někomu jinému"
+        },
+        "messageLabel": "Tvoje zpráva",
+        "placeholder": "Až tohle budeš číst, …",
+        "startersLabel": "Začni třeba takhle",
+        "starters": [
+          "Až tohle budeš číst, ",
+          "Chci ti říct něco, co se nahlas říká těžko: ",
+          "Pamatuješ si, jak "
+        ],
+        "whenLabel": "Kdy se má otevřít?",
+        "yearLabel": "Rok doručení",
+        "when": {
+          "oneYear": "Za rok",
+          "tenYears": "Za 10 let",
+          "eighteen": "K 18. narozeninám",
+          "gone": "Až tu nebudu"
+        },
+        "seal": "Zapečetit",
+        "sealedTitle": "Tvoje zpráva počká.",
+        "sealedYear": "Přesně do roku {year}.",
+        "sealedEighteen": "Až do 18. narozenin.",
+        "sealedGone": "Až přijde ta chvíle.",
+        "demoNote": "Tohle je jen ukázka. Nic se neodeslalo.",
+        "saveCta": "Ulož ji doopravdy",
+        "again": "Napsat jinou"
+      }
     },
-    "howItWorks": {
-      "label": "Jak to funguje",
-      "titlePlain": "Čtyři kroky mezi teď",
-      "titleItalic": "a navždy.",
-      "steps": [
-        { "title": "Napiš svou zprávu", "body": "Napiš, nahraj nebo přilož cokoliv — text, hlas, video, fotky, dokumenty. Použij bohatý editor nebo nahrávej přímo v prohlížeči." },
-        { "title": "Nastav spouštěč", "body": "Zvol konkrétní datum doručení, nebo aktivuj pojistku pro případ nedostupnosti. ARCA sleduje tvou přítomnost a zasáhne jen tehdy, kdy má." },
-        { "title": "Strážci to potvrdí", "body": "Než se cokoliv odešle, tví důvěryhodní kontakti potvrdí tvůj stav. Jedno jejich kliknutí drží všechno zapečetěné dalších 30 dní." },
-        { "title": "Doručeno ve správnou chvíli", "body": "Příjemci dostanou soukromý, zabezpečený odkaz — nic dřív, nic pozdě. Tvá slova dorazí přesně tak, jak jsi zamýšlel." }
-      ]
-    },
-    "features": {
-      "label": "Postavené jinak",
-      "titlePlain": "Každý detail navržený",
-      "titleItalic": "pro důvěru.",
-      "items": [
+    "timeline": {
+      "label": "Časová osa jednoho života",
+      "title": "Napsáno dnes. Otevřeno ve správný den.",
+      "sample": "Ukázka",
+      "writtenIn": "Napsáno v roce {year}",
+      "stops": [
         {
-          "title": "Bezpečně uložené",
-          "body": "Spojení je šifrované (HTTPS) a data jsou uložená u poskytovatele infrastruktury šifrovaně na úrovni úložiště. Nejcitlivější údaje v Trezoru šifrujeme navíc vlastním klíčem.",
-          "pills": ["HTTPS", "Šifrované úložiště", "AES-256-GCM pro Trezor"]
+          "year": "2032",
+          "to": "Dceři",
+          "occasion": "první den ve škole",
+          "quote": "Píšu ti, když ti jsou dva měsíce a spíš mi na hrudi. Dneska jdeš poprvé do školy. Jestli ses bála, je to v pořádku. Já taky."
         },
         {
-          "title": "Důvěryhodní strážci",
-          "body": "Než se tvá Arca vůbec doručí, nejdřív se zeptáme až 3 důvěryhodných kontaktů. Jediný falešný poplach je nepřijatelný — proto máme pojistku.",
-          "pills": ["Ochrana proti falešnému poplachu", "Odkazy v e-mailu", "72hodinové okno"]
+          "year": "2044",
+          "to": "Synovi",
+          "occasion": "18. narozeniny",
+          "quote": "Nevím, jaký svět teď kolem tebe je. Vím jen, že ho zvládneš líp, než si dneska myslíš."
         },
         {
-          "title": "Bohatá média a postupné doručení",
-          "body": "Nahraj hlasové zprávy a videa. Přilož soubory. Naplánuj, aby se části zprávy odemykaly v různých časech — dopis dnes, video k narozeninám.",
-          "pills": ["Hlas a video", "Postupné kapitoly", "5 GB úložiště"]
+          "year": "2051",
+          "to": "Partnerce",
+          "occasion": "25. výročí svatby",
+          "quote": "Dnes ráno jsme se vzali. Až tohle budeš číst, uplyne pětadvacet let. Doufám, že se pořád smějeme stejným věcem."
+        },
+        {
+          "year": "2070",
+          "to": "Vnoučatům",
+          "occasion": "až tu nebudu",
+          "quote": "Neznám vaše jména. Ale vím, že jednou budete. A to mi stačí, abych se teď usmíval."
+        }
+      ],
+      "finale": "Některá slova mají přijít později."
+    },
+    "forWhom": {
+      "label": "Pro koho",
+      "title": "Pro lidi, na kterých ti záleží.",
+      "lead": "A někdy i pro tebe samotného.",
+      "scrollHint": "Posuň do strany",
+      "cards": [
+        {
+          "key": "children",
+          "title": "Pro děti",
+          "example": "Dopis k osmnáctinám, napsaný dnes, dokud jsou malé a usínají ti v náruči."
+        },
+        {
+          "key": "partner",
+          "title": "Pro partnera",
+          "example": "K výročí, kdy si připomenete, jak to celé začalo."
+        },
+        {
+          "key": "self",
+          "title": "Pro sebe staršího",
+          "example": "Otevři ve čtyřiceti. Kdo jsi dnes, co tě trápí a v co doufáš."
+        },
+        {
+          "key": "family",
+          "title": "Pro rodinu",
+          "example": "Jedna zpráva pro všechny najednou, třeba k Vánocům za deset let."
+        },
+        {
+          "key": "gone",
+          "title": "Až tu nebudu",
+          "example": "Pro chvíli, kdy tě budou nejvíc postrádat. S lidmi, kterým věříš, jako pojistkou."
         }
       ]
     },
-    "security": {
-      "label": "Zabezpečení",
-      "titlePlain": "Jasně a bez přehánění.",
-      "titleItalic": "Takhle chráníme tvá data.",
-      "body": "Spojení je šifrované (HTTPS) a data jsou uložená u poskytovatele infrastruktury šifrovaně na úrovni úložiště. Nejcitlivější údaje v Trezoru (hesla, přístupy) šifrujeme navíc vlastním klíčem (AES-256-GCM). Zprávy nejsou šifrované end-to-end.",
-      "items": [
-        "Šifrované úložiště, Trezor navíc AES-256-GCM",
-        "TLS 1.3 při přenosu",
-        "Nezfalšovatelný záznam o doručení",
-        "HMAC-podepsané tokeny příjemců",
-        "Pojistka strážců před každým doručením"
+    "how": {
+      "label": "Jak to funguje",
+      "title": "Čtyři kroky. Pak už jen čas.",
+      "steps": [
+        {
+          "title": "Napiš",
+          "body": "Text, fotky, hlasovou zprávu nebo video. Klidně jen pár vět."
+        },
+        {
+          "title": "Vyber kdy a komu",
+          "body": "Konkrétní den, věk adresáta, „za pět let“, nebo chvíli, kdy se dlouho neozveš."
+        },
+        {
+          "title": "Urči strážce",
+          "body": "U zpráv „až tu nebudu“ vybereš lidi, kterých se ARCA zeptá, než cokoli doručí."
+        },
+        {
+          "title": "ARCA doručí",
+          "body": "V den, který zvolíš, dostane adresát e-mail s osobním odkazem. Účet k tomu nepotřebuje."
+        }
       ],
-      "cardPath": "arca://schranka/stav",
-      "cardRows": [
-        { "label": "Stav", "value": "Zapečetěno" },
-        { "label": "Úložiště", "value": "Šifrované" },
-        { "label": "Trezor", "value": "AES-256-GCM" },
-        { "label": "Schválení strážci", "value": "Vyžadováno" },
-        { "label": "Spojení", "value": "HTTPS" },
-        { "label": "Stav doručení", "value": "Čeká na spouštěč" }
+      "ui": {
+        "to": "Pro",
+        "recipient": "Eliška",
+        "draft": "Až tohle budeš číst, budeš o hlavu vyšší než já…",
+        "kinds": [
+          "Text",
+          "Fotky",
+          "Hlas",
+          "Video"
+        ],
+        "when": "Kdy se otevře",
+        "whenValue": "K 18. narozeninám",
+        "guardians": "Strážci",
+        "guardianA": "Tomáš",
+        "guardianB": "Jana",
+        "mailSubject": "Někdo ti nechal zprávu",
+        "mailOpen": "Otevřít zprávu"
+      }
+    },
+    "guardians": {
+      "label": "Strážci",
+      "title": "Lidé, kterým věříš. Pro chvíli, kterou nikdo neplánuje.",
+      "lead": "Zprávy „až tu nebudu“ se neřídí datem, ale tím, že se dlouho neozveš. Aby nic neodešlo omylem, máš strážce.",
+      "steps": [
+        "Nastavíš, po kolika dnech bez tvé aktivity v ARCA se má ozvat (výchozí je 90 dní).",
+        "Když ta doba uplyne, napíšeme tvým strážcům. Dostanou dva odkazy: „Je v pořádku“ a „Uvolnit zprávy“. Platí 72 hodin.",
+        "Stačí jeden strážce, který potvrdí, že jsi v pořádku, a odpočet začne znovu.",
+        "Když nikdo nezareaguje, zprávy se doručí po ochranné lhůtě, kterou si zvolíš."
+      ],
+      "noGuardians": "Strážce mít nemusíš. Bez nich napíšeme přímo tobě a doručení můžeš během ochranné lhůty zrušit.",
+      "privacy": "Strážci obsah tvých zpráv nevidí. Znají jen jejich název.",
+      "diagram": "Tvoje světlo propojené jemnými vlákny se světly tří strážců.",
+      "you": "Ty"
+    },
+    "world": {
+      "label": "Tvůj vlastní svět",
+      "title": "Piš v atmosféře, která je tvoje.",
+      "lead": "V aplikaci si vybereš, v jakém světle píšeš. Zkus to tady, změní se celá stránka.",
+      "carryOver": "Tvoje volba se přenese i do aplikace v tomhle prohlížeči.",
+      "groupLabel": "Atmosféra"
+    },
+    "security": {
+      "label": "Bezpečnost a důvěra",
+      "title": "Jasně a bez přehánění.",
+      "lead": "Svěřuješ nám něco osobního. Proto tady píšeme přesně, jak to funguje, i to, co (zatím) neumíme.",
+      "points": [
+        {
+          "title": "Šifrované spojení a úložiště",
+          "body": "Spojení je šifrované (HTTPS) a data jsou uložená u poskytovatele infrastruktury šifrovaně na úrovni úložiště."
+        },
+        {
+          "title": "Manuál k životu navíc",
+          "body": "Nejcitlivější údaje (hesla, přístupy, instrukce) šifrujeme navíc vlastním klíčem (AES-256-GCM)."
+        },
+        {
+          "title": "Ne end-to-end",
+          "body": "Zprávy nejsou šifrované end-to-end. Píšeme to rovnou, abys mohl rozhodnout sám, co do nich napíšeš."
+        },
+        {
+          "title": "Otevře se až po doručení",
+          "body": "Adresát zprávu otevře přes osobní odkaz až po doručení. Můžeš přidat kontrolní otázku, na kterou zná odpověď jen on."
+        },
+        {
+          "title": "Tvoje kopie",
+          "body": "Své zprávy si můžeš kdykoli stáhnout jako PDF (texty a přepisy nahrávek)."
+        },
+        {
+          "title": "AI jen na tvůj pokyn",
+          "body": "Když použiješ AI pomocníka, text zpracuje externí poskytovatel AI. Bez tvého kliknutí se nikam neposílá."
+        }
+      ],
+      "whatIfTitle": "Co se stane, když…",
+      "whatIf": [
+        {
+          "q": "…se dlouho neozvu?",
+          "a": "Zprávy „až tu nebudu“ nejdřív projdou tvými strážci. Když žádné nemáš, napíšeme tobě. Zprávy s pevným datem čekají na svůj den, dlouhé ticho je neuspíší."
+        },
+        {
+          "q": "…si to rozmyslím?",
+          "a": "Do doručení můžeš zprávu kdykoli upravit, včetně data a adresátů."
+        },
+        {
+          "q": "…se zpráva nemá doručit?",
+          "a": "Během ochranné lhůty doručení zrušíš jedním klikem. Strážci ho zastaví potvrzením, že jsi v pořádku."
+        }
       ]
     },
     "pricing": {
       "label": "Ceník",
-      "title": "Jednoduché, poctivé ceny.",
-      "subtitle": "Začni zdarma, bez platební karty. Upgraduj, až budeš chtít neomezeně všechno.",
+      "title": "Začni zdarma.",
+      "lead": "Bez platební karty. Na víc zpráv a nahrávky přejdeš, až budeš chtít.",
       "free": {
-        "tier": "Základní",
-        "price": "0 Kč",
-        "period": "Navždy zdarma",
-        "features": ["1 Arca", "50 MB úložiště", "Bohatý textový editor", "Spouštěč nedostupnosti", "Spouštěč podle data", "Důvěryhodní strážci", "Chytrý Heartbeat webhook"],
+        "name": "Zdarma",
+        "tagline": "Na první zprávu, která čeká na svůj den.",
+        "messages": "{count, plural, one {# zpráva} few {# zprávy} other {# zpráv}}",
+        "features": [
+          "Text a fotky",
+          "Strážci a Manuál k životu",
+          "Všechny způsoby doručení"
+        ],
         "cta": "Začít zdarma"
       },
       "pro": {
-        "tier": "Arca Pro",
-        "badge": "NEJVÝHODNĚJŠÍ",
-        "price": "229 Kč",
-        "period": "/ měsíc",
-        "altPricePrefix": "nebo",
-        "altPriceAmount": "2 290 Kč jednorázově",
-        "altPriceSuffix": "· doživotní přístup",
+        "name": "ARCA Pro",
+        "tagline": "Pro všechny, kterým chceš něco říct.",
+        "perMonth": "/ měsíc",
+        "orLifetime": "nebo {price} jednorázově",
+        "unavailable": "Aktuální cenu uvidíš po přihlášení.",
         "features": [
-          { "text": "Neomezené Arcy", "highlight": true },
-          { "text": "5 GB úložiště pro média", "highlight": true },
-          { "text": "Nahrávání hlasu a videa", "highlight": true },
-          { "text": "Postupné doručení kapitol", "highlight": true },
-          { "text": "Důvěryhodní strážci", "highlight": false },
-          { "text": "Chytrý Heartbeat webhook", "highlight": false }
+          "Neomezený počet zpráv",
+          "Hlasové a video zprávy",
+          "Všechno z plánu Zdarma"
         ],
-        "cta": "Odemknout Pro",
-        "footnote": "Zabezpečená platba přes Stripe · Zrušitelné kdykoliv"
-      }
+        "cta": "Přejít na Pro"
+      },
+      "note": "Platba probíhá přes Stripe."
+    },
+    "faq": {
+      "label": "Otázky",
+      "title": "Na co se lidé ptají.",
+      "items": [
+        {
+          "q": "Je ARCA jen o smrti?",
+          "a": "Ne. Můžeš psát k narozeninám, k výročí, sobě za deset let, nebo na jakýkoli den, který si vybereš. Zprávy pro chvíli, kdy tu nebudeš, jsou jen jednou z možností."
+        },
+        {
+          "q": "Jak strážci poznají, že je čas doručit?",
+          "a": "Nepoznávají to sami. Když se dlouho neozveš, ARCA jim pošle e-mail se dvěma odkazy: „Je v pořádku“ a „Uvolnit zprávy“. Když nikdo nezareaguje, zprávy se doručí po ochranné lhůtě."
+        },
+        {
+          "q": "Můžu zprávu upravit nebo zrušit?",
+          "a": "Do doručení ji můžeš kdykoli upravit, včetně data a adresátů. Když se zpráva po tvé dlouhé neaktivitě dostane do ochranné lhůty, doručení můžeš zrušit."
+        },
+        {
+          "q": "Co dostane adresát?",
+          "a": "E-mail s osobním odkazem. Zprávu otevře přes něj, případně po odpovědi na kontrolní otázku. Účet v ARCA nepotřebuje."
+        }
+      ]
     },
     "finalCta": {
-      "label": "Začni dnes",
-      "titlePlain": "Některé věci jsou příliš důležité",
-      "titleItalic": "na to, abys je nechal náhodě.",
-      "subtitle": "Vytvoř svou první Arcu za pár minut. Zdarma na začátek, bez karty.",
-      "ctaPrimary": "Začít vytvářet svou Arcu",
-      "ctaSecondary": "Už máš účet? Přihlas se"
+      "title": "Komu napíšeš první?",
+      "lead": "Stačí pár vět. Zbytek počká.",
+      "cta": "Začít psát"
     },
     "footer": {
-      "privacy": "Zásady ochrany soukromí",
-      "terms": "Podmínky použití",
+      "tagline": "Slova, která počkají na svůj den.",
+      "product": "Produkt",
+      "legal": "Právní informace",
+      "legalPending": "Obchodní podmínky a zásady ochrany soukromí připravujeme. Máš-li otázku, napiš nám.",
       "contact": "Kontakt",
+      "cookies": "Používáme jen nezbytné cookies: jazyk a přihlášení. Analytika je bez cookies.",
+      "operator": "Provozovatel",
+      "companyId": "IČO {id}",
       "rights": "Všechna práva vyhrazena."
     }
   },

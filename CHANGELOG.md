@@ -1,5 +1,56 @@
 # Changelog
 
+## [1.61.1] - Nový web: plynulé zapečetění na mobilu
+Měření v mobilním Chromu (Android emulátor) ukázalo, že při zapečetění padá snímková frekvence na ~40 fps se 14 snímky delšími než 50 ms: skládání karty do orbu se animovalo přes `clip-path` (z JavaScriptu se v Chromu nekompozituje, takže se každý snímek překreslovala vrstva velká jako karta — na mobilu přes 1000 px při DPR 2,6) a celý formulář se rozostřoval filtrem.
+
+### Opraveno
+- `components/marketing/HeroComposer.tsx`, `marketing.css` — orb se skládá jen přes `transform` (scale z velikosti viditelné části karty na velikost orbu) a `opacity`, obojí na kompozitoru; rozostření formuláře jen na zařízeních s myší. Výsledek v emulátoru: 53–58 fps, 2–5 delších snímků; na desktopu (Apple M4 Max, Chrome) celá sekvence 60 fps bez jediného dlouhého snímku.
+
+## [1.61.0] - Nový web, milník M3: zapečetění zprávy v hero
+Hero je teď celý zážitek: návštěvník napíše zprávu, vybere komu a kdy — a při tažení posuvníkem let se mění barva světla za hero (blízká budoucnost ranní a teplá, vzdálená hluboce modrá, „až tu nebudu“ noční). Po „Zapečetit“ se v kartě shromáždí světlo, slova se v něm rozpustí, karta se složí do zářícího orbu, ten převezme WebGL scéna (skutečný lom světla) a orb pomalu stoupá a mizí v hloubce mezi ostatními světly, které se na okamžik rozzáří. Rok mezitím doroluje na zvolený rok. Nic se neodesílá.
+
+### Přidáno
+- `components/marketing/HeroComposer.tsx` — sekvence v GSAP (`@gsap/react`); orb se animuje přes `clip-path`/`transform`, takže žádný posun layoutu (CLS 0). Bez WebGL letí DOM orb; `prefers-reduced-motion` = jen tiché prolnutí. Výsledek ohlášen přes `aria-live`, fokus přejde na „Ulož ji doopravdy“. Na mobilu se orb i výsledek drží ve viditelné části karty.
+- `components/marketing/Odometer.tsx` — rok rolující po číslicích v pevných sloupcích (znovu použije časová osa v M4).
+- `lib/marketing/landing-draft.ts` — rozepsaná zpráva v `localStorage` (vše v try/catch, platnost 30 dní).
+- `app/dashboard/arca/new/ComposeWizard.tsx` — po registraci composer nabídne „Rozepsanou zprávu z webu“: text, režim i spouštěč (rok → „za X let“, 18. narozeniny → věkový milník, „až tu nebudu“ → zapečetit); použije se jen po kliknutí.
+- `app/login/LoginForm.tsx` — `?mode=signup` otevře rovnou registraci; `?next=` (jen cesty v rámci webu) určí, kam pokračovat. Pro potvrzení e-mailem a Google jede cíl v krátké cookie, ne v návratové adrese Supabase — ta tak dál přesně odpovídá allow-listu.
+- `lib/auth/safe-next.ts` — kontrola, že `next` je cesta na tomto webu.
+
+### Změněno
+- `app/api/auth/callback/route.ts` — vedle `?next=` (ověřeného od 1.58.9) čte cíl i z krátké cookie `arca_next` a po použití ji smaže.
+- `proxy.ts` — přihlášený uživatel na `/login?next=…` pokračuje rovnou na `next` (dřív vždy na dashboard).
+
+### Změněno
+- `messages/*.json` — texty o strážcích na webu platí pro všechny zprávy „až tu nebudu“ (od opravy 1.58.5 je to pravda).
+- Závislosti: `gsap@3.15.0`, `@gsap/react@2.1.2` (přesně připnuté).
+
+## [1.60.0] - Nový web, milník M2: světelná scéna se skleněnými orby
+Pozadí celého webu je teď živá WebGL scéna: světelné pole v barvách zvolené atmosféry, skleněné orby (zprávy, které čekají) s lomem světla, jemnou barevnou disperzí, fresnelovým okrajem a vlastním světlem uvnitř, a drobná vzdálená světla. Pomalu plují, reagují jemně na pohyb myši a scroll (bližší orby víc, vzdálenější míň) a při přepnutí atmosféry plynule přejdou do nových barev.
+
+### Přidáno
+- `components/marketing/scene/` — holé WebGL 1 (jeden fragment shader, bez three.js; celá scéna má ~5 kB gzip v samostatném chunku), načítané přes `next/dynamic` bez SSR.
+- Adaptivní kvalita: rozlišení vykreslování je omezené (DPR max 1,5, 42–70 % CSS pixelů), slabší zařízení startují níž, při pomalých snímcích scéna sama sníží úroveň; na nejnižší úrovni vypne `backdrop-filter` na skle, a když nepomůže ani to, zůstane statický snímek. Zařízení zamčené na 30 fps (úsporný režim) se za pomalé nepovažuje.
+- Smyčka se zastaví ve skryté záložce. `prefers-reduced-motion`: žádná smyčka ani parallaxa, jen statický snímek.
+- Fallback: bez WebGL (nebo při ztrátě kontextu) zůstává CSS pozadí z M1 — zároveň slouží jako placeholder stejné velikosti, plátno se plynule objeví až po prvním vykresleném snímku.
+
+## [1.59.0] - Nový web, milník M1: kostra všech sekcí
+První milník nového veřejného webu („Světlo, které cestuje časem“). Všechny sekce stojí staticky a responzivně (375–1920 px), v češtině i angličtině, na design tokenech aplikace. Animace, WebGL scéna a předání konceptu zprávy do editoru přijdou v dalších milnících.
+
+### Přidáno
+- `app/(marketing)/` — landing na `/` (jazyk podle cookie / prohlížeče) a nově na `/en` a `/cs` (pevný jazyk, `hreflang`, canonical). `components/marketing/` — navigace, interaktivní ukázka zprávy v hero (skutečné textové pole, volba adresáta a roku, zapečetění s ohlášením přes `aria-live`), časová osa jednoho života, Pro koho, Jak to funguje, Strážci, Tvůj vlastní svět (přepínač atmosféry sdílený s aplikací přes `arca-vibe`), Bezpečnost, Ceník, FAQ, závěrečná výzva, patička.
+- `lib/marketing/pricing.ts` — ceny se načítají ze stejných Stripe cen, které účtuje checkout (`STRIPE_PRICE_MONTHLY`/`_LIFETIME`, cache 1 h), limit plánu Zdarma z `FREE_LIMITS`. Bez Stripe se částka nezobrazí.
+- `lib/marketing/operator.ts` + `.env.example` — provozovatel v patičce z `NEXT_PUBLIC_OPERATOR_*`, nic natvrdo.
+- `messages/*.json` — nový jmenný prostor `Marketing`; všechna tvrzení ověřená proti kódu.
+
+### Změněno
+- `proxy.ts` — marketingové stránky přeskakují dotaz na Supabase a určují jazyk stránky hlavičkou `x-arca-locale`. `i18n/request.ts` hlavičku respektuje a na Supabase/DB se ptá jen při existující session cookie (anonymní návštěva bez síťového volání navíc).
+- `components/VibeBackground.tsx` — na marketingových stránkách se nevykresluje (mají vlastní scénu, nestahuje se fotka pozadí).
+- `app/layout.tsx` — fonty se subsetem `latin-ext`, aby česká diakritika nepadala na náhradní font (i v aplikaci).
+- `app/sitemap.ts` — přidány `/en` a `/cs`.
+
+### Odstraněno
+- `app/page.tsx` a jmenný prostor `Landing` (starý landing).
 ## [1.58.10] - Oprava: volba „Opakování: každý rok“ nic nedělala
 U doručení „V daný den“ composer nabízel výběr „Opakování: Jednorázově / Každý rok“. Výběr se nikam neodesílal a opakované doručení v aplikaci neexistuje — kdo zvolil „Každý rok“, dostal jedno doručení a myslel si, že jich bude víc.
 

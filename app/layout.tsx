@@ -12,20 +12,20 @@ import { SITE_URL } from "@/lib/site-url";
 import "./globals.css";
 
 const inter = Inter({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-inter",
   display: "swap",
 });
 
 const playfair = Playfair_Display({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-playfair",
   display: "swap",
   style: ["normal", "italic"],
 });
 
 const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-instrument-serif",
   display: "swap",
   style: ["normal", "italic"],

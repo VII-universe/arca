@@ -1,6 +1,8 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useVibe, GRADIENTS, PHOTOS } from "@/contexts/vibe-context";
+import { isMarketingPath } from "@/lib/marketing/paths";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 // KEY FIX: renders the background as a fixed -z-20 div instead of mutating
@@ -9,6 +11,11 @@ import { useVibe, GRADIENTS, PHOTOS } from "@/contexts/vibe-context";
 
 export function VibeBackground() {
   const { vibe, customImageUrl, groupImageOverride } = useVibe();
+  const pathname = usePathname();
+
+  // Marketing pages paint their own light scene — don't stack the app's
+  // background (or download its photo) underneath it.
+  if (isMarketingPath(pathname)) return null;
 
   const activeImageUrl = groupImageOverride || customImageUrl;
 
