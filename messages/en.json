@@ -817,7 +817,7 @@
       "eventOptionCustom": "Custom",
       "eventHint": "Guardians confirm the moment has come. ARCA then delivers the message.",
       "sealedTitle": "Sealed",
-      "sealedHint": "Opens only once three Guardians independently confirm. Until then, no one — not even us — sees the content.",
+      "sealedHint": "Delivered after a long silence from you (90 days by default, change it in Settings). Your guardians are asked first. If you have none, we email you and you can cancel.",
       "whoLabel": "Who it's for",
       "bornOn": "born {date}",
       "selectRecipientFirst": "First pick a recipient in step 01.",

@@ -190,8 +190,10 @@ export async function activatePack(
 }
 
 // ─── cancelDelivery ───────────────────────────────────────────────────────────
-// Reverts a pack from GRACE_PERIOD → ACTIVE, resets the trigger, and records
-// a check-in so inactivity timers restart from now.
+// Reverts a pack from GRACE_PERIOD or PENDING_GUARDIAN_APPROVAL → ACTIVE,
+// resets the trigger, and records a check-in so inactivity timers restart
+// from now. An owner who is back must be able to stop a delivery that is
+// waiting on guardians, not only one in the plain grace period.
 export async function cancelDelivery(
   packId: string
 ): Promise<{ ok: true } | { error: string }> {
@@ -207,7 +209,7 @@ export async function cancelDelivery(
   });
 
   if (!pack) return { error: "Pack not found." };
-  if (pack.status !== "GRACE_PERIOD")
+  if (pack.status !== "GRACE_PERIOD" && pack.status !== "PENDING_GUARDIAN_APPROVAL")
     return { error: "Pack is not in grace period." };
   if (!pack.triggerCondition)
     return { error: "No trigger condition found." };
@@ -224,6 +226,12 @@ export async function cancelDelivery(
     await tx.triggerCondition.update({
       where: { id: pack.triggerCondition!.id },
       data: { status: "PENDING", triggeredAt: null },
+    });
+    // Retire the guardians' outstanding links for this round, so an old
+    // "Release" link can't fire if the pack goes quiet again within 72 h.
+    await tx.guardianToken.updateMany({
+      where: { packId, usedAt: null },
+      data: { usedAt: now },
     });
     // Reset the inactivity clock
     await tx.user.update({

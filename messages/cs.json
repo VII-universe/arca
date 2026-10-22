@@ -817,7 +817,7 @@
       "eventOptionCustom": "Na vlastní výběr",
       "eventHint": "Strážci potvrdí, že okamžik nastal. ARCA pak zprávu doručí.",
       "sealedTitle": "Zapečetěno",
-      "sealedHint": "Otevře se až poté, co tři strážci nezávisle potvrdí. Předtím nikdo — ani my — neuvidí obsah.",
+      "sealedHint": "Doručí se, až se dlouho neozveš (výchozí 90 dní, změníš v Nastavení). Nejdřív se zeptáme tvých strážců. Když žádné nemáš, napíšeme tobě a doručení můžeš zrušit.",
       "whoLabel": "Komu bude",
       "bornOn": "nar. {date}",
       "selectRecipientFirst": "Nejdřív vyber příjemce v kroku 01.",

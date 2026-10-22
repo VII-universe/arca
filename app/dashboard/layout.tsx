@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
 import { resolveUser } from "@/lib/auth/user";
+import { touchLastActive } from "@/lib/auth/activity";
 import { getSignedAvatarUrl } from "@/app/actions/recipients";
 import DashboardShell from "@/components/layout/DashboardShell";
 
@@ -42,6 +43,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     console.error("[dashboard/layout] DB error:", err);
     // Keep going with defaults — children will handle their own data
   }
+
+  // Visiting the dashboard is activity (see lib/auth/activity.ts). Never let
+  // it break the page.
+  await touchLastActive(authUser.id).catch((err) => console.error("[dashboard/layout] touchLastActive:", err));
 
   // Recipients separately so a failure here doesn't block the rest
   try {

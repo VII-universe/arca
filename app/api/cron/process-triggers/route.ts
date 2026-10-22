@@ -3,9 +3,8 @@ import { render } from "@react-email/render";
 import { prisma } from "@/lib/prisma/client";
 import { resend, FROM_EMAIL, APP_URL } from "@/lib/resend";
 import { PackStatus, TriggerStatus } from "@/lib/prisma/generated";
-import { GracePeriodWarningEmail } from "@/emails/GracePeriodWarningEmail";
 import { ArcaDeliveryEmail } from "@/emails/ArcaDeliveryEmail";
-import { GuardianAlertEmail } from "@/emails/GuardianAlertEmail";
+import { startInactivityDelivery, DEFAULT_INACTIVITY_DAYS } from "@/lib/triggers/inactivity";
 
 // ─── Auth guard ───────────────────────────────────────────────────────────────
 
@@ -28,31 +27,6 @@ function daysSince(date: Date, now: Date): number {
 }
 
 // ─── Email helpers ────────────────────────────────────────────────────────────
-
-async function sendGracePeriodWarning(params: {
-  toEmail: string;
-  userName: string;
-  packTitle: string;
-  packId: string;
-  daysLeft: number;
-}) {
-  const cancelUrl = `${APP_URL}/dashboard`;
-  const html = await render(
-    GracePeriodWarningEmail({
-      userName: params.userName,
-      packTitle: params.packTitle,
-      daysLeft: params.daysLeft,
-      cancelUrl,
-    })
-  );
-  const { error } = await resend.emails.send({
-    from: FROM_EMAIL,
-    to: params.toEmail,
-    subject: `Your Arca "${params.packTitle}" will be delivered in ${params.daysLeft} days`,
-    html,
-  });
-  if (error) throw new Error(`Resend error: ${error.message}`);
-}
 
 async function sendArcaDelivery(params: {
   toEmail: string;
@@ -164,14 +138,17 @@ export async function GET(request: NextRequest) {
     console.error("[cron/sweepA]", err);
   }
 
-  // ── Sweep B: INACTIVITY dead-man switch → GRACE_PERIOD or PENDING_GUARDIAN_APPROVAL ──
+  // ── Sweep B: "deliver after a long silence" → guardians or GRACE_PERIOD ──
+  // INACTIVITY triggers carry their own day limit; "sealed" packs from the
+  // composer (MANUAL_EMERGENCY) use the owner's inactivity setting. Both go
+  // through the same guardian-first path (lib/triggers/inactivity.ts).
 
   try {
     const inactivityPacks = await prisma.messagePack.findMany({
       where: {
         status: PackStatus.ACTIVE,
         triggerCondition: {
-          type: "INACTIVITY",
+          type: { in: ["INACTIVITY", "MANUAL_EMERGENCY"] },
           status: TriggerStatus.PENDING,
         },
       },
@@ -180,11 +157,11 @@ export async function GET(request: NextRequest) {
         title: true,
         owner: {
           select: {
-            id: true,
             email: true,
             name: true,
             lastActiveAt: true,
             guardians: { select: { id: true, name: true, email: true } },
+            settings: { select: { inactivityDays: true } },
           },
         },
         triggerCondition: {
@@ -195,113 +172,26 @@ export async function GET(request: NextRequest) {
 
     results.sweepB.found = inactivityPacks.length;
 
-    const toActivate = inactivityPacks.filter((pack) => {
-      const limit = pack.triggerCondition?.inactivityDaysLimit;
-      if (!limit || !pack.owner) return false;
-      return daysSince(pack.owner.lastActiveAt, now) >= limit;
-    });
+    for (const pack of inactivityPacks) {
+      const trigger = pack.triggerCondition;
+      if (!trigger || !pack.owner) continue;
+      const limit =
+        trigger.inactivityDaysLimit ?? pack.owner.settings?.inactivityDays ?? DEFAULT_INACTIVITY_DAYS;
+      if (daysSince(pack.owner.lastActiveAt, now) < limit) continue;
 
-    for (const pack of toActivate) {
-      const guardians = pack.owner?.guardians ?? [];
-      const triggerCondId = pack.triggerCondition?.id;
-      if (!triggerCondId) continue;
-
-      if (guardians.length > 0) {
-        // Guardians exist: enter PENDING_GUARDIAN_APPROVAL and send them action emails
-        await prisma.$transaction(async (tx) => {
-          await tx.messagePack.update({
-            where: { id: pack.id },
-            data: { status: PackStatus.PENDING_GUARDIAN_APPROVAL },
-          });
-          await tx.triggerCondition.update({
-            where: { id: triggerCondId },
-            data: { status: TriggerStatus.IN_GRACE_PERIOD, triggeredAt: now },
-          });
-        });
-
-        results.sweepB.guardian_approval++;
-
-        const expiresAt = new Date(now.getTime() + 72 * 60 * 60 * 1000); // 72 h
-        for (const guardian of guardians) {
-          try {
-            const [confirmToken, releaseToken] = await prisma.$transaction([
-              prisma.guardianToken.create({
-                data: {
-                  guardianId: guardian.id,
-                  packId: pack.id,
-                  action: "CONFIRM_ALIVE",
-                  expiresAt,
-                },
-              }),
-              prisma.guardianToken.create({
-                data: {
-                  guardianId: guardian.id,
-                  packId: pack.id,
-                  action: "RELEASE",
-                  expiresAt,
-                },
-              }),
-            ]);
-
-            const html = await render(
-              GuardianAlertEmail({
-                guardianName: guardian.name,
-                ownerName: pack.owner?.name ?? "the owner",
-                packTitle: pack.title,
-                confirmAliveUrl: `${APP_URL}/guardian/action?token=${confirmToken.token}`,
-                releaseUrl: `${APP_URL}/guardian/action?token=${releaseToken.token}`,
-                expiresInHours: 72,
-              })
-            );
-
-            const { error } = await resend.emails.send({
-              from: FROM_EMAIL,
-              to: guardian.email,
-              subject: `${pack.owner?.name ?? "Someone"} may need your help — Guardian action required`,
-              html,
-            });
-            if (error) throw new Error(error.message);
-            results.sweepB.emails_sent++;
-          } catch (emailErr) {
-            console.error(
-              `[cron/sweepB] Failed to send guardian email to ${guardian.email} for pack ${pack.id}:`,
-              emailErr
-            );
-          }
-        }
-      } else {
-        // No guardians: fall back to normal GRACE_PERIOD
-        await prisma.$transaction(async (tx) => {
-          await tx.messagePack.update({
-            where: { id: pack.id },
-            data: { status: PackStatus.GRACE_PERIOD },
-          });
-          await tx.triggerCondition.update({
-            where: { id: triggerCondId },
-            data: { status: TriggerStatus.IN_GRACE_PERIOD, triggeredAt: now },
-          });
-        });
-
-        results.sweepB.entered_grace++;
-
-        if (!pack.owner?.email) continue;
-        const daysLeft = pack.triggerCondition?.gracePeriodDays ?? 14;
-        try {
-          await sendGracePeriodWarning({
-            toEmail: pack.owner.email,
-            userName: pack.owner.name ?? "there",
-            packTitle: pack.title,
-            packId: pack.id,
-            daysLeft,
-          });
-          results.sweepB.emails_sent++;
-        } catch (emailErr) {
-          console.error(
-            `[cron/sweepB] Failed to send grace period email to ${pack.owner.email} for pack ${pack.id}:`,
-            emailErr
-          );
-        }
-      }
+      const started = await startInactivityDelivery(
+        {
+          id: pack.id,
+          title: pack.title,
+          triggerConditionId: trigger.id,
+          gracePeriodDays: trigger.gracePeriodDays,
+          owner: pack.owner,
+        },
+        now
+      );
+      if (started.mode === "guardians") results.sweepB.guardian_approval++;
+      if (started.mode === "grace") results.sweepB.entered_grace++;
+      results.sweepB.emails_sent += started.emailsSent;
     }
   } catch (err) {
     results.sweepB.error = err instanceof Error ? err.message : "Unknown error";

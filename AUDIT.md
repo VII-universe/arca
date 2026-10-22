@@ -21,3 +21,9 @@ Při ověřování na produkční DB (dávno, Fáze 1.5) jsme narazili na existu
 **Aktuální kód (`app/api/cron/process-triggers/route.ts`) je v pořádku** — všechny 4 sweepy zapisují `MessagePack.status` i `TriggerCondition.status` atomicky ve stejné `$transaction`, takže tahle nekonzistence novými běhy cronu už vzniknout nemůže. Zaseknuté řádky jsou pozůstatek nějaké starší verze cron logiky (před touhle atomickou dvojicí zápisů), ne aktivní bug.
 
 **Zbývá: jednorázový úklid dat na produkci.** `scripts/fix-stuck-trigger-conditions.sql` — SELECT pro náhled + UPDATE pro opravu, spustit ručně přes Supabase SQL editor (lokální `DATABASE_URL` je od incidentu s `vercel env pull` nefunkční, takže to nejde spustit z tohohle prostředí). Bezpečné spustit víckrát (po první opravě SELECT už nic nenajde).
+
+## Known issue: zrušení doručení po globálním spínači „na datum“ zprávu nezastaví
+
+Když se spustí globální spínač typu „na konkrétní datum“ (Nastavení → spínač, `switchType = SPECIFIC_DATE`), `cron/pulse` přesune aktivní zprávy do ochranné lhůty a zprávám bez vlastního spouštěče vytvoří `TriggerCondition` typu `SPECIFIC_DATE` s už proběhlým datem. Pokud autor během lhůty doručení zruší (`cancelDelivery`), spouštěč se vrátí na `PENDING` — a `process-triggers` sweep A ho při nejbližším hodinovém běhu doručí, protože datum je v minulosti. Zrušení tedy u téhle cesty fakticky nefunguje.
+
+Týká se jen globálního spínače na datum (spínač na neaktivitu jde od opravy „až tu nebudu“ přes strážce a zrušení funguje). Vědomě odloženo (rozhodnutí 2026-10-22). Možná oprava: při zrušení vypnout globální spínač, nebo pulse vytvářet spouštěč jiného typu než `SPECIFIC_DATE`.
