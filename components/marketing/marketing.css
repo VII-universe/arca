@@ -417,10 +417,10 @@
   z-index: 60;
   pointer-events: none;
   background:
-    radial-gradient(circle 70px at calc(var(--morph-cx, 50%) - 18px) calc(var(--morph-cy, 50%) - 22px), rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.3) 30%, transparent 70%),
-    radial-gradient(circle at var(--morph-cx, 50%) var(--morph-cy, 50%), var(--morph-color), transparent 72%);
-  transform-origin: var(--morph-cx, 50%) var(--morph-cy, 50%);
-  will-change: transform, clip-path, opacity;
+    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.3) 30%, transparent 70%),
+    radial-gradient(circle at 50% 50%, var(--morph-color), transparent 72%);
+  border-radius: 50%;
+  will-change: transform, opacity;
 }
 
 /* Entry for text that appears once something has happened. */

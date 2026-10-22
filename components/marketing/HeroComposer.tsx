@@ -150,40 +150,39 @@ export function HeroComposer() {
     const toX = window.innerWidth * (0.55 + Math.random() * 0.3);
     const toY = H * 0.14;
 
-    // The morph layer is placed once over the card and only ever animated
-    // with clip-path and transforms — moving it with left/top/width/height
-    // would register as layout shift.
-    const insetX = (rect.width - ORB_PX) / 2;
-    const insetTop = cy - rect.top - ORB_PX / 2;
-    const insetBottom = rect.bottom - cy - ORB_PX / 2;
+    // The morph is an orb-sized element at the fold point, stretched to cover
+    // the visible card and shrunk back to its natural size. Only transform and
+    // opacity are animated: both stay on the compositor (clip-path driven
+    // from JS repaints a card-sized layer every frame — visible jank on
+    // phones), and neither registers as layout shift.
+    const visibleH = Math.min(rect.bottom, H) - Math.max(rect.top, 0);
     gsap.set(morph, {
       display: "block",
       opacity: 0,
-      left: rect.left,
-      top: rect.top,
-      width: rect.width,
-      height: rect.height,
+      left: cx - ORB_PX / 2,
+      top: cy - ORB_PX / 2,
+      width: ORB_PX,
+      height: ORB_PX,
       x: 0,
       y: 0,
-      scale: 1,
-      clipPath: "inset(0px 0px 0px 0px round 28px)",
+      scaleX: rect.width / ORB_PX,
+      scaleY: visibleH / ORB_PX,
       "--morph-color": rgbCss(tint),
-      "--morph-cx": `${cx - rect.left}px`,
-      "--morph-cy": `${cy - rect.top}px`,
     });
+    // Blurring the whole form is a heavy filter on a big layer; keep it for
+    // desktop-class devices, plain fade elsewhere.
+    const dissolve = window.matchMedia("(pointer: fine)").matches
+      ? { opacity: 0, filter: "blur(12px)" }
+      : { opacity: 0 };
 
     const tl = gsap.timeline({ defaults: { ease: "power2.inOut" } });
     // 1. Light gathers inside the glass; the words dissolve into it.
     tl.to(light, { opacity: 1, duration: 1.1 }, 0)
-      .to(form, { opacity: 0, filter: "blur(12px)", duration: 0.9 }, 0.15)
+      .to(form, { ...dissolve, duration: 0.9 }, 0.15)
       // 2. The card folds into a glowing orb.
       .to(morph, { opacity: 1, duration: 0.35 }, 0.85)
       .to(card, { opacity: 0, duration: 0.45 }, 0.95)
-      .to(morph, {
-        clipPath: `inset(${insetTop}px ${insetX}px ${insetBottom}px ${insetX}px round ${ORB_PX / 2}px)`,
-        duration: 1,
-        ease: "expo.inOut",
-      }, 0.95)
+      .to(morph, { scaleX: 1, scaleY: 1, duration: 1, ease: "expo.inOut" }, 0.95)
       .call(() => {
         setSealed(true);
         gsap.set(light, { opacity: 0 });

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.61.1] - Nový web: plynulé zapečetění na mobilu
+Měření v mobilním Chromu (Android emulátor) ukázalo, že při zapečetění padá snímková frekvence na ~40 fps se 14 snímky delšími než 50 ms: skládání karty do orbu se animovalo přes `clip-path` (z JavaScriptu se v Chromu nekompozituje, takže se každý snímek překreslovala vrstva velká jako karta — na mobilu přes 1000 px při DPR 2,6) a celý formulář se rozostřoval filtrem.
+
+### Opraveno
+- `components/marketing/HeroComposer.tsx`, `marketing.css` — orb se skládá jen přes `transform` (scale z velikosti viditelné části karty na velikost orbu) a `opacity`, obojí na kompozitoru; rozostření formuláře jen na zařízeních s myší. Výsledek v emulátoru: 53–58 fps, 2–5 delších snímků; na desktopu (Apple M4 Max, Chrome) celá sekvence 60 fps bez jediného dlouhého snímku.
+
 ## [1.61.0] - Nový web, milník M3: zapečetění zprávy v hero
 Hero je teď celý zážitek: návštěvník napíše zprávu, vybere komu a kdy — a při tažení posuvníkem let se mění barva světla za hero (blízká budoucnost ranní a teplá, vzdálená hluboce modrá, „až tu nebudu“ noční). Po „Zapečetit“ se v kartě shromáždí světlo, slova se v něm rozpustí, karta se složí do zářícího orbu, ten převezme WebGL scéna (skutečný lom světla) a orb pomalu stoupá a mizí v hloubce mezi ostatními světly, které se na okamžik rozzáří. Rok mezitím doroluje na zvolený rok. Nic se neodesílá.
 
