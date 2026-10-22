@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.59.0] - Nový web, milník M1: kostra všech sekcí
+První milník nového veřejného webu („Světlo, které cestuje časem“). Všechny sekce stojí staticky a responzivně (375–1920 px), v češtině i angličtině, na design tokenech aplikace. Animace, WebGL scéna a předání konceptu zprávy do editoru přijdou v dalších milnících.
+
+### Přidáno
+- `app/(marketing)/` — landing na `/` (jazyk podle cookie / prohlížeče) a nově na `/en` a `/cs` (pevný jazyk, `hreflang`, canonical). `components/marketing/` — navigace, interaktivní ukázka zprávy v hero (skutečné textové pole, volba adresáta a roku, zapečetění s ohlášením přes `aria-live`), časová osa jednoho života, Pro koho, Jak to funguje, Strážci, Tvůj vlastní svět (přepínač atmosféry sdílený s aplikací přes `arca-vibe`), Bezpečnost, Ceník, FAQ, závěrečná výzva, patička.
+- `lib/marketing/pricing.ts` — ceny se načítají ze stejných Stripe cen, které účtuje checkout (`STRIPE_PRICE_MONTHLY`/`_LIFETIME`, cache 1 h), limit plánu Zdarma z `FREE_LIMITS`. Bez Stripe se částka nezobrazí.
+- `lib/marketing/operator.ts` + `.env.example` — provozovatel v patičce z `NEXT_PUBLIC_OPERATOR_*`, nic natvrdo.
+- `messages/*.json` — nový jmenný prostor `Marketing`; všechna tvrzení ověřená proti kódu.
+
+### Změněno
+- `proxy.ts` — marketingové stránky přeskakují dotaz na Supabase a určují jazyk stránky hlavičkou `x-arca-locale`. `i18n/request.ts` hlavičku respektuje a na Supabase/DB se ptá jen při existující session cookie (anonymní návštěva bez síťového volání navíc).
+- `components/VibeBackground.tsx` — na marketingových stránkách se nevykresluje (mají vlastní scénu, nestahuje se fotka pozadí).
+- `app/layout.tsx` — fonty se subsetem `latin-ext`, aby česká diakritika nepadala na náhradní font (i v aplikaci).
+- `app/sitemap.ts` — přidány `/en` a `/cs`.
+
+### Odstraněno
+- `app/page.tsx` a jmenný prostor `Landing` (starý landing).
 ## [1.58.10] - Oprava: volba „Opakování: každý rok“ nic nedělala
 U doručení „V daný den“ composer nabízel výběr „Opakování: Jednorázově / Každý rok“. Výběr se nikam neodesílal a opakované doručení v aplikaci neexistuje — kdo zvolil „Každý rok“, dostal jedno doručení a myslel si, že jich bude víc.
 

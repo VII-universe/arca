@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, type Locale } from "@/i18n/config";
+import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, LOCALE_HEADER, type Locale } from "@/i18n/config";
+import { MARKETING_LOCALE_PATHS, isMarketingPath } from "@/lib/marketing/paths";
 
 // i18n first-visit language detection — "without i18n routing" (see the i18n
 // design review), so this only ever sets a cookie, never redirects or
@@ -35,6 +36,31 @@ const PUBLIC_PREFIXES = [
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Marketing pages: no auth check (nothing there depends on the session,
+  // and skipping getUser() saves a Supabase round trip on every landing
+  // visit). The render locale is pinned via LOCALE_HEADER — the explicit
+  // /en or /cs path wins, otherwise cookie, otherwise Accept-Language, so
+  // even a first visit renders in the visitor's language rather than the
+  // default.
+  if (isMarketingPath(pathname)) {
+    const pathLocale = MARKETING_LOCALE_PATHS[pathname];
+    const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
+    const locale: Locale =
+      pathLocale ??
+      ((LOCALES as readonly string[]).includes(cookieLocale ?? "")
+        ? (cookieLocale as Locale)
+        : pickLocaleFromAcceptLanguage(request.headers.get("accept-language")));
+    const headers = new Headers(request.headers);
+    headers.set(LOCALE_HEADER, locale);
+    const res = NextResponse.next({ request: { headers } });
+    // An explicit language URL is a language choice — remember it for the
+    // rest of the site (login etc.); "/" only fills in a missing cookie.
+    if (pathLocale || !request.cookies.has(LOCALE_COOKIE)) {
+      res.cookies.set(LOCALE_COOKIE, locale, { maxAge: 60 * 60 * 24 * 365, path: "/" });
+    }
+    return res;
+  }
 
   // Short-circuit for public routes before touching Supabase auth
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {

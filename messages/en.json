@@ -867,129 +867,305 @@
     "recipientFallback": "recipient",
     "editorPlaceholder": "Dear {name},\n\nif you're reading this…"
   },
-  "Landing": {
+  "Marketing": {
     "meta": {
-      "title": "ARCA — Your legacy, secured for the future.",
-      "description": "A highly secure digital time capsule and dead-man switch for your most important messages, documents, and memories."
+      "title": "ARCA — Words that wait for their day",
+      "description": "Write to your child, your partner, or your future self, and choose the day they'll receive it: a birthday, ten years from now, or when you're no longer here."
     },
     "nav": {
-      "features": "Features",
+      "primary": "Main navigation",
+      "skip": "Skip to content",
+      "home": "ARCA — home",
+      "howItWorks": "How it works",
+      "forWhom": "Who it's for",
       "security": "Security",
       "pricing": "Pricing",
       "signIn": "Sign in",
-      "cta": "Create your Arca"
+      "start": "Start for free",
+      "menu": "Menu",
+      "closeMenu": "Close menu",
+      "language": "Language"
     },
     "hero": {
-      "eyebrow": "Secure · Private · Timeless",
-      "titleLine1": "Your legacy,",
-      "titleItalic": "secured",
-      "titleLine2": "for the future.",
-      "subheadline": "A highly secure digital time capsule and dead-man switch for your most important messages, documents, and memories — delivered precisely when they matter most.",
-      "ctaPrimary": "Start building your Arca",
-      "ctaSecondary": "See how it works",
-      "trustEncrypted": "Encrypted in transit and at rest",
-      "trustFree": "Free to start",
-      "trustNoCard": "No credit card required",
-      "trustVoice": "Voice & video recording"
+      "kicker": "Messages for the future",
+      "title": "Words that wait <em>for their day.</em>",
+      "lead": "Write to your child, your partner, or your future self. Choose the day they'll receive it: a birthday, ten years from now, or when you're no longer here. ARCA keeps it until then, and delivers it.",
+      "composer": {
+        "label": "Demo: write a message to the future",
+        "question": "Who do you want to tell something?",
+        "recipients": {
+          "child": "My child",
+          "partner": "My partner",
+          "self": "Me, in 10 years",
+          "mom": "My mom",
+          "other": "Someone else"
+        },
+        "messageLabel": "Your message",
+        "placeholder": "By the time you read this, …",
+        "startersLabel": "Start like this",
+        "starters": [
+          "By the time you read this, ",
+          "There's something I find hard to say out loud: ",
+          "Do you remember when "
+        ],
+        "whenLabel": "When should it open?",
+        "yearLabel": "Delivery year",
+        "when": {
+          "oneYear": "In a year",
+          "tenYears": "In 10 years",
+          "eighteen": "On their 18th birthday",
+          "gone": "When I'm gone"
+        },
+        "seal": "Seal it",
+        "sealedTitle": "Your message will wait.",
+        "sealedYear": "Until {year}, exactly.",
+        "sealedEighteen": "Until their 18th birthday.",
+        "sealedGone": "Until the moment comes.",
+        "demoNote": "This is only a demo. Nothing was sent.",
+        "saveCta": "Keep it for real",
+        "again": "Write another"
+      }
     },
-    "howItWorks": {
-      "label": "How it works",
-      "titlePlain": "Four steps between now",
-      "titleItalic": "and forever.",
-      "steps": [
-        { "title": "Compose your message", "body": "Write, record, or upload anything — text, voice, video, photos, documents. Use the rich editor or record directly in your browser." },
-        { "title": "Set your trigger", "body": "Choose a specific delivery date, or activate the dead-man switch. ARCA monitors your presence and acts only when it should." },
-        { "title": "Guardians are consulted", "body": "Before anything is sent, your trusted contacts confirm your status. One click from them keeps everything sealed for another 30 days." },
-        { "title": "Delivered at the right moment", "body": "Recipients receive a private, secure link — nothing before, nothing after. Your words arrive exactly as intended." }
-      ]
-    },
-    "features": {
-      "label": "Built different",
-      "titlePlain": "Every detail designed",
-      "titleItalic": "for trust.",
-      "items": [
+    "timeline": {
+      "label": "One life, on a timeline",
+      "title": "Written today. Opened on the right day.",
+      "sample": "Example",
+      "writtenIn": "Written in {year}",
+      "stops": [
         {
-          "title": "Stored securely",
-          "body": "Connections are encrypted (HTTPS) and data is stored with our infrastructure provider, encrypted at the storage level. The most sensitive details in the Vault get an extra layer of encryption with our own key.",
-          "pills": ["HTTPS", "Encrypted storage", "AES-256-GCM for the Vault"]
+          "year": "2032",
+          "to": "To my daughter",
+          "occasion": "first day of school",
+          "quote": "I'm writing this while you're two months old, asleep on my chest. Today is your first day of school. If you were scared, that's all right. So was I."
         },
         {
-          "title": "Trusted Guardians",
-          "body": "Before your Arca is ever delivered, up to 3 trusted contacts are consulted first. A single false positive is unacceptable — so we built a failsafe.",
-          "pills": ["False-positive protection", "Email action links", "72-hour window"]
+          "year": "2044",
+          "to": "To my son",
+          "occasion": "18th birthday",
+          "quote": "I don't know what the world around you looks like now. I only know you'll handle it better than you think."
         },
         {
-          "title": "Rich Media & Drip Delivery",
-          "body": "Record voice messages and videos. Attach files. Schedule parts of your message to unlock at different times — a letter today, a video on their birthday.",
-          "pills": ["Voice & video", "Drip chapters", "5 GB storage"]
+          "year": "2051",
+          "to": "To my wife",
+          "occasion": "25th anniversary",
+          "quote": "We got married this morning. By the time you read this, twenty-five years will have passed. I hope we still laugh at the same things."
+        },
+        {
+          "year": "2070",
+          "to": "To my grandchildren",
+          "occasion": "when I'm gone",
+          "quote": "I don't know your names. But I know you'll be here one day, and that's enough to make me smile right now."
+        }
+      ],
+      "finale": "Some words are meant to arrive later."
+    },
+    "forWhom": {
+      "label": "Who it's for",
+      "title": "For the people who matter to you.",
+      "lead": "And sometimes, for yourself.",
+      "scrollHint": "Scroll sideways",
+      "cards": [
+        {
+          "key": "children",
+          "title": "For your children",
+          "example": "A letter for their eighteenth, written today, while they're small enough to fall asleep in your arms."
+        },
+        {
+          "key": "partner",
+          "title": "For your partner",
+          "example": "For an anniversary, to remind you both how it all began."
+        },
+        {
+          "key": "self",
+          "title": "For your future self",
+          "example": "Open at forty. Who you are today, what worries you, what you hope for."
+        },
+        {
+          "key": "family",
+          "title": "For your family",
+          "example": "One message for everyone at once, say, for Christmas ten years from now."
+        },
+        {
+          "key": "gone",
+          "title": "When I'm gone",
+          "example": "For the moment they'll miss you most. With people you trust as a safeguard."
         }
       ]
     },
-    "security": {
-      "label": "Security",
-      "titlePlain": "Plainly, without hype.",
-      "titleItalic": "This is how we protect your data.",
-      "body": "Connections are encrypted (HTTPS) and data is stored with our infrastructure provider, encrypted at the storage level. The most sensitive details in the Vault (passwords, account access) get an extra layer of encryption with our own key (AES-256-GCM). Messages are not end-to-end encrypted.",
-      "items": [
-        "Encrypted storage, Vault additionally AES-256-GCM",
-        "TLS 1.3 in transit",
-        "Tamper-proof delivery audit trail",
-        "HMAC-signed recipient tokens",
-        "Guardian failsafe before any delivery"
+    "how": {
+      "label": "How it works",
+      "title": "Four steps. Then just time.",
+      "steps": [
+        {
+          "title": "Write",
+          "body": "Text, photos, a voice note, or a video. Even a few sentences are enough."
+        },
+        {
+          "title": "Choose when, and for whom",
+          "body": "A specific date, the recipient's age, \"in five years\", or a long silence from you."
+        },
+        {
+          "title": "Pick guardians",
+          "body": "For messages meant to arrive after a long silence, choose people ARCA asks first."
+        },
+        {
+          "title": "ARCA delivers",
+          "body": "On the day you choose, the recipient gets an email with a personal link. No account needed."
+        }
       ],
-      "cardPath": "arca://vault/status",
-      "cardRows": [
-        { "label": "Status", "value": "Sealed" },
-        { "label": "Storage", "value": "Encrypted" },
-        { "label": "Vault", "value": "AES-256-GCM" },
-        { "label": "Guardian approval", "value": "Required" },
-        { "label": "Connection", "value": "HTTPS" },
-        { "label": "Delivery status", "value": "Pending trigger" }
+      "ui": {
+        "to": "To",
+        "recipient": "Ellie",
+        "draft": "By the time you read this, you'll be taller than me…",
+        "kinds": [
+          "Text",
+          "Photos",
+          "Voice",
+          "Video"
+        ],
+        "when": "Opens",
+        "whenValue": "On her 18th birthday",
+        "guardians": "Guardians",
+        "guardianA": "Tom",
+        "guardianB": "Jane",
+        "mailSubject": "Someone left you a message",
+        "mailOpen": "Open message"
+      }
+    },
+    "guardians": {
+      "label": "Guardians",
+      "title": "People you trust. For the moment nobody plans.",
+      "lead": "You can set a message to be delivered after a long silence from you. Guardians make sure nothing goes out by mistake.",
+      "steps": [
+        "For each message, you set how many days without signing in before ARCA reaches out.",
+        "When that time passes, we email your guardians two links: \"They're fine\" and \"Release the messages\". The links are valid for 72 hours.",
+        "One guardian confirming you're fine is enough, and the countdown starts over.",
+        "If nobody responds, the messages are delivered after a grace period you choose."
+      ],
+      "noGuardians": "Guardians are optional. Without them, we email you directly, and you can cancel the delivery during the grace period.",
+      "privacy": "Guardians never see what your messages say. They only know their titles.",
+      "diagram": "Your light, linked by fine threads to the lights of three guardians.",
+      "you": "You"
+    },
+    "world": {
+      "label": "Your own world",
+      "title": "Write in a light that feels like yours.",
+      "lead": "In the app, you choose the atmosphere you write in. Try it here. The whole page changes.",
+      "carryOver": "Your choice carries over to the app in this browser.",
+      "groupLabel": "Atmosphere"
+    },
+    "security": {
+      "label": "Security and trust",
+      "title": "Plainly, without hype.",
+      "lead": "You're trusting us with something personal. So here's exactly how it works, including what we don't do (yet).",
+      "points": [
+        {
+          "title": "Encrypted in transit and at rest",
+          "body": "Connections are encrypted (HTTPS), and data is stored with our infrastructure provider, encrypted at the storage level."
+        },
+        {
+          "title": "An extra layer for the Life Manual",
+          "body": "The most sensitive details (passwords, account access, instructions) get an extra layer of encryption with our own key (AES-256-GCM)."
+        },
+        {
+          "title": "Not end-to-end",
+          "body": "Messages are not end-to-end encrypted. We say it upfront, so you can decide what goes into them."
+        },
+        {
+          "title": "Opens only after delivery",
+          "body": "The recipient opens the message through a personal link, only after it's delivered. You can add a security question only they can answer."
+        },
+        {
+          "title": "Your own copy",
+          "body": "Download your messages as a PDF at any time (text and recording transcripts)."
+        },
+        {
+          "title": "AI only when you ask",
+          "body": "If you use the AI helper, the text is processed by an external AI provider. Nothing is sent unless you click."
+        }
+      ],
+      "whatIfTitle": "What happens if…",
+      "whatIf": [
+        {
+          "q": "…I go quiet for a long time?",
+          "a": "Messages set to deliver after inactivity go through your guardians first. If you have none, we email you. Messages with a fixed date wait for their day; a long silence won't send them early."
+        },
+        {
+          "q": "…I change my mind?",
+          "a": "Until delivery, you can edit a message at any time, including its date and recipients."
+        },
+        {
+          "q": "…a message shouldn't be delivered?",
+          "a": "During the grace period, you can cancel delivery in one click. Guardians stop it by confirming you're fine."
+        }
       ]
     },
     "pricing": {
       "label": "Pricing",
-      "title": "Simple, honest pricing.",
-      "subtitle": "Start free, no credit card required. Upgrade when you're ready for unlimited everything.",
+      "title": "Start for free.",
+      "lead": "No credit card. Upgrade for more messages and recordings whenever you want.",
       "free": {
-        "tier": "Basic",
-        "price": "$0",
-        "period": "Forever free",
-        "features": ["1 Arca", "50 MB storage", "Rich text editor", "Inactivity trigger", "Date-based trigger", "Trusted Guardians", "Smart Heartbeat webhook"],
-        "cta": "Get started free"
+        "name": "Free",
+          "tagline": "For a first message, waiting for its day.",
+        "messages": "{count, plural, one {# message} other {# messages}}",
+        "features": [
+          "Text and photos",
+          "Guardians and the Life Manual",
+          "Every delivery option"
+        ],
+        "cta": "Start for free"
       },
       "pro": {
-        "tier": "Arca Pro",
-        "badge": "BEST VALUE",
-        "price": "$9.99",
-        "period": "/ month",
-        "altPricePrefix": "or",
-        "altPriceAmount": "$99 once",
-        "altPriceSuffix": "· lifetime access",
+        "name": "ARCA Pro",
+        "tagline": "For everyone you want to tell something.",
+        "perMonth": "/ month",
+        "orLifetime": "or {price} once",
+        "unavailable": "You'll see the current price after signing in.",
         "features": [
-          { "text": "Unlimited Arcas", "highlight": true },
-          { "text": "5 GB media storage", "highlight": true },
-          { "text": "Voice & video recording", "highlight": true },
-          { "text": "Drip chapter delivery", "highlight": true },
-          { "text": "Trusted Guardians", "highlight": false },
-          { "text": "Smart Heartbeat webhook", "highlight": false }
+          "Unlimited messages",
+          "Voice and video messages",
+          "Everything in Free"
         ],
-        "cta": "Unlock Pro",
-        "footnote": "Secure checkout via Stripe · Cancel anytime"
-      }
+        "cta": "Go Pro"
+      },
+      "note": "Payments are handled by Stripe."
+    },
+    "faq": {
+      "label": "Questions",
+      "title": "What people ask.",
+      "items": [
+        {
+          "q": "Is ARCA only about death?",
+          "a": "No. You can write for a birthday, an anniversary, yourself in ten years, or any day you choose. Messages for when you're gone are just one of the options."
+        },
+        {
+          "q": "How do guardians know it's time to deliver?",
+          "a": "They don't decide on their own. When a message is set to deliver after inactivity and you don't sign in for a long time, ARCA emails them two links: \"They're fine\" and \"Release the messages\". If nobody responds, the messages are delivered after a grace period."
+        },
+        {
+          "q": "Can I edit or cancel a message?",
+          "a": "Until delivery, you can edit it at any time, including its date and recipients. If a message enters its grace period after a long silence from you, you can cancel the delivery."
+        },
+        {
+          "q": "What does the recipient get?",
+          "a": "An email with a personal link. They open the message through it, after answering a security question if you set one. They don't need an ARCA account."
+        }
+      ]
     },
     "finalCta": {
-      "label": "Begin today",
-      "titlePlain": "Some things are too important",
-      "titleItalic": "to leave to chance.",
-      "subtitle": "Create your first Arca in minutes. Free to start, no card needed.",
-      "ctaPrimary": "Start building your Arca",
-      "ctaSecondary": "Already have an account? Sign in"
+      "title": "Who will you write to first?",
+      "lead": "A few sentences are enough. The rest can wait.",
+      "cta": "Start writing"
     },
     "footer": {
-      "privacy": "Privacy Policy",
-      "terms": "Terms of Service",
+      "tagline": "Words that wait for their day.",
+      "product": "Product",
+      "legal": "Legal",
+      "legalPending": "Our terms and privacy policy are on their way. If you have a question, write to us.",
       "contact": "Contact",
+      "cookies": "We only use essential cookies: language and sign-in. Analytics are cookie-free.",
+      "operator": "Operated by",
+      "companyId": "Company ID {id}",
       "rights": "All rights reserved."
     }
   },
