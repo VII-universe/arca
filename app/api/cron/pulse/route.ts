@@ -1,10 +1,13 @@
 // Hourly heartbeat — checks UserSettings global dead-man's switch.
-// Complements /api/cron/process-triggers (daily) which handles per-pack triggers.
+// Complements /api/cron/process-triggers (hourly) which handles per-pack triggers.
 //
 // Logic:
 //  1. Find users whose GLOBAL switch has fired (inactivity OR specific date)
-//  2. Move their ACTIVE packs to GRACE_PERIOD
-//  3. Upsert a TriggerCondition so the daily cron can deliver after grace period
+//  2. Move their ACTIVE packs to GRACE_PERIOD — except packs with their own
+//     SPECIFIC_DATE trigger (time capsules, age milestones): those wait for
+//     their own date and are delivered by process-triggers sweep A, never
+//     early just because the owner went quiet.
+//  3. Upsert a TriggerCondition so the hourly cron can deliver after grace period
 //
 // Auth: Authorization: Bearer <CRON_SECRET>
 
@@ -54,7 +57,15 @@ export async function GET(req: NextRequest) {
         },
       },
       messagePacks: {
-        where: { status: PackStatus.ACTIVE },
+        where: {
+          status: PackStatus.ACTIVE,
+          // Explicit null branch: a pack with no trigger yet is still swept
+          // (the upsert below creates one), only SPECIFIC_DATE is excluded.
+          OR: [
+            { triggerCondition: null },
+            { triggerCondition: { type: { not: "SPECIFIC_DATE" } } },
+          ],
+        },
         select: { id: true },
       },
     },
