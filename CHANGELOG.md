@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.58.11] - Bezpečnost: Next.js 16.4.0 → 16.4.2
+`npm audit` hlásil u Next.js 16.4.0 kritické zranitelnosti: neautentizované vzdálené spuštění kódu v Image Optimization API při použití SVG, DoS v App Routeru přes Server Actions a vzdálené spuštění kódu v `use cache` funkcích vracejících typed arrays. Opraveno v 16.4.2 (patch verze).
+
+### Změněno
+- `package.json`, `package-lock.json` — `next` 16.4.2. Build, typy, lint a testy beze změny chování.
+
 ## [1.61.1] - Nový web: plynulé zapečetění na mobilu
 Měření v mobilním Chromu (Android emulátor) ukázalo, že při zapečetění padá snímková frekvence na ~40 fps se 14 snímky delšími než 50 ms: skládání karty do orbu se animovalo přes `clip-path` (z JavaScriptu se v Chromu nekompozituje, takže se každý snímek překreslovala vrstva velká jako karta — na mobilu přes 1000 px při DPR 2,6) a celý formulář se rozostřoval filtrem.
 
