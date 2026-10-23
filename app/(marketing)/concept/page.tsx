@@ -50,6 +50,20 @@ export default function ConceptBoard() {
       </p>
 
       <section>
+        <h2>M1 · Průjezd scénou</h2>
+        <p>Záznam z produkční scény (větev <code>landing-v2</code>) na reálném GPU: rovnoměrný scroll celou stránkou za 45 s, kamera má vlastní zpoždění a zastavení u hvězd. Živě a s měřením výkonu: preview odkaz s <code>?perf=1</code>.</p>
+        <div className="cx-shots" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
+          <figure>
+            <video poster="/concept/m1-journey.jpg" controls muted playsInline preload="metadata" width={1280} height={720}>
+              <source src="/concept/m1-journey.webm" type="video/webm" />
+              <source src="/concept/m1-journey.mp4" type="video/mp4" />
+            </video>
+            <figcaption className="cx-mono">1280 × 720 · 50 s · záznam obrazovky (25 fps, scéna běží v 60 fps)</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section>
         <h2>1 · Louka v noci (hero A)</h2>
         <p>Tři vrstvy krajiny s vlastní paralaxou: vzdálené kopce v oparu, zalesněný hřbet a louka s trávou. Svit nad obzorem (chladná airglow, vlevo teplé světlo vzdáleného města), mlha v údolích mezi vrstvami. Hvězdy u obzoru slábnou (atmosféra), Mléčná dráha leží tam, kde na skutečném nebi. Odrazy hvězd nikde. Spodní třetina zůstává tmavá: tam bude nadpis a karta.</p>
         <Shots name="meadow" alt="Noční louka pod Mléčnou drahou" />
