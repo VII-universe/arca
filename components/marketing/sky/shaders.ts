@@ -194,12 +194,16 @@ void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   float aspect = uRes.x / uRes.y;
   float pw = 1.2 / uRes.y;
-  float x = uv.x * aspect, y = uv.y, h = uHorizon;
+  // x is measured from the centre of the screen in units of its height, so
+  // the land is the same at every aspect ratio — wider screens just see more
+  // of it, like the camera — and the hero still (fitted to the height,
+  // centred) lines up with the live scene.
+  float x = (uv.x - 0.5) * aspect, y = uv.y, h = uHorizon;
   float above = max(y - h, 0.0);
 
   // Skyglow: cool airglow along the whole horizon, a warm town far off to the left.
   float o = -uYaw * 1.1;
-  float town = exp(-pow((x - 0.2 * aspect - o * 0.45) / 0.55, 2.0));
+  float town = exp(-pow((x + 0.5 - o * 0.45) / 0.55, 2.0));
   vec3 air = vec3(0.045, 0.068, 0.105);
   vec3 warm = uGlowWarm * 3.2 * town;
   vec3 glow = air * (exp(-above * 6.0) * 0.8 + exp(-above * 22.0) * 0.5)
@@ -221,11 +225,12 @@ void main(){
   float bladeW = smoothstep(0.5, 0.15, abs(fract(xn * 520.0) - 0.5));
   float nearTop = nearY + blade * bladeW;
 
-  // Two small spruces at the very edge — scale, not a motif.
+  // Two small spruces far to the left — scale, not a motif. Wide screens
+  // see them near the edge; on a phone they're out of frame.
   vec2 P = vec2(x, y);
   float trees = 0.0, tx;
-  tx = 0.035 * aspect + o; trees = max(trees, conifer(P, vec2(tx, RIDGE(tx) - 0.005), 0.062, 0.1, pw));
-  tx = 0.058 * aspect + o; trees = max(trees, conifer(P, vec2(tx, RIDGE(tx) - 0.005), 0.042, 0.6, pw));
+  tx = -0.68 + o; trees = max(trees, conifer(P, vec2(tx, RIDGE(tx) - 0.005), 0.062, 0.1, pw));
+  tx = -0.645 + o; trees = max(trees, conifer(P, vec2(tx, RIDGE(tx) - 0.005), 0.042, 0.6, pw));
 
   float farLand = aa(y - farY, pw);
   float midLand = aa(y - midY, pw);
@@ -271,7 +276,7 @@ void main(){
 export const CORONA_FRAG = /* glsl */ `
 precision highp float;
 varying vec2 vUv;
-uniform vec3 uColor; uniform float uIntensity; uniform float uTime;
+uniform vec3 uColor; uniform float uIntensity; uniform float uTime; uniform float uWhite;
 ${NOISE3}
 void main(){
   float r = length(vUv) * 2.0;                 // 0 centre .. 1 edge of the quad
@@ -281,7 +286,8 @@ void main(){
   float glow = exp(-r * 2.2) * 0.32 + exp(-r * 0.9) * 0.06;
   float rays = pow(max(0.0, fbm3(vec3(cos(a) * 5.0, sin(a) * 5.0, uTime * 0.03))), 3.0) * exp(-r * 4.5) * 0.9;
   float spikes = (exp(-abs(vUv.y) * 420.0) + exp(-abs(vUv.x) * 420.0)) * exp(-r * 5.0) * 0.14;
-  vec3 c = mix(uColor, vec3(1.0), clamp(core * 0.5, 0.0, 1.0));
+  // Hot stars burn white at the core; cool dwarfs keep their colour (uWhite).
+  vec3 c = mix(uColor, vec3(1.0), clamp(core * 0.5, 0.0, 1.0) * uWhite);
   gl_FragColor = vec4(c * (core + corona + glow + rays + spikes) * uIntensity * smoothstep(1.0, 0.6, r), 1.0);
 }`;
 

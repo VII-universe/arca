@@ -12,58 +12,67 @@ export interface JourneySection {
   id: WaypointId;
   /** Shown only in the ?perf=1 overlay. */
   label: string;
-  /** Section height in small-viewport heights (desktop / phone). */
-  vh: number;
-  vhPhone: number;
-  /** Share of the section during which the camera holds at its waypoint before moving on. */
-  hold: number;
+  /**
+   * Length of the flight to the next waypoint, in small-viewport heights
+   * (desktop / phone). The camera holds at its waypoint for as long as the
+   * section's content takes to read, then flies during this stretch — never
+   * more than a screen with nothing to read.
+   */
+  leg: number;
+  legPhone: number;
 }
 
-// Tempo slows with the year: each leg is longer than the one before, and the
-// last stop ("until I'm gone") holds the longest.
+// Tempo slows with the year: each leg between the stars is a little longer
+// than the one before. After the journey the hops are short.
 export const JOURNEY: JourneySection[] = [
-  { id: "earth", label: "Hero · Země", vh: 110, vhPhone: 100, hold: 0.25 },
-  { id: "liftoff", label: "Odlet", vh: 90, vhPhone: 70, hold: 0 },
-  { id: "barnard", label: "2032 · Barnardova hvězda · 6 ly", vh: 170, vhPhone: 130, hold: 0.4 },
-  { id: "gliese251", label: "2044 · Gliese 251 · 18 ly", vh: 190, vhPhone: 140, hold: 0.4 },
-  { id: "vega", label: "2051 · Vega · 25 ly", vh: 210, vhPhone: 155, hold: 0.42 },
-  { id: "titawin", label: "2070 · Titawin · 44 ly", vh: 260, vhPhone: 190, hold: 0.5 },
-  { id: "forWhom", label: "Pro koho", vh: 140, vhPhone: 120, hold: 0.3 },
-  { id: "howItWorks", label: "Jak to funguje", vh: 160, vhPhone: 130, hold: 0.3 },
-  { id: "guardians", label: "Strážci", vh: 140, vhPhone: 120, hold: 0.3 },
-  { id: "atmospheres", label: "Atmosféry", vh: 120, vhPhone: 110, hold: 0.3 },
-  { id: "security", label: "Bezpečnost (kamera stojí)", vh: 130, vhPhone: 120, hold: 0.6 },
-  { id: "pricing", label: "Ceník", vh: 120, vhPhone: 110, hold: 0.3 },
-  { id: "faq", label: "FAQ", vh: 120, vhPhone: 110, hold: 0.3 },
-  { id: "home", label: "Závěr · pohled domů", vh: 110, vhPhone: 100, hold: 0 },
+  { id: "earth", label: "Hero · Země", leg: 45, legPhone: 35 },
+  { id: "liftoff", label: "Odlet", leg: 60, legPhone: 50 },
+  { id: "barnard", label: "2032 · Barnardova hvězda · 6 ly", leg: 50, legPhone: 40 },
+  { id: "gliese251", label: "2044 · Gliese 251 · 18 ly", leg: 55, legPhone: 45 },
+  { id: "vega", label: "2051 · Vega · 25 ly", leg: 60, legPhone: 50 },
+  { id: "titawin", label: "2070 · Titawin · 44 ly", leg: 40, legPhone: 35 },
+  { id: "forWhom", label: "Pro koho", leg: 25, legPhone: 20 },
+  { id: "howItWorks", label: "Jak to funguje", leg: 25, legPhone: 20 },
+  { id: "guardians", label: "Strážci", leg: 25, legPhone: 20 },
+  { id: "atmospheres", label: "Atmosféry", leg: 20, legPhone: 15 },
+  { id: "security", label: "Bezpečnost (kamera stojí)", leg: 20, legPhone: 15 },
+  { id: "pricing", label: "Ceník", leg: 15, legPhone: 10 },
+  { id: "faq", label: "FAQ", leg: 15, legPhone: 10 },
+  { id: "home", label: "Závěr · pohled domů", leg: 0, legPhone: 0 },
 ];
+
+/** Where the camera "reads" the page: this far down the viewport. */
+export const READING_LINE = 0.5;
+
+/** A waypoint's place on the page: where its section starts and where its flight starts. */
+export interface WaypointMark {
+  top: number;
+  legStart: number;
+}
 
 export const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 /** power2.inOut — the camera's easing family. */
 export const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
 /**
- * Scroll position → journey progress s ∈ [0, n−1]: the integer part is the
- * section whose waypoint the camera is leaving, the fraction how far along
- * the leg to the next one (0 during that section's hold, not yet eased).
- * `tops` are the sections' document offsets, ascending.
+ * Reading position → journey progress s ∈ [0, n−1]. While the reading line
+ * is inside section i's content the camera holds at waypoint i (s = i);
+ * across its leg — up to where section i+1 starts — it flies to i+1
+ * (s = i + fraction, not yet eased). `y` is the document position of the
+ * reading line (scrollY + READING_LINE × viewport height).
  */
-export function progressAt(tops: number[], holds: number[], scrollY: number): number {
-  const n = tops.length;
-  if (n === 0) return 0;
-  if (scrollY <= tops[0]) return 0;
+export function progressAt(marks: WaypointMark[], y: number): number {
+  const n = marks.length;
+  if (n === 0 || y <= marks[0].top) return 0;
   for (let i = 0; i < n - 1; i++) {
-    if (scrollY < tops[i + 1]) {
-      const f = (scrollY - tops[i]) / Math.max(1, tops[i + 1] - tops[i]);
-      return i + clamp01((f - holds[i]) / Math.max(1e-6, 1 - holds[i]));
+    const next = marks[i + 1].top;
+    if (y < next) {
+      const legStart = Math.min(marks[i].legStart, next);
+      if (y <= legStart) return i;
+      return i + clamp01((y - legStart) / Math.max(1, next - legStart));
     }
   }
   return n - 1;
-}
-
-/** Waypoint index the reader is "at" (for reduced motion, which cuts instead of flying). */
-export function nearestWaypoint(s: number): number {
-  return Math.round(s);
 }
 
 /**

@@ -958,7 +958,10 @@
           "quote": "I don't know your names. But I know you'll be here one day, and that's enough to make me smile right now."
         }
       ],
-      "finale": "Some words are meant to arrive later."
+      "finale": "Some words are meant to arrive later.",
+      "stars": ["Barnard's Star", "Gliese 251", "Vega", "Titawin"],
+      "distance": "{ly, plural, one {# light year} other {# light years}}",
+      "lightNote": "Light leaving it today reaches Earth in {year}. Just like a message you write today."
     },
     "forWhom": {
       "label": "Who it's for",
@@ -1045,7 +1048,7 @@
       ],
       "noGuardians": "Guardians are optional. Without them, we email you directly, and you can cancel the delivery during the grace period.",
       "privacy": "Guardians never see what your messages say. They only know their titles.",
-      "diagram": "Your light, linked by fine threads to the lights of three guardians.",
+      "diagram": "Your light, with the calm lights of two guardians beside it.",
       "you": "You"
     },
     "world": {
@@ -1167,7 +1170,8 @@
       "cookies": "We only use essential cookies: language and sign-in. Analytics are cookie-free.",
       "operator": "Operated by",
       "companyId": "Company ID {id}",
-      "rights": "All rights reserved."
+      "rights": "All rights reserved.",
+      "starData": "Star data: HYG Database v4.4 (CC BY-SA 4.0), from the ESA Hipparcos and Gaia catalogues."
     }
   },
   "Auth": {

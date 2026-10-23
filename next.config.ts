@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
       // server."). Match the largest of those limits.
       bodySizeLimit: "10mb",
     },
+    // The landing (app/(marketing)) and the app (app/(app)) have separate
+    // root layouts, so there's no single layout for a 404 on unmatched URLs —
+    // app/global-not-found.tsx serves it.
+    globalNotFound: true,
   },
   images: {
     remotePatterns: [

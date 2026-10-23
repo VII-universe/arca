@@ -57,12 +57,16 @@ const POINTER_MAX = (1.5 * Math.PI) / 180;   // the mouse turns the view by 1.5�
 const SCROLL_LAG_S = 0.28;                   // ≈ a 0.8 s scrub: the camera floats, never jerks
 const STANDOFF = 0.0006;                     // parsecs from a stop star (≈ 120 au)
 
-// Corona per stop: angular size (rad) and intensity at the stop, whitening of the colour.
-const STOP_LOOK: Record<string, { star: number; angular: number; intensity: number; whiten: number; side: number }> = {
-  barnard: { star: STOP_STARS.barnard, angular: 0.3, intensity: 1.25, whiten: 0.04, side: 1 },
-  gliese251: { star: STOP_STARS.gliese251, angular: 0.28, intensity: 1.2, whiten: 0.05, side: -1 },
-  vega: { star: STOP_STARS.vega, angular: 0.2, intensity: 1.25, whiten: 0.12, side: 1 },
-  titawin: { star: STOP_STARS.titawin, angular: 0.16, intensity: 1.2, whiten: 0.12, side: -1 },
+// Corona per stop: angular size (rad) and intensity at the stop, its colour
+// and how white its core burns. The red dwarfs (Barnard's Star, M4; Gliese
+// 251, M3) are small, dim and orange-red; Vega (A0) is the big blue-white one.
+// Dwarf colours are the blackbody colour pushed further from white so they
+// read as warm next to Vega at a glance.
+const STOP_LOOK: Record<string, { star: number; angular: number; intensity: number; color: RGB | null; white: number; side: number }> = {
+  barnard: { star: STOP_STARS.barnard, angular: 0.1, intensity: 0.85, color: [1, 0.55, 0.3], white: 0.3, side: 1 },
+  gliese251: { star: STOP_STARS.gliese251, angular: 0.11, intensity: 0.9, color: [1, 0.62, 0.36], white: 0.35, side: -1 },
+  vega: { star: STOP_STARS.vega, angular: 0.2, intensity: 1.3, color: null, white: 1, side: 1 },
+  titawin: { star: STOP_STARS.titawin, angular: 0.16, intensity: 1.2, color: null, white: 0.9, side: -1 },
 };
 
 // Galactic axes in the equatorial frame (rows of the IAU rotation).
@@ -297,7 +301,7 @@ export class SkyEngine {
     // Close-up of a stop: corona, and at Titawin a planet against it.
     this.coronaMat = new ShaderMaterial({
       vertexShader: CORONA_VERT, fragmentShader: CORONA_FRAG, transparent: true, depthTest: false, depthWrite: false, blending: AdditiveBlending,
-      uniforms: { uColor: { value: [1, 1, 1] }, uIntensity: { value: 0 }, uTime: { value: 0 } },
+      uniforms: { uColor: { value: [1, 1, 1] }, uIntensity: { value: 0 }, uTime: { value: 0 }, uWhite: { value: 1 } },
     });
     this.corona = new Mesh(new PlaneGeometry(1, 1), this.coronaMat);
     this.corona.renderOrder = 1;
@@ -530,8 +534,12 @@ export class SkyEngine {
     const toStar = s.clone().sub(eye).normalize();
     const toSun = eye.clone().multiplyScalar(-1).normalize();
     const look = toStar.clone().lerp(toSun, 0.5).normalize();
-    // Portrait screens are narrow: turn so the star and the Sun sit one above the other.
-    const up = portrait ? orthoUp(perp.clone().multiplyScalar(-cfg.side), look) : orthoUp(perp.clone().cross(toStar).multiplyScalar(-cfg.side), look);
+    // Portrait screens are narrow: turn so the star and the Sun sit one above
+    // the other — the star on top, the text below it. On wide screens the
+    // star sits on the right, the text column on the left.
+    let up = portrait ? orthoUp(perp.clone(), look) : orthoUp(perp.clone().cross(toStar), look);
+    const right = look.clone().cross(up);
+    if (portrait ? up.dot(toStar) < 0 : right.dot(toStar) < 0) up = up.multiplyScalar(-1);
     return { eye, look, up, r0: STANDOFF, dim: 1 };
   }
 
@@ -794,7 +802,7 @@ export class SkyEngine {
     this.localCam.updateMatrixWorld();
     const starPos = this.star(cfg.star);
     const dir = starPos.clone().sub(eye).normalize();
-    const color = starColor(this.opts.catalog.colorIndex[cfg.star], cfg.whiten);
+    const color = cfg.color ?? starColor(this.opts.catalog.colorIndex[cfg.star], 0.12);
     const angular = 0.025 + (cfg.angular - 0.025) * Math.pow(near, 3);
     const size = 10 * Math.tan(angular) * 2;
     this.corona.visible = near > 0;
@@ -803,6 +811,7 @@ export class SkyEngine {
     this.coronaMat.uniforms.uColor.value = color;
     this.coronaMat.uniforms.uIntensity.value = (0.3 + (cfg.intensity - 0.3) * Math.pow(near, 1.6)) * dim;
     this.coronaMat.uniforms.uTime.value = this.time;
+    this.coronaMat.uniforms.uWhite.value = cfg.white;
 
     // The planet lives at Titawin, drawn over the corona as a silhouette.
     this.planet.visible = planetOn;

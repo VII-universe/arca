@@ -958,7 +958,10 @@
           "quote": "Neznám vaše jména. Ale vím, že jednou budete. A to mi stačí, abych se teď usmíval."
         }
       ],
-      "finale": "Některá slova mají přijít později."
+      "finale": "Některá slova mají přijít později.",
+      "stars": ["Barnardova hvězda", "Gliese 251", "Vega", "Titawin"],
+      "distance": "{ly, plural, one {# světelný rok} few {# světelné roky} other {# světelných let}}",
+      "lightNote": "Světlo, které z ní vyrazí dnes, dorazí k Zemi v roce {year}. Stejně jako zpráva, kterou dnes napíšeš."
     },
     "forWhom": {
       "label": "Pro koho",
@@ -1045,7 +1048,7 @@
       ],
       "noGuardians": "Strážce mít nemusíš. Bez nich napíšeme přímo tobě a doručení můžeš během ochranné lhůty zrušit.",
       "privacy": "Strážci obsah tvých zpráv nevidí. Znají jen jejich název.",
-      "diagram": "Tvoje světlo propojené jemnými vlákny se světly tří strážců.",
+      "diagram": "Tvoje světlo a vedle něj dvě klidná světla tvých strážců.",
       "you": "Ty"
     },
     "world": {
@@ -1167,7 +1170,8 @@
       "cookies": "Používáme jen nezbytné cookies: jazyk a přihlášení. Analytika je bez cookies.",
       "operator": "Provozovatel",
       "companyId": "IČO {id}",
-      "rights": "Všechna práva vyhrazena."
+      "rights": "Všechna práva vyhrazena.",
+      "starData": "Hvězdná data: HYG Database v4.4 (CC BY-SA 4.0), z katalogů ESA Hipparcos a Gaia."
     }
   },
   "Auth": {

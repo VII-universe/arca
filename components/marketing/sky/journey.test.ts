@@ -2,28 +2,33 @@ import { describe, it, expect } from "vitest";
 import { JOURNEY, coronaNearness, logLeg, progressAt } from "./journey";
 
 describe("journey progress", () => {
-  const tops = [0, 1000, 2000, 4000];
-  const holds = [0, 0.5, 0, 0];
+  // Three sections: content 0–800 then a leg to 1000; content 1000–1500, leg
+  // to 2000; the last one starts at 2000.
+  const marks = [
+    { top: 0, legStart: 800 },
+    { top: 1000, legStart: 1500 },
+    { top: 2000, legStart: 2600 },
+  ];
 
   it("starts at 0 and ends at the last waypoint", () => {
-    expect(progressAt(tops, holds, -50)).toBe(0);
-    expect(progressAt(tops, holds, 9999)).toBe(3);
+    expect(progressAt(marks, -50)).toBe(0);
+    expect(progressAt(marks, 9999)).toBe(2);
   });
 
-  it("is linear across a section without a hold", () => {
-    expect(progressAt(tops, holds, 500)).toBeCloseTo(0.5);
+  it("holds at a waypoint while its content is being read", () => {
+    expect(progressAt(marks, 400)).toBe(0);
+    expect(progressAt(marks, 1200)).toBe(1);
   });
 
-  it("holds at the waypoint for the first part of a section", () => {
-    expect(progressAt(tops, holds, 1000)).toBe(1);
-    expect(progressAt(tops, holds, 1400)).toBe(1);
-    expect(progressAt(tops, holds, 1750)).toBeCloseTo(1.5);
+  it("flies across the leg to the next section", () => {
+    expect(progressAt(marks, 900)).toBeCloseTo(0.5);
+    expect(progressAt(marks, 1750)).toBeCloseTo(1.5);
   });
 
   it("never runs backwards while scrolling down", () => {
     let last = -1;
-    for (let y = 0; y < 4100; y += 37) {
-      const s = progressAt(tops, holds, y);
+    for (let y = 0; y < 3000; y += 37) {
+      const s = progressAt(marks, y);
       expect(s).toBeGreaterThanOrEqual(last);
       last = s;
     }
@@ -67,10 +72,16 @@ describe("journey layout", () => {
     expect(ids.indexOf("vega")).toBeLessThan(ids.indexOf("titawin"));
   });
 
-  it("slows down with the year", () => {
-    const vh = (id: string) => JOURNEY.find((s) => s.id === id)!.vh;
-    expect(vh("gliese251")).toBeGreaterThan(vh("barnard"));
-    expect(vh("vega")).toBeGreaterThan(vh("gliese251"));
-    expect(vh("titawin")).toBeGreaterThan(vh("vega"));
+  it("slows down with the year between the stars", () => {
+    const leg = (id: string) => JOURNEY.find((s) => s.id === id)!.leg;
+    expect(leg("gliese251")).toBeGreaterThan(leg("barnard"));
+    expect(leg("vega")).toBeGreaterThan(leg("gliese251"));
+  });
+
+  it("never leaves more than a screen of flight without text", () => {
+    for (const s of JOURNEY) {
+      expect(s.leg).toBeLessThanOrEqual(80);
+      expect(s.legPhone).toBeLessThanOrEqual(80);
+    }
   });
 });

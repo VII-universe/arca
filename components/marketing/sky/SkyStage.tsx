@@ -3,14 +3,25 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAtmosphere } from "../atmosphere";
 import { loadCatalog } from "./catalog";
-import { progressAt, JOURNEY } from "./journey";
+import { progressAt, READING_LINE, type WaypointMark } from "./journey";
 import type { SkyEngine } from "./engine";
-import { PerfOverlay } from "./PerfOverlay";
+import dynamic from "next/dynamic";
+import meadowWideWebp from "./stills/meadow-wide.webp";
+import meadowTallWebp from "./stills/meadow-tall.webp";
 
-// The fixed sky behind the landing. Renders a CSS night sky at once (no
-// layout shift, nothing for LCP to wait on), then — after the first paint —
-// loads Three.js and the catalogue, and fades the WebGL sky in over it.
-// Without WebGL the CSS layer swaps to a still render of the same scene.
+// AVIF as plain hashed assets (the image pipeline doesn't read AVIF; these
+// need no processing — they're served as rendered).
+const meadowWideAvif = new URL("./stills/meadow-wide.avif", import.meta.url).href;
+const meadowTallAvif = new URL("./stills/meadow-tall.avif", import.meta.url).href;
+
+// The fixed sky behind the landing. The meadow shows at once as a still —
+// rendered by this same scene from the hero's camera, with the same
+// projection (fitted to the height, centred), so when the live sky has its
+// first frame it fades in over it without a jump. Three.js and the
+// catalogue load after the first paint. Without WebGL the still stays.
+
+// ?perf=1 only — not part of the landing's bundle otherwise.
+const PerfOverlay = dynamic(() => import("./PerfOverlay").then((m) => m.PerfOverlay), { ssr: false });
 
 type StageState = "loading" | "live" | "fallback";
 const noSubscribe = () => () => {};
@@ -24,7 +35,11 @@ export function SkyStage() {
   const [atmosphere, setAtmosphere] = useAtmosphere();
   const lenisRef = useRef<import("lenis").default | null>(null);
 
+  // The engine is built asynchronously; it starts from whatever the
+  // atmosphere is by then (the stored choice arrives after hydration).
+  const atmosphereRef = useRef(atmosphere);
   useEffect(() => {
+    atmosphereRef.current = atmosphere;
     engineRef.current?.setAtmosphere(atmosphere);
   }, [atmosphere]);
 
@@ -37,14 +52,16 @@ export function SkyStage() {
     let disposed = false;
     const cleanups: (() => void)[] = [];
 
-    // Section offsets → journey progress.
-    const sections = () => Array.from(document.querySelectorAll<HTMLElement>("[data-waypoint]"));
-    let tops: number[] = [];
-    const holds = JOURNEY.map((s) => s.hold);
+    // Sections → where each one starts and where its flight (leg) starts.
+    let marks: WaypointMark[] = [];
     const measure = () => {
-      tops = sections().map((el) => el.getBoundingClientRect().top + window.scrollY);
+      marks = Array.from(document.querySelectorAll<HTMLElement>("[data-waypoint]")).map((el) => {
+        const r = el.getBoundingClientRect();
+        const leg = el.querySelector<HTMLElement>(":scope > [data-leg]");
+        return { top: r.top + window.scrollY, legStart: (leg ? leg.getBoundingClientRect().top : r.bottom) + window.scrollY };
+      });
     };
-    const progress = () => progressAt(tops, holds, window.scrollY);
+    const progress = () => progressAt(marks, window.scrollY + window.innerHeight * READING_LINE);
 
     const boot = async () => {
       const [{ SkyEngine }, catalog] = await Promise.all([import("./engine"), loadCatalog(abort.signal)]);
@@ -52,7 +69,7 @@ export function SkyStage() {
       const engine = SkyEngine.create({
         canvas,
         catalog,
-        atmosphere,
+        atmosphere: atmosphereRef.current,
         reducedMotion,
         lowPower: memory <= 3,
         onReady: () => !disposed && setState("live"),
@@ -112,14 +129,18 @@ export function SkyStage() {
       engineRef.current?.dispose();
       engineRef.current = null;
     };
-    // The atmosphere is applied by its own effect; the engine is built once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <>
       <div className="sky" data-state={state} aria-hidden="true">
         <div className="sky__still" />
+        <picture className="sky__photo">
+          <source media="(orientation: portrait)" type="image/avif" srcSet={meadowTallAvif} />
+          <source media="(orientation: portrait)" type="image/webp" srcSet={meadowTallWebp.src} />
+          <source type="image/avif" srcSet={meadowWideAvif} />
+          <img src={meadowWideWebp.src} alt="" width={meadowWideWebp.width} height={meadowWideWebp.height} fetchPriority="high" decoding="async" />
+        </picture>
         <canvas ref={canvasRef} className="sky__canvas" />
       </div>
       {perf && <PerfOverlay engineRef={engineRef} lenisRef={lenisRef} atmosphere={atmosphere} setAtmosphere={setAtmosphere} state={state} />}

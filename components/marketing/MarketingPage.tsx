@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { LOCALES } from "@/i18n/config";
 import { marketingPathFor } from "@/lib/marketing/paths";
-import { SkyJourney } from "./sky/SkyJourney";
+import { LandingPage } from "./landing/LandingPage";
 
 // Shared by "/", "/en" and "/cs". The locale itself is decided in proxy.ts
 // (LOCALE_HEADER), so every getTranslations() here already renders the
@@ -31,8 +31,7 @@ export async function marketingMetadata(path: string): Promise<Metadata> {
   };
 }
 
-// v2 („Světlo na cestě“), M1: the scene alone. The sections and their
-// content (components in this folder) come back in M2.
+// v2 („Světlo na cestě“): the sky, the journey and every section.
 export async function MarketingPage() {
-  return <SkyJourney />;
+  return <LandingPage />;
 }

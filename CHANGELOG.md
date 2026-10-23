@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.63.0] - Web v2, milník M2: typografie a rozvržení ve scéně
+Všechny sekce stojí staticky ve skutečném nebi, v češtině i angličtině: text sedí na scéně jako titulky ve filmu (Newsreader, Inter s `ss01`/`cv11`, Geist Mono), karty jen tam, kde je zpráva nebo plán (matný obsidián, žádné sklo). Ukázkové zprávy jsou zastávky u hvězd ve vzdálenosti „rok − 2026“ světelných let. Animace přijdou v M3–M6.
+
+### Přidáno
+- `components/marketing/landing/` — nové sekce (hero s ukázkou zprávy, cesta ke hvězdám jako seznam zastávek, Pro koho, Jak to funguje, Strážci, Atmosféry, Bezpečnost, Ceník, FAQ, závěr, patička), `Waypoint` (sekce = obsah, během kterého kamera stojí, + krátký přelet k další), česká typografie (nezlomitelné mezery po jednopísmenných předložkách a mezi číslem a jednotkou).
+- `app/(marketing)/layout.tsx` — vlastní kořenový layout webu: jen fonty, scéna a i18n (na serveru; klientské komponenty dostávají texty jako props). Bez providerů aplikace, bez CSS aplikace, bez Sentry.
+- `app/global-not-found.tsx` — 404 pro neexistující adresy (web a aplikace mají oddělené kořenové layouty).
+- `messages/*.json` — názvy hvězd, vzdálenost ve světelných letech, věta o světle u první zastávky, poděkování za hvězdná data v patičce.
+- Hero je vidět okamžitě: statický snímek louky (AVIF/WebP, vykreslený touto scénou se stejnou projekcí), WebGL se přes něj prolne bez skoku.
+
+### Změněno
+- `app/(app)/` — aplikace (layout, `globals.css`, `dashboard`, `login`, `arca`, `guardian`, `contribute`, `(sanctuary)`) přesunuta do skupiny tras; URL beze změny. Přechod mezi webem a aplikací je plné načtení stránky.
+- `instrumentation-client.ts` — na marketingových stránkách se Sentry nenačítá; jinde se načte jako samostatný chunk a inicializuje hned po načtení.
+- `components/marketing/atmosphere.tsx` — atmosféra se čte a ukládá přímo pod klíčem `arca-vibe` (stejně jako `VibeProvider` aplikace), takže se volba dál přenáší.
+- Scéna: Barnardova hvězda a Gliese 251 (červení trpaslíci) mají teplejší barvu a menší, slabší korónu; Vega je velká a modrobílá. Hvězda zastávky je na širokých obrazovkách vpravo (text vlevo), na telefonu nahoře (text pod ní). Louka se počítá od středu obrazovky, takže vypadá stejně na každém poměru stran.
+- `next.config.ts` — `experimental.globalNotFound`.
+
+### Opraveno
+- Uložená atmosféra se na webu nepoužila, pokud ji prohlížeč načetl až po spuštění scény.
+
+## [1.62.0] - Web v2, milník M1: scéna ze skutečného katalogu hvězd
+Nový veřejný web („Světlo na cestě“): jedna Three.js scéna za celou stránkou, kamera řízená scrollem letí od louky přes Barnardovu hvězdu, Gliese 251, Vegu a Titawin (silueta planety) podél Mléčné dráhy a zpátky pohledem domů.
+
+### Přidáno
+- `components/marketing/sky/` — engine (Three.js 0.186.1), shadery, cesta kamery (`journey.ts`, testy), katalog (`stars.bin`, 30 005 hvězd z HYG v4.4, 8 B na hvězdu, 240 kB) a jeho dekodér s testy. Mléčná dráha a mlhoviny se pro každou atmosféru předpočítají do cube mapy, přepnutí atmosféry se prolne za 1,2 s.
+- `scripts/build-sky-catalog.mjs` — sestavení katalogu z HYG (CC BY-SA 4.0).
+- Výkon: DPR max 1,5, adaptivní rozlišení (100/83/66 %), pauza ve skryté záložce, Three.js a katalog až po prvním vykreslení. Bez WebGL statický snímek, `prefers-reduced-motion` = střih přes ztmavení místo letu.
+- `?perf=1` — panel s FPS, GPU a rozlišením a 40s test celé cesty se souhrnem po sekcích.
+- Závislosti: `three@0.186.1`, `lenis@1.3.26`, `@types/three@0.186.0` (přesně připnuté).
+
 ## [1.58.11] - Bezpečnost: Next.js 16.4.0 → 16.4.2
 `npm audit` hlásil u Next.js 16.4.0 kritické zranitelnosti: neautentizované vzdálené spuštění kódu v Image Optimization API při použití SVG, DoS v App Routeru přes Server Actions a vzdálené spuštění kódu v `use cache` funkcích vracejících typed arrays. Opraveno v 16.4.2 (patch verze).
 
