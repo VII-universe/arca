@@ -89,6 +89,7 @@
     "stripe": "^22.1.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.4",
+    "three": "0.186.1",
     "typescript": "^6.0.3",
     "vercel": "^53.1.1"
   },
@@ -96,6 +97,7 @@
     "@playwright/test": "^1.64.0",
     "@tailwindcss/typography": "^0.5.19",
     "@types/qrcode": "^1.5.6",
+    "@types/three": "0.186.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.0",
     "supabase": "^2.98.1",

@@ -14,7 +14,8 @@ export const MARKETING_LOCALE_PATHS: Record<string, Locale> = {
 export const MARKETING_PATHS = ["/", ...Object.keys(MARKETING_LOCALE_PATHS)];
 
 export function isMarketingPath(pathname: string | null | undefined): boolean {
-  return !!pathname && MARKETING_PATHS.includes(pathname);
+  // concept-v2 branch only: the M0 concept board under /concept is public too.
+  return !!pathname && (MARKETING_PATHS.includes(pathname) || pathname === "/concept" || pathname.startsWith("/concept/"));
 }
 
 export function marketingPathFor(locale: Locale): string {
