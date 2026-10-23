@@ -201,3 +201,16 @@
   .cx-shots { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .cx-table { font-size: 0.8rem; }
 }
+
+/* M0b full-viewport scene (renders, video) */
+.cx-scene { position: relative; }
+.cx-scene.cx-fullscene { position: fixed; inset: 0; background: var(--cx-bg0); }
+.cx-sunmark { display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(255, 217, 160, 0.6); }
+
+/* M0b board: video and atmosphere pairs */
+.cx-shots video { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--cx-line); background: var(--cx-bg0); }
+.cx-atm { display: grid; gap: 28px 20px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); margin-top: 28px; }
+.cx-atm figure { margin: 0; }
+.cx-atm__pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cx-atm img { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--cx-line); }
+.cx-atm figcaption { margin-top: 8px; }
