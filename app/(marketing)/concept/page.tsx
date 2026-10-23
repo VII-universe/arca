@@ -61,12 +61,18 @@ export default function ConceptBoard() {
         <p>Kamera se zvedne od obzoru, krajina a atmosféra zmizí, pak let po logaritmické vzdálenosti k Barnardově hvězdě (5,96 ly, rok 2032). Z louky ji okem nevidíš (9,5 mag). Během letu se vynoří jako červený bod a roste až do posledního snímku. Slabé částice kolem kamery dávají pocit rychlosti (jen vodítko hloubky, ne „warp“). Hrubé tempo, jde o pocit.</p>
         <div className="cx-shots">
           <figure>
-            <video src="/concept/flight-16x9.webm" poster="/concept/flight-poster.jpg" controls muted loop playsInline preload="metadata" width={1280} height={720} />
-            <figcaption className="cx-mono">16 : 9 · 1280 × 720 · webm · 0,5 MB</figcaption>
+            <video poster="/concept/flight-poster.jpg" controls muted loop playsInline preload="metadata" width={1280} height={720}>
+              <source src="/concept/flight-16x9.webm" type="video/webm" />
+              <source src="/concept/flight-16x9.mp4" type="video/mp4" />
+            </video>
+            <figcaption className="cx-mono">16 : 9 · 1280 × 720 · webm / mp4 (H.264, iOS)</figcaption>
           </figure>
           <figure>
-            <video src="/concept/flight-9x16.webm" poster="/concept/flight-poster-m.jpg" controls muted loop playsInline preload="metadata" width={720} height={1280} />
-            <figcaption className="cx-mono">9 : 16 · 720 × 1280 · webm</figcaption>
+            <video poster="/concept/flight-poster-m.jpg" controls muted loop playsInline preload="metadata" width={720} height={1280}>
+              <source src="/concept/flight-9x16.webm" type="video/webm" />
+              <source src="/concept/flight-9x16.mp4" type="video/mp4" />
+            </video>
+            <figcaption className="cx-mono">9 : 16 · 720 × 1280 · webm / mp4</figcaption>
           </figure>
         </div>
         <div className="cx-links cx-mono"><a href="/concept/scene?shot=flight">Otevřít živě (smyčka)</a></div>
