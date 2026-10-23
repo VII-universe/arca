@@ -42,6 +42,7 @@ export function PerfOverlay({
   const [bench, setBench] = useState<BenchResult | null>(null);
   const [running, setRunning] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const raf = useRef(0);
 
   useEffect(() => {
@@ -95,9 +96,12 @@ export function PerfOverlay({
   };
 
   return (
-    <aside className="sky-perf" aria-label="Měření výkonu scény">
-      <div className="sky-perf__fps">{stats ? stats.fps.toFixed(0) : "–"} <small>fps</small></div>
-      {stats ? (
+    <aside className="sky-perf" data-collapsed={collapsed} aria-label="Měření výkonu scény">
+      {/* Tap the number to fold the panel away from the scene. */}
+      <button type="button" className="sky-perf__fps" aria-expanded={!collapsed} onClick={() => setCollapsed((c) => !c)}>
+        {stats ? stats.fps.toFixed(0) : "–"} <small>fps{running > 0 ? ` · test ${Math.round(running * 100)} %` : ""}</small>
+      </button>
+      {collapsed ? null : stats ? (
         <dl>
           <div><dt>snímek</dt><dd>{stats.frameMs.toFixed(1)} ms</dd></div>
           <div><dt>render</dt><dd>{stats.width}×{stats.height} · {Math.round(stats.scale * 100)} % · DPR {stats.dpr}</dd></div>
@@ -107,6 +111,7 @@ export function PerfOverlay({
       ) : (
         <p>Scéna: {state}</p>
       )}
+      {!collapsed && <>
       <div className="sky-perf__row">
         {ATMOS.map((a) => (
           <button key={a.id} type="button" aria-pressed={atmosphere === a.id} onClick={() => setAtmosphere(a.id)}>{a.label}</button>
@@ -118,7 +123,8 @@ export function PerfOverlay({
         </button>
         <button type="button" onClick={copy}>{copied ? "Zkopírováno" : "Kopírovat výsledek"}</button>
       </div>
-      {bench && (
+      </>}
+      {bench && !collapsed && (
         <div className="sky-perf__bench">
           <p><b>{bench.avgFps.toFixed(1)} fps</b> průměr · 1% low {bench.low1Fps.toFixed(1)} fps</p>
           <ul>

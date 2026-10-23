@@ -92,7 +92,9 @@ html.lenis, html.lenis body { height: auto; }
   color: var(--sky-star);
   font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
-.sky-perf__fps { font-size: 28px; line-height: 1; margin-bottom: 8px; }
+.sky-perf[data-collapsed="true"] { width: auto; padding: 6px 10px; }
+.sky-perf .sky-perf__fps { display: block; border: 0; padding: 0; font-size: 28px; line-height: 1; margin-bottom: 8px; text-align: left; }
+.sky-perf[data-collapsed="true"] .sky-perf__fps { margin: 0; font-size: 18px; }
 .sky-perf__fps small { font-size: 11px; opacity: 0.7; }
 .sky-perf dl { margin: 0 0 8px; }
 .sky-perf dl div { display: flex; gap: 8px; }
