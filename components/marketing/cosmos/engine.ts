@@ -20,7 +20,7 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import type { Catalog } from "./catalog";
 import {
   AU_KM, EARTH_POLE, EARTH_RADIUS_AU, GALACTIC_CENTRE, GALACTIC_CENTRE_LY, GALACTIC_NORTH, GALACTIC_Y, LY_AU, PC_AU,
-  PLANETS, SUN_RADIUS_KM, YEAR_DAYS, equatorialToEcliptic, greenwichDirection, julianDay, moonPosition,
+  J2000, PLANETS, SUN_RADIUS_KM, YEAR_DAYS, equatorialToEcliptic, greenwichDirection, julianDay, moonPosition,
   orbitPhase, orbitPoints, planetPosition, type PlanetId, type Vec3, vadd, vcross, vdot, vlen, vnorm, vscale, vsub, MOON_RADIUS_KM,
 } from "./ephemeris";
 import { JOURNEY, KEYS, bilog, clamp01, easeInOut, orbitsAt, segmentAt, smoothstep, trailFadeAt, type Anchor, type Direction, type Key, type Look } from "./journey";
@@ -32,6 +32,7 @@ import { ATMO_FRAG, ATMO_VERT, CLOUDS_FRAG, CLOUDS_VERT, EARTH_FRAG, EARTH_VERT 
 import { CORONA_FRAG, CORONA_VERT, MARKER_FRAG, MARKER_VERT, PLANET_FRAG, PLANET_VERT, RING_FRAG, RING_VERT, SUN_FRAG, SUN_VERT } from "./shaders/bodies";
 import { ORBIT_FRAG, ORBIT_VERT, TRAIL_FRAG, TRAIL_VERT } from "./shaders/lines";
 import { DUST_FRAG, GALAXY_FRAG, GALAXY_VERT } from "./shaders/galaxy";
+import { FILAMENT_FRAG, FILAMENT_VERT, FLOW_FRAG, FLOW_VERT, SPARK_FRAG, SPARK_VERT } from "./shaders/light";
 import { TEXTURES, type TextureName } from "./textures";
 
 export type CosmosAtmosphere = "nebula" | "sunset" | "ocean" | "midnight" | "stars";
@@ -57,6 +58,12 @@ const MOON_R = MOON_RADIUS_KM / AU_KM;
 const RING_STEP = 0.0062;           // the trail spirals out this much (of 1 au) per orbit
 const TRAIL_MAX_ORBITS = 50;
 const TRAIL_SEGMENTS = 180;
+const EARTH_SPIN_S = 240;          // one turn of the Earth on screen, seconds (the real day would read as still)
+const EARTH_SPIN0 = 180;             // where the turn starts (degrees east of the J2000 Greenwich direction): the lit cities face the hero
+const CLOUD_DRIFT = 0.00045;       // clouds slide against the surface, uv per second
+const SPARKS = 200;                // the message's trail, particles
+const SPARK_LIFE = 1.4;            // seconds
+const AMBER: RGB = [1.0, 0.85, 0.63];
 
 // IAU north poles (RA, Dec, J2000) → the axis each globe spins on.
 const POLES: Record<PlanetId | "moon", [number, number]> = {
@@ -66,6 +73,11 @@ const POLES: Record<PlanetId | "moon", [number, number]> = {
 const MARKER_COLOR: Record<PlanetId | "moon", RGB> = {
   mercury: [0.62, 0.6, 0.57], venus: [0.96, 0.9, 0.76], earth: [0.5, 0.64, 0.96], mars: [0.86, 0.56, 0.36],
   jupiter: [0.86, 0.76, 0.6], saturn: [0.9, 0.82, 0.62], uranus: [0.62, 0.84, 0.9], neptune: [0.38, 0.52, 0.95], moon: [0.72, 0.72, 0.7],
+};
+// A thin atmospheric rim in the planet's own colour (strength, colour); none on the airless ones.
+const HAZE: Record<PlanetId | "moon", [number, RGB]> = {
+  mercury: [0, [0, 0, 0]], venus: [0.7, [0.9, 0.85, 0.7]], earth: [0, [0, 0, 0]], mars: [0.4, [0.95, 0.6, 0.42]],
+  jupiter: [0.5, [0.8, 0.74, 0.62]], saturn: [0.5, [0.85, 0.78, 0.6]], uranus: [0.55, [0.62, 0.86, 0.92]], neptune: [0.65, [0.5, 0.64, 1.0]], moon: [0, [0, 0, 0]],
 };
 const SATURN_EQ_KM = 60_268;
 const SATURN_FLAT = 0.098;
@@ -96,6 +108,8 @@ export interface CosmosEngineOptions {
   lowPower: boolean;
   /** Julian day the scene shows as "today" (defaults to now, and keeps ticking). */
   baseJd?: number;
+  /** Captures: where the Earth's turn starts, degrees (default EARTH_SPIN0). */
+  spin0?: number;
   onReady: () => void;
   onContextLost: () => void;
 }
@@ -227,6 +241,27 @@ export class CosmosEngine {
   private pointer = { x: 0, y: 0, sx: 0, sy: 0 };
   private reduced: { shown: number; phase: "idle" | "out" | "in"; t: number };
   private lastPose: Pose | null = null;
+  private hold = 0;
+  private lastDt = 1 / 60;
+  private anchorNdc: [number, number] | null = null;
+  // The message's light and its trail.
+  private readonly filament: Points;
+  private readonly filamentMat: ShaderMaterial;
+  private readonly fil = { ndc: [0, 0] as [number, number], depth: 0, world: [0, 0, 0] as Vec3, pulse: 0 };
+  private readonly sparks: Points;
+  private readonly sparkMat: ShaderMaterial;
+  private readonly sparkWorld = new Float64Array(SPARKS * 3);
+  private readonly sparkBirth = new Float32Array(SPARKS).fill(-1e9);
+  private sparkHead = 0;
+  private sparkLast = 0;
+  private sparkAt: Vec3 | null = null;
+  // Dust streaming past the camera.
+  private readonly flow: Points;
+  private readonly flowMat: ShaderMaterial;
+  private readonly flowLocal: Float32Array;
+  private flowL = 0;
+  private prevCam: Vec3 | null = null;
+  private speed = 0;
 
   private raf = 0;
   private last = 0;
@@ -320,7 +355,7 @@ export class CosmosEngine {
         const bv = Math.pow(rnd(), 0.7) * 1.5 - 0.1;
         colors.set(starColor(bv), i * 3);
         seeds[i] = rnd();
-        const m0 = 2.8 + rnd() * 3.4;                                      // apparent magnitude from its own distance
+        const m0 = 5.4 + rnd() * 3.6;                                      // apparent magnitude from its own distance (half show from there)
         absMag[i] = m0 - 5 * Math.log10(r / PC_AU / 10);
       }
     }
@@ -386,6 +421,7 @@ export class CosmosEngine {
         uDay: { value: placeholder(30, 50, 90) }, uNight: { value: placeholder(0, 0, 0) }, uClouds: { value: placeholder(0, 0, 0) },
         uNormal: { value: placeholder(128, 128, 255) }, uSpec: { value: placeholder(0, 0, 0) },
         uSun: { value: new Vector3(1, 0, 0) }, uCentre: { value: new Vector3() }, uCloudShift: { value: 0 }, uExposure: { value: 1 }, uNightLift: { value: 0 },
+        uMoon: { value: new Vector3(1e9, 0, 0) }, uMoonR: { value: MOON_RADIUS_KM / AU_KM },
       },
     });
     const earthMesh = new Mesh(earthGeo, this.earthMat);
@@ -409,7 +445,7 @@ export class CosmosEngine {
     this.world.add(earthMesh, this.clouds, this.atmo);
 
     // ── planets and the Moon ──
-    const planetGeo = sphere(96, 64);
+    const planetGeo = sphere(160, 120);
     const markerPos = new Float32Array(10 * 3);
     const markerCol = new Float32Array(10 * 3);
     this.markerAlpha = new Float32Array(10);
@@ -421,8 +457,8 @@ export class CosmosEngine {
         uniforms: {
           uMap: { value: placeholder(90, 85, 80) }, uSun: { value: new Vector3(1, 0, 0) }, uExposure: { value: 1 }, uAmbient: { value: id === "moon" ? 0.05 : 0.012 },   // the Moon's night side: earthshine
           uHasRing: { value: 0 }, uCentre: { value: new Vector3() }, uRingNormal: { value: new Vector3(0, 0, 1) }, uRingInner: { value: 0 }, uRingOuter: { value: 0 },
-          uRing: { value: placeholder(0, 0, 0) }, uHaze: { value: id === "jupiter" || id === "saturn" ? 0.5 : id === "venus" ? 0.7 : 0 },
-          uHazeColor: { value: id === "venus" ? [0.9, 0.85, 0.7] : [0.75, 0.72, 0.65] },
+          uRing: { value: placeholder(0, 0, 0) }, uHaze: { value: HAZE[id][0] }, uHazeColor: { value: HAZE[id][1] },
+          uCaster: { value: new Vector3(1e9, 0, 0) }, uCasterR: { value: 0 },
         },
       });
       const mesh = isEarth ? earthMesh : new Mesh(planetGeo, mat);
@@ -512,12 +548,58 @@ export class CosmosEngine {
     tg.setAttribute("aS", new BufferAttribute(ts, 1));
     this.trailMat = new ShaderMaterial({
       vertexShader: TRAIL_VERT, fragmentShader: TRAIL_FRAG, transparent: true, depthWrite: false, blending: AdditiveBlending,
-      uniforms: { uOrbits: { value: 0 }, uFade: { value: 0 }, uAlpha: { value: 0.55 }, uColor: { value: [1.0, 0.85, 0.63] } },
+      uniforms: { uOrbits: { value: 0 }, uFade: { value: 0 }, uAlpha: { value: 0.42 }, uColor: { value: AMBER } },
     });
     this.trail = new Line(tg, this.trailMat);
     this.trail.frustumCulled = false;
     this.trail.renderOrder = 3;
     this.world.add(this.trail);
+
+    // ── the message's light: the filament, its sparks, and the dust streaming past ──
+    this.filamentMat = new ShaderMaterial({
+      vertexShader: FILAMENT_VERT, fragmentShader: FILAMENT_FRAG, transparent: true, depthTest: true, depthWrite: false, blending: AdditiveBlending,
+      uniforms: { uPx: { value: 1 }, uSize: { value: 14 }, uColor: { value: [1.0, 0.78, 0.5] }, uAlpha: { value: 1 } },
+    });
+    const fg = new BufferGeometry();
+    fg.setAttribute("position", new BufferAttribute(new Float32Array(3), 3));
+    this.filament = new Points(fg, this.filamentMat);
+    this.filament.frustumCulled = false;
+    this.filament.renderOrder = 8;
+    this.world.add(this.filament);
+    const sg = new BufferGeometry();
+    sg.setAttribute("position", new BufferAttribute(new Float32Array(SPARKS * 3), 3));
+    sg.setAttribute("aAge", new BufferAttribute(new Float32Array(SPARKS).fill(-1), 1));
+    const sseed = new Float32Array(SPARKS);
+    for (let i = 0; i < SPARKS; i++) sseed[i] = Math.abs((Math.sin(i * 7.31) * 1357.17) % 1);
+    sg.setAttribute("aSeed", new BufferAttribute(sseed, 1));
+    this.sparkMat = new ShaderMaterial({
+      vertexShader: SPARK_VERT, fragmentShader: SPARK_FRAG, transparent: true, depthTest: true, depthWrite: false, blending: AdditiveBlending,
+      uniforms: { uPx: { value: 1 }, uLife: { value: SPARK_LIFE }, uColor: { value: [1.0, 0.68, 0.34] } },
+    });
+    this.sparks = new Points(sg, this.sparkMat);
+    this.sparks.frustumCulled = false;
+    this.sparks.renderOrder = 7;
+    this.world.add(this.sparks);
+    const nFlow = opts.lowPower ? 1200 : 2600;
+    this.flowLocal = new Float32Array(nFlow * 3);
+    const fseed = new Float32Array(nFlow);
+    {
+      let seed = 99;
+      const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+      for (let i = 0; i < nFlow * 3; i++) this.flowLocal[i] = rnd() - 0.5;
+      for (let i = 0; i < nFlow; i++) fseed[i] = rnd();
+    }
+    const flg = new BufferGeometry();
+    flg.setAttribute("position", new BufferAttribute(this.flowLocal, 3));
+    flg.setAttribute("aSeed", new BufferAttribute(fseed, 1));
+    this.flowMat = new ShaderMaterial({
+      vertexShader: FLOW_VERT, fragmentShader: FLOW_FRAG, transparent: true, depthTest: true, depthWrite: false, blending: AdditiveBlending,
+      uniforms: { uPx: { value: 1 }, uL: { value: 1 }, uAlpha: { value: 0.3 }, uColor: { value: [0.8, 0.86, 1.0] } },
+    });
+    this.flow = new Points(flg, this.flowMat);
+    this.flow.frustumCulled = false;
+    this.flow.renderOrder = 4;
+    this.world.add(this.flow);
 
     // Reduced motion: sections cut through a fade instead of flying.
     this.veilMat = new ShaderMaterial({
@@ -545,6 +627,27 @@ export class CosmosEngine {
     this.setProgress(s);
     this.smooth = this.opts.reducedMotion ? Math.round(this.target) : this.target;
     this.reduced.shown = Math.round(this.target);
+  }
+
+  /** How far the reader is through the current section's content (0..1): the camera glides a little with it. */
+  setHold(h: number) {
+    this.hold = clamp01(h);
+  }
+
+  /** Where the message's light should settle on screen while the camera stands (NDC), or null to lead the flight. */
+  setAnchor(ndc: [number, number] | null) {
+    this.anchorNdc = ndc;
+  }
+
+  /** Captures: stop the clock, then advance it by hand with step(). */
+  pause() {
+    this.stop();
+  }
+
+  /** Captures: one frame, dt seconds after the last (deterministic motion). */
+  step(dt: number) {
+    if (this.running) return;
+    this.frame(this.last + dt * 1000);
   }
 
   setPointer(nx: number, ny: number) {
@@ -918,7 +1021,11 @@ export class CosmosEngine {
     this.updateEphemeris(orbits);
     const portrait = this.width < this.height;
 
-    const pA = this.camOf(A), pB = this.camOf(B);
+    // The camera never quite stands still: it glides along its orbit of the subject (ISS pace in the hero), and
+    // while the reader is inside a section it slides a little with the scroll — never two screens without motion.
+    const driftLon = this.time * (A.at === 0 ? 0.08 : 0.02) + this.hold * 6;
+    const drift = (k: Key): Key => ({ ...k, dir: { ...k.dir, lon: k.dir.lon + driftLon }, dist: k.dist * (k.at === 0 ? 1 + 0.12 * this.hold : 1) });
+    const pA = this.camOf(drift(A)), pB = this.camOf(drift(B));
     const L = vlen(vsub(pB, pA));
     const w = L < 1e-12 ? u : bilog(u, A.dist / L, B.dist / L);
     const cam = lerp3(pA, pB, w);
@@ -940,6 +1047,7 @@ export class CosmosEngine {
     if (this.running) this.raf = requestAnimationFrame(this.frame);
     const dt = Math.min(0.1, Math.max(0.001, (now - this.last) / 1000));
     this.last = now;
+    this.lastDt = dt;
     this.time += this.opts.reducedMotion ? dt * 0.3 : dt;
     this.measure(dt);
 
@@ -1095,14 +1203,32 @@ export class CosmosEngine {
       mesh.scale.set(b.radius, b.radius * (1 - b.flat), b.radius);
       // Orientation: local +y is the pole; Greenwich (local +x) for the Earth, else the pole only.
       const axis = b.axis;
-      const east = b.id === "earth" ? greenwichDirection(this.earthJd) : orthoUp([1, 0, 0], axis);
+      let east = b.id === "earth" ? greenwichDirection(J2000) : orthoUp([1, 0, 0], axis);
+      if (b.id === "earth") {
+        // A visible turn on screen (one in four minutes): the real day would read as a still, so the turn
+        // starts from a chosen face rather than the hour's.
+        const spin = ((this.opts.spin0 ?? EARTH_SPIN0) * Math.PI) / 180 + (this.time * 2 * Math.PI) / EARTH_SPIN_S;
+        const r = v3(east).applyQuaternion(new Quaternion().setFromAxisAngle(v3(axis), spin));
+        east = [r.x, r.y, r.z];
+      }
       const z = vcross(east, axis);
       mesh.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(v3(east), v3(axis), v3(z)));
       mesh.visible = px > 0.35 && dist > b.radius * 1.001;
       mesh.updateMatrixWorld();
-      const sunDir = vnorm(vscale(b.pos, -1));
+      let sunDir = vnorm(vscale(b.pos, -1));
+      if (b.id === "moon") {
+        // Lift-off is a hero moment, not a textbook: near the Moon a fill light from the camera's side keeps its face lit.
+        const fill = smoothstep(0.25, 0.6, this.smooth) * (1 - smoothstep(1.2, 1.7, this.smooth));
+        if (fill > 0) sunDir = vnorm(vadd(sunDir, vscale(vnorm(vscale(rel, -1)), 1.4 * fill)));
+      }
       const u = b.mat.uniforms;
       u.uSun.value.set(sunDir[0], sunDir[1], sunDir[2]);
+      if (b.id === "moon") {
+        // The Earth's shadow on the Moon (lunar eclipses), body-centred.
+        const c = vsub(this.earth.pos, b.pos);
+        u.uCaster.value.set(c[0], c[1], c[2]);
+        u.uCasterR.value = this.earth.radius;
+      }
       u.uExposure.value = exposure;
       if (b.id !== "earth") u.uCentre.value.set(rel[0], rel[1], rel[2]);
       if (b.ring && b.ringMat) {
@@ -1135,7 +1261,13 @@ export class CosmosEngine {
     const epx = (e.radius / edist) / pxAngle;
     const eSun = vnorm(vscale(e.pos, -1));
     this.earthMat.uniforms.uCentre.value.set(erel[0], erel[1], erel[2]);
-    this.earthMat.uniforms.uCloudShift.value = (this.time * 0.00002) % 1;
+    this.earthMat.uniforms.uCloudShift.value = (this.time * CLOUD_DRIFT) % 1;
+    {
+      // The Moon's shadow on the Earth (solar eclipses), Earth-centred.
+      const moon = this.bodies.find((b) => b.id === "moon")!;
+      const m = vsub(moon.pos, e.pos);
+      this.earthMat.uniforms.uMoon.value.set(m[0], m[1], m[2]);
+    }
     this.earthMat.uniforms.uNightLift.value = 0.2;
     this.cloudsMat.uniforms.uSun.value.set(eSun[0], eSun[1], eSun[2]);
     this.cloudsMat.uniforms.uCloudShift.value = this.earthMat.uniforms.uCloudShift.value;
@@ -1180,6 +1312,8 @@ export class CosmosEngine {
     this.trail.visible = this.trailMat.uniforms.uFade.value > 0.002;
     this.trail.position.set(-p.cam[0], -p.cam[1], -p.cam[2]);
 
+    this.updateLights(p, q, tx, ty, pxAngle);
+
     // ── draw ──
     r.setRenderTarget(null);
     r.clear();
@@ -1188,6 +1322,87 @@ export class CosmosEngine {
     r.clearDepth();
     r.render(this.world, cam);
     if (this.veilMat.uniforms.uA.value > 0.001) r.render(this.veilScene, this.quadCam);
+  }
+
+  /**
+   * The message's light: a point of amber that flies a little ahead of the
+   * camera, leaves sparks behind (each fading on its own, so the trail is
+   * particles, not a line), and at a stop settles where the sample text
+   * begins and pulses. And the dust: motes in a cube around the camera,
+   * moved against its motion and wrapped, so every flight has depth.
+   */
+  private updateLights(p: Pose, q: Quaternion, tx: number, ty: number, pxAngle: number) {
+    const dt = Math.max(1e-3, this.lastDt);
+    const moved = this.prevCam ? vsub(p.cam, this.prevCam) : [0, 0, 0] as Vec3;
+    const v = vlen(moved) / dt;                          // au per second
+    this.speed += (v - this.speed) * (1 - Math.exp(-dt / 0.25));
+    // The local scale: how far the nearest body is.
+    let nearD = vlen(p.cam);
+    for (const b of this.bodies) nearD = Math.min(nearD, vlen(vsub(b.pos, p.cam)));
+    const portrait = this.width < this.height;
+
+    // ── the filament ──
+    const f = this.fil;
+    const settled = Math.abs(this.target - this.smooth) < 1e-3;
+    const want: [number, number] = this.anchorNdc && settled ? this.anchorNdc : portrait ? [0.02, -0.28] : [-0.1, -0.24];
+    const k = 1 - Math.exp(-dt / 0.7);
+    f.ndc[0] += (want[0] - f.ndc[0]) * k;
+    f.ndc[1] += (want[1] - f.ndc[1]) * k;
+    const wantDepth = Math.max(this.speed * 2.5, 0.015 * nearD);
+    f.depth = f.depth <= 0 ? wantDepth : Math.exp(Math.log(f.depth) + (Math.log(wantDepth) - Math.log(f.depth)) * (1 - Math.exp(-dt / 0.8)));
+    const ref = portrait ? 9 / 16 : 16 / 9;
+    const d = new Vector3(f.ndc[0] * (ref / this.camera.aspect) * tx, f.ndc[1] * ty, -1).normalize().applyQuaternion(q);
+    f.world = vadd(p.cam, vscale([d.x, d.y, d.z], f.depth));
+    const relF = vsub(f.world, p.cam);
+    (this.filament.geometry.attributes.position as BufferAttribute).setXYZ(0, relF[0], relF[1], relF[2]);
+    (this.filament.geometry.attributes.position as BufferAttribute).needsUpdate = true;
+    const still = 1 - smoothstep(0.002, 0.02, this.speed / Math.max(nearD, 1e-12));
+    f.pulse = still;
+    const beat = 1 + 0.35 * still * (0.5 + 0.5 * Math.sin(this.time * (2 * Math.PI / 1.7)));
+    this.filamentMat.uniforms.uSize.value = 17 * beat;
+    this.filamentMat.uniforms.uAlpha.value = (0.85 + 0.15 * still) * p.dim;
+    this.filamentMat.uniforms.uPx.value = this.sparkMat.uniforms.uPx.value = this.flowMat.uniforms.uPx.value = this.markerMat.uniforms.uPx.value;
+
+    // ── the sparks: one left behind every so often along the path (by distance flown, so the trail is even) ──
+    const since = this.sparkAt ? vlen(vsub(f.world, this.sparkAt)) : Infinity;
+    if (since > 0.012 * nearD && this.time - this.sparkLast > 0.03) {
+      this.sparkLast = this.time;
+      this.sparkAt = f.world;
+      const i = this.sparkHead;
+      this.sparkHead = (i + 1) % SPARKS;
+      const jitter = f.depth * 0.05;
+      const r1 = Math.sin(i * 12.9898) * 0.5, r2 = Math.sin(i * 78.233) * 0.5, r3 = Math.sin(i * 37.719) * 0.5;
+      this.sparkWorld[i * 3] = f.world[0] + r1 * jitter;
+      this.sparkWorld[i * 3 + 1] = f.world[1] + r2 * jitter;
+      this.sparkWorld[i * 3 + 2] = f.world[2] + r3 * jitter;
+      this.sparkBirth[i] = this.time;
+    }
+    const spos = this.sparks.geometry.attributes.position as BufferAttribute;
+    const sage = this.sparks.geometry.attributes.aAge as BufferAttribute;
+    for (let i = 0; i < SPARKS; i++) {
+      const age = this.time - this.sparkBirth[i];
+      sage.setX(i, age > SPARK_LIFE ? -1 : age);
+      if (age <= SPARK_LIFE) spos.setXYZ(i, this.sparkWorld[i * 3] - p.cam[0], this.sparkWorld[i * 3 + 1] - p.cam[1], this.sparkWorld[i * 3 + 2] - p.cam[2]);
+    }
+    spos.needsUpdate = sage.needsUpdate = true;
+
+    // ── the dust ──
+    const wantL = Math.max(this.speed * 4, 0.3 * nearD);
+    this.flowL = this.flowL <= 0 ? wantL : Math.exp(Math.log(this.flowL) + (Math.log(wantL) - Math.log(this.flowL)) * (1 - Math.exp(-dt / 1.2)));
+    const L = this.flowL;
+    const loc = this.flowLocal;
+    const dx = moved[0] / L, dy = moved[1] / L, dz = moved[2] / L;
+    const wrap = (x: number) => x - Math.floor(x + 0.5);
+    for (let i = 0; i < loc.length; i += 3) {
+      loc[i] = wrap(loc[i] - dx);
+      loc[i + 1] = wrap(loc[i + 1] - dy);
+      loc[i + 2] = wrap(loc[i + 2] - dz);
+    }
+    (this.flow.geometry.attributes.position as BufferAttribute).needsUpdate = true;
+    this.flowMat.uniforms.uL.value = L;
+    this.flowMat.uniforms.uAlpha.value = 0.6 * p.dim;
+    void pxAngle;
+    this.prevCam = p.cam;
   }
 }
 

@@ -21,6 +21,7 @@ varying vec2 vUv; varying vec3 vN; varying vec3 vWorld;
 uniform sampler2D uMap; uniform vec3 uSun; uniform float uExposure; uniform float uAmbient;
 uniform float uHasRing; uniform vec3 uCentre; uniform vec3 uRingNormal; uniform float uRingInner; uniform float uRingOuter; uniform sampler2D uRing;
 uniform float uHaze; uniform vec3 uHazeColor;
+uniform vec3 uCaster; uniform float uCasterR;   // another body that can shadow this one (body-centred), e.g. the Earth over the Moon
 ${LOGDEPTH_FRAG_PARS}
 ${TONEMAP}
 void main(){
@@ -31,7 +32,8 @@ void main(){
   vec3 albedo = texture2D(uMap, vUv).rgb;
   float ndl = dot(N, L);
   float lit = max(ndl, 0.0);
-  float soft = smoothstep(-0.12, 0.2, ndl);
+  // A crisp terminator with a short soft band.
+  float soft = smoothstep(-0.03, 0.12, ndl);
   // The rings' shadow on the planet: walk from the surface toward the Sun to
   // the ring plane and read the ring's density there.
   float shade = 1.0;
@@ -50,10 +52,20 @@ void main(){
       }
     }
   }
-  vec3 col = albedo * (lit * 1.1 * shade * soft + uAmbient);
-  // Thin haze on gas giants: brighter limb toward the Sun.
-  float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-  col += uHazeColor * fres * uHaze * soft * (0.4 + 0.6 * lit);
+  // The caster's shadow (eclipse): the ray toward the Sun passes through it.
+  if (uCasterR > 0.0) {
+    vec3 p = vWorld - uCentre;
+    vec3 cp = uCaster - p;
+    float bc = dot(cp, L);
+    if (bc > 0.0) {
+      float dc2 = dot(cp, cp) - bc * bc;
+      shade *= 1.0 - 0.92 * smoothstep(uCasterR * uCasterR, uCasterR * uCasterR * 0.8, dc2);
+    }
+  }
+  vec3 col = albedo * (lit * 1.15 * shade * soft + uAmbient);
+  // The atmosphere's rim in the planet's own colour: thin, brightest where the limb faces the Sun.
+  float fres = pow(1.0 - max(dot(N, V), 0.0), 5.0);
+  col += uHazeColor * fres * uHaze * soft * (0.5 + 0.7 * lit);
   gl_FragColor = vec4(tonemap(col * uExposure), 1.0);
   ${OUTPUT}
 }`;

@@ -106,11 +106,11 @@ export const indexOf = (id: WaypointId) => WAYPOINTS.indexOf(id);
 // Tempo slows with the year; the Galaxy is the slowest.
 export const KEYS: Key[] = [
   { at: 0, label: "Hero · Země z oběžné dráhy", anchor: "earth", dist: 3.6 * R, dir: { frame: "bodySun", lat: 12, lon: 112 }, look: { at: "earth" },
-    offset: [0.5, -0.08], offsetPhone: [0.1, -0.5], up: "pole", orbits: 0, dim: 1, stars: 0.55 },
+    offset: [0.5, -0.08], offsetPhone: [0.1, -0.5], up: "pole", orbits: 0, dim: 1, stars: 0.4 },
   { at: 0.5, label: "Průlet · Měsíc", anchor: "moon", dist: PASS * MOON_R, dir: { frame: "bodySun", lat: 16, lon: 38 }, look: { at: "moon" },
-    offset: [0.26, -0.08], offsetPhone: [0, 0.22], up: "ecliptic", orbits: 0, dim: 1, stars: 0.7 },
-  { at: 1, label: "Odlet · Měsíc v popředí, Země za ním", anchor: "moon", dist: 9 * MOON_R, dir: { frame: "earthMoon", lat: 20, lon: 28 }, look: { at: "earthNow" },
-    offset: [0.14, 0.1], offsetPhone: [-0.1, 0.3], up: "ecliptic", orbits: 0, dim: 1, stars: 0.8 },
+    offset: [0.26, -0.08], offsetPhone: [0, 0.22], up: "ecliptic", orbits: 0, dim: 1, stars: 0.5 },
+  { at: 1, label: "Odlet · Měsíc v popředí, Země za ním", anchor: "moon", dist: 11 * MOON_R, dir: { frame: "earthMoon", lat: 6, lon: 22 }, look: { at: "earthNow" },
+    offset: [-0.02, 0.1], offsetPhone: [-0.2, 0.3], up: "ecliptic", orbits: 0, dim: 1, stars: 0.55 },
   { at: 2, label: "2032 · 6 oběhů", anchor: "earthNow", dist: 0.7, dir: { frame: "bodySun", lat: 40, lon: 96 }, look: { at: "earthNow" },
     offset: [0.08, -0.34], offsetPhone: [0, -0.46], up: "ecliptic", orbits: 6, trail: true, dim: 1, stars: 0.9 },
   { at: 2.5, label: "Průlet · Mars", anchor: "mars", dist: PASS * radius("mars"), dir: { frame: "bodySun", lat: 12, lon: 44 }, look: { at: "mars" },
@@ -198,6 +198,21 @@ export function progressAt(marks: WaypointMark[], y: number): number {
     }
   }
   return n - 1;
+}
+
+/** How far the reading line is through the current section's content (0..1); 0 while flying. */
+export function holdAt(marks: WaypointMark[], y: number): number {
+  const n = marks.length;
+  if (n === 0 || y <= marks[0].top) return 0;
+  for (let i = 0; i < n; i++) {
+    const next = i + 1 < n ? marks[i + 1].top : Infinity;
+    if (y < next) {
+      const legStart = Math.min(marks[i].legStart, next);
+      if (y > legStart) return 0;
+      return clamp01((y - marks[i].top) / Math.max(1, legStart - marks[i].top));
+    }
+  }
+  return 0;
 }
 
 /** The inverse: the reading position that puts the camera at progress s (used by the capture scripts). */

@@ -30,6 +30,7 @@ uniform vec3 uSun;          // unit, from the Earth toward the Sun
 uniform vec3 uCentre;       // the Earth's centre (camera-relative)
 uniform float uCloudShift;  // clouds drift east over time (uv units)
 uniform float uExposure; uniform float uNightLift;
+uniform vec3 uMoon; uniform float uMoonR;   // the Moon, Earth-centred: its shadow when the geometry allows (a solar eclipse)
 ${LOGDEPTH_FRAG_PARS}
 ${TONEMAP}
 void main(){
@@ -39,6 +40,15 @@ void main(){
   vec3 L = normalize(uSun);
   vec3 T = normalize(vT - N * dot(vT, N));
   vec3 B = cross(N, T);
+  float eclipse = 1.0;
+  {
+    vec3 mp = uMoon - (vWorld - uCentre);
+    float bm = dot(mp, L);
+    if (bm > 0.0) {
+      float dm2 = dot(mp, mp) - bm * bm;
+      eclipse = 1.0 - 0.9 * smoothstep(uMoonR * uMoonR * 1.6, uMoonR * uMoonR * 0.5, dm2);
+    }
+  }
 
   vec3 day = texture2D(uDay, vUv).rgb;
   vec3 night = texture2D(uNight, vUv).rgb;
@@ -60,7 +70,7 @@ void main(){
   vec2 cuv = vec2(vUv.x + uCloudShift, vUv.y);
   float cloudHere = texture2D(uClouds, cuv).r;
   float shadow = texture2D(uClouds, cuv - lt * vec2(0.0045, 0.0045) / max(ndl, 0.12)).r;
-  float cloudShadow = 1.0 - 0.55 * shadow * lit;
+  float cloudShadow = (1.0 - 0.55 * shadow * lit) * eclipse;
 
   // Ocean glint: a tight highlight and a broad sheen, water only.
   vec3 H = normalize(L + V);

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useAtmosphere } from "../atmosphere";
 import { loadCatalog } from "./catalog";
-import { progressAt, scrollForProgress, READING_LINE, JOURNEY, type WaypointMark } from "./journey";
+import { progressAt, scrollForProgress, holdAt, READING_LINE, JOURNEY, STOP_YEARS, type WaypointMark } from "./journey";
 import type { CosmosEngine } from "./engine";
 
 // The fixed scene behind the landing. The Earth shows at once as a still —
@@ -28,7 +28,7 @@ const STILL_OF: Record<string, (typeof STILLS)[number]> = {
 
 declare global {
   interface Window {
-    __cosmos?: { engine: CosmosEngine; setProgress: (s: number) => void; scrollTo: (s: number) => void; setScroll: (y: number) => void; pageEnd: () => number };
+    __cosmos?: { engine: CosmosEngine; setProgress: (s: number) => void; scrollTo: (s: number) => void; setScroll: (y: number) => void; step: (dt: number) => void; pageEnd: () => number };
   }
 }
 
@@ -60,14 +60,39 @@ export function CosmosStage() {
     const cleanups: (() => void)[] = [];
 
     let marks: WaypointMark[] = [];
+    let waypoints: HTMLElement[] = [];
     const measure = () => {
-      marks = Array.from(document.querySelectorAll<HTMLElement>("[data-waypoint]")).map((el) => {
+      waypoints = Array.from(document.querySelectorAll<HTMLElement>("[data-waypoint]"));
+      marks = waypoints.map((el) => {
         const r = el.getBoundingClientRect();
         const leg = el.querySelector<HTMLElement>(":scope > [data-leg]");
         return { top: r.top + window.scrollY, legStart: (leg ? leg.getBoundingClientRect().top : r.bottom) + window.scrollY };
       });
     };
-    const progress = () => progressAt(marks, window.scrollY + window.innerHeight * READING_LINE);
+    const readingY = () => window.scrollY + window.innerHeight * READING_LINE;
+    const progress = () => progressAt(marks, readingY());
+    // At a stop the message's light settles where the sample's words begin (just left of the quote's first line).
+    const anchorFor = (s: number): [number, number] | null => {
+      if (!Number.isInteger(s)) return null;
+      const el = waypoints[s];
+      if (!el || !(el.dataset.waypoint! in STOP_YEARS)) return null;
+      const quote = el.querySelector<HTMLElement>(".l-stop__quote");
+      if (!quote) return null;
+      const r = quote.getBoundingClientRect();
+      const portrait = window.innerWidth < window.innerHeight;
+      const x = portrait ? r.left + r.width / 2 : r.left - 22;
+      const y = portrait ? r.top - 26 : r.top + 18;
+      // NDC in the engine's reference frame (16:9 landscape, 9:16 portrait): the scene is fitted to the height.
+      const ref = portrait ? 9 / 16 : 16 / 9;
+      const nx = ((x / window.innerWidth) * 2 - 1) * ((window.innerWidth / window.innerHeight) / ref);
+      return [nx, 1 - (y / window.innerHeight) * 2];
+    };
+    const apply = (engine: CosmosEngine, s: number) => {
+      engine.setProgress(s);
+      engine.setHold(holdAt(marks, readingY()));
+      engine.setAnchor(anchorFor(s));
+      setStill(stillFor(s));
+    };
     const stillFor = (s: number) => STILL_OF[JOURNEY[Math.min(JOURNEY.length - 1, Math.round(s))].id] ?? "earth";
 
     const boot = async () => {
@@ -77,6 +102,7 @@ export function CosmosStage() {
       const engine = CosmosEngine.create({
         canvas, catalog, atmosphere: atmosphereRef.current, reducedMotion, lowPower: memory <= 3,
         baseJd: jdParam ? Number(jdParam) : undefined,
+        spin0: params.has("spin") ? Number(params.get("spin")) : undefined,
         onReady: () => !disposed && setState("live"),
         onContextLost: () => !disposed && setState("fallback"),
       });
@@ -95,26 +121,28 @@ export function CosmosStage() {
           scrollTo: (s) => {
             measure();
             window.scrollTo(0, Math.max(0, scrollForProgress(marks, s) - window.innerHeight * READING_LINE));
+            apply(engine, s);
             engine.jumpTo(s);
-            setStill(stillFor(s));
           },
           setScroll: (y) => {
             measure();
             window.scrollTo(0, y);
             const s = progress();
+            apply(engine, s);
             engine.jumpTo(s);
-            setStill(stillFor(s));
+          },
+          // Deterministic time for the ride videos: the clock stops, each frame advances it by dt.
+          step: (dt) => {
+            engine.pause();
+            engine.step(dt);
           },
           pageEnd: () => { measure(); return marks.length - 1; },
         };
         engine.jumpTo(Number(params.get("t") ?? 0));
       } else {
         engine.jumpTo(progress());
-        const onScroll = () => {
-          const s = progress();
-          engine.setProgress(s);
-          setStill(stillFor(s));
-        };
+        apply(engine, progress());
+        const onScroll = () => apply(engine, progress());
         window.addEventListener("scroll", onScroll, { passive: true });
         cleanups.push(() => window.removeEventListener("scroll", onScroll));
       }
@@ -122,7 +150,7 @@ export function CosmosStage() {
       const ro = new ResizeObserver(() => {
         engine.resize();
         measure();
-        if (!capture) engine.setProgress(progress());
+        if (!capture) apply(engine, progress());
       });
       ro.observe(canvas);
       ro.observe(document.body);

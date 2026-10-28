@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.66.0] - Web v3 „Oběhy“, milník M1: scéna dýchá
+Choreografie z M0 schválená; M1 oživuje scénu. Hero: Země se viditelně otáčí (jedna otočka za 4 minuty, start nad Evropou v noci s úsvitem na okraji), oblaka plynou jinou rychlostí než povrch, kamera velmi pomalu klouže po dráze a při scrollu přes formulář klouže dál. Světlo: ostrý terminátor s krátkým měkkým přechodem na všech planetách, tenký fresnel v barvě planety (Mars, Uran, Neptun, Venuše, obři), stín Saturnu na prstencích a prstenců na Saturnu, stín Měsíce na Zemi a Země na Měsíci, když to geometrie dovolí (zatmění). Světelné vlákno zprávy: jantarový bod letí jízdou lehce před kamerou, zanechává stopu částic (každá slábne sama), u zastávky se usadí vedle ukázky, pulzuje a text z něj vyteče (scroll-driven odhalení). Prach proudící kolem kamery dává každému přeletu hloubku. Měsíc při odletu dostává přisvícení od kamery (hero moment, ne učebnice).
+
+### Přidáno
+- `shaders/light.ts` — vlákno, jiskry (atribut stáří) a prach (jednotková krychle kolem kamery, posouvaná proti jejímu pohybu a zabalovaná).
+- `engine.ts` — `setHold` (posun v sekci → klouzání kamery), `setAnchor` (kam se vlákno usadí), `pause`/`step` (deterministický čas pro videa); stíny mezi tělesy (`uCaster`, `uMoon`); rotace Země na obrazovce a drift oblaků.
+- `journey.ts` — `holdAt`; `CosmosStage` měří pozici ukázky u zastávek a předává ji scéně.
+- `landing.css` — ukázka u zastávky se odhaluje zleva s view timeline (`@supports (animation-timeline: view())`), jinak je prostě vidět.
+
+### Změněno
+- Hluboké hvězdné pole slabší (polovina hvězd viditelná ze své vzdálenosti), v hero méně hvězd; stopa oběhů tlumenější, aby zůstala jantarová; koule planet jemnější (160×120).
+
 ## [1.65.0] - Web v3 „Oběhy“, milník M0 podruhé: jízda jedním směrem ven
 Choreografie kamery předělaná podle připomínek: kamera nikdy nekrouží kolem jednoho objektu, letí jedním směrem ven a mezi každými dvěma body trasy mine něco nového. Trasa: Země zblízka → odlet, Měsíc projde (zblízka, osvětlená strana) → 2032 u Země s prvními oběhy → Mars → 2044 → Jupiter → 2051 → Saturn s prstenci → Uran → Neptun → 2070 na okraji soustavy (62 au, celá soustava pod kamerou) → Slunce se stává hvězdou → let hvězdami jedním směrem (ke galaktickému severu) → Galaxie shora → otočka a návrat k modré tečce. Každá míjená planeta vyplní nejméně třetinu výšky obrazovky (5,5 poloměru). Oběhy jsou stopa za Zemí viditelná jen u zastávek. Typografie všech sekcí podle sekce 4 briefu.
 
