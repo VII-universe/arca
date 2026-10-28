@@ -76,18 +76,14 @@ export interface JourneySection {
 const R = EARTH_RADIUS_AU;
 const MOON_R = MOON_RADIUS_KM / AU_KM;
 const radius = (id: "mars" | "jupiter" | "saturn" | "uranus" | "neptune") => PLANET_BY_ID[id].radiusKm / AU_KM;
-/** A planet fills a third of the screen (its disc ~23° tall at a 50° field) from this many radii. */
-const PASS = 5.5;
-/** The flight ray out of the system: toward galactic north, leaning to the centre — it ends above the disc, the Sun low. */
-const RAY: Direction = { frame: "galactic", lat: 78, lon: 348 };
 
 export const JOURNEY: JourneySection[] = [
   { id: "hero", leg: 170, legPhone: 150 },
-  { id: "liftoff", leg: 170, legPhone: 150 },
-  { id: "y2032", leg: 260, legPhone: 220 },
-  { id: "y2044", leg: 260, legPhone: 220 },
-  { id: "y2051", leg: 340, legPhone: 300 },
-  { id: "y2070", leg: 120, legPhone: 100 },
+  { id: "liftoff", leg: 200, legPhone: 170 },
+  { id: "y2032", leg: 200, legPhone: 170 },
+  { id: "y2044", leg: 200, legPhone: 170 },
+  { id: "y2051", leg: 260, legPhone: 220 },
+  { id: "y2070", leg: 160, legPhone: 140 },
   { id: "forWhom", leg: 90, legPhone: 80 },
   { id: "how", leg: 90, legPhone: 80 },
   { id: "guardians", leg: 90, legPhone: 80 },
@@ -103,51 +99,64 @@ export const JOURNEY: JourneySection[] = [
 export const WAYPOINTS = JOURNEY.map((s) => s.id);
 export const indexOf = (id: WaypointId) => WAYPOINTS.indexOf(id);
 
+/**
+ * The planets are arranged on the flight line: each at its real distance
+ * from the Sun, on its real orbit, but at a heliocentric longitude a few
+ * degrees to one side or the other of the Earth's — so the camera flies one
+ * straight way out and passes them on alternating sides. (Their longitudes
+ * of the day would ask for turns of 100–150° between Jupiter, Saturn, Uranus
+ * and Neptune.) Degrees east of the Earth; the stops alternate text sides.
+ */
+export const ARRANGED_LON: Record<"mars" | "jupiter" | "saturn" | "uranus" | "neptune", number> = {
+  mars: 7, jupiter: -7, saturn: 7, uranus: -7, neptune: 7,
+};
+/** The Moon's place in the Earth's noon frame (lat, lon): a gibbous Moon over the night side, the same every day. */
+export const MOON_DIR: Direction = { frame: "bodySun", lat: -6, lon: 228 };
+
+/** Stops: which side the planet is on (the text takes the other). */
+export const STOP_SIDE: Record<"y2032" | "y2044" | "y2051" | "y2070", "left" | "right"> = { y2032: "right", y2044: "left", y2051: "right", y2070: "left" };
+
+// A stop's planet fills about half the screen's height (4.6 radii at a 50° field); fly-bys the same.
+const NEAR = 4.6;
+/** Where the finale flies: away from the Sun along the Earth's outward line, bending down toward the Galaxy's south pole so the disc is seen from outside. */
+const OUT = (lat: number, lon: number): Direction => ({ frame: "galactic", lat, lon });
+
 // Tempo slows with the year; the Galaxy is the slowest.
 export const KEYS: Key[] = [
   { at: 0, label: "Hero · Země z oběžné dráhy", anchor: "earth", dist: 3.6 * R, dir: { frame: "bodySun", lat: 12, lon: 112 }, look: { at: "earth" },
     offset: [0.5, -0.08], offsetPhone: [0.1, -0.5], up: "pole", orbits: 0, dim: 1, stars: 0.4 },
-  { at: 0.5, label: "Průlet · Měsíc", anchor: "moon", dist: PASS * MOON_R, dir: { frame: "bodySun", lat: 16, lon: 38 }, look: { at: "moon" },
-    offset: [0.26, -0.08], offsetPhone: [0, 0.22], up: "ecliptic", orbits: 0, dim: 1, stars: 0.5 },
-  { at: 1, label: "Odlet · Měsíc v popředí, Země za ním", anchor: "moon", dist: 11 * MOON_R, dir: { frame: "earthMoon", lat: 6, lon: 22 }, look: { at: "earthNow" },
-    offset: [-0.02, 0.1], offsetPhone: [-0.2, 0.3], up: "ecliptic", orbits: 0, dim: 1, stars: 0.55 },
-  { at: 2, label: "2032 · 6 oběhů", anchor: "earthNow", dist: 0.7, dir: { frame: "bodySun", lat: 40, lon: 96 }, look: { at: "earthNow" },
-    offset: [0.08, -0.34], offsetPhone: [0, -0.46], up: "ecliptic", orbits: 6, trail: true, dim: 1, stars: 0.9 },
-  { at: 2.5, label: "Průlet · Mars", anchor: "mars", dist: PASS * radius("mars"), dir: { frame: "bodySun", lat: 12, lon: 44 }, look: { at: "mars" },
-    offset: [0.28, 0], offsetPhone: [0, 0.26], up: "ecliptic", orbits: 6, dim: 1, stars: 0.9 },
-  { at: 3, label: "2044 · 18 oběhů", anchor: "sun", dist: 2.7, dir: { frame: "ecliptic", lat: 42, lon: 112 }, look: { at: "earthNow" },
-    offset: [0.1, -0.3], offsetPhone: [0, -0.45], up: "ecliptic", orbits: 18, trail: true, dim: 1, stars: 0.9 },
-  { at: 3.5, label: "Průlet · Jupiter", anchor: "jupiter", dist: PASS * radius("jupiter"), dir: { frame: "bodySun", lat: 8, lon: 50 }, look: { at: "jupiter" },
-    offset: [-0.26, 0.04], offsetPhone: [0, 0.26], up: "ecliptic", orbits: 18, dim: 1, stars: 0.9 },
-  { at: 4, label: "2051 · 25 oběhů", anchor: "sun", dist: 5.2, dir: { frame: "ecliptic", lat: 40, lon: 75 }, look: { at: "earthNow" },
-    offset: [0.1, -0.3], offsetPhone: [0, -0.45], up: "ecliptic", orbits: 25, trail: true, dim: 1, stars: 0.9 },
-  { at: 4.4, label: "Průlet · Saturn", anchor: "saturn", dist: PASS * radius("saturn"), dir: { frame: "bodySun", lat: 24, lon: 55 }, look: { at: "saturn" },
-    offset: [0.22, -0.04], offsetPhone: [0, 0.24], up: "ecliptic", orbits: 25, dim: 1, stars: 0.9 },
-  { at: 4.65, label: "Průlet · Uran", anchor: "uranus", dist: PASS * radius("uranus"), dir: { frame: "bodySun", lat: 10, lon: 40 }, look: { at: "uranus" },
-    offset: [-0.3, 0.05], offsetPhone: [0, 0.26], up: "ecliptic", orbits: 25, dim: 1, stars: 0.9 },
-  { at: 4.85, label: "Průlet · Neptun", anchor: "neptune", dist: PASS * radius("neptune"), dir: { frame: "bodySun", lat: 14, lon: 45 }, look: { at: "neptune" },
-    offset: [0.3, 0], offsetPhone: [0, 0.26], up: "ecliptic", orbits: 25, dim: 1, stars: 0.9 },
-  { at: 5, label: "2070 · 44 oběhů · okraj soustavy", anchor: "sun", dist: 62, dir: { frame: "ecliptic", lat: 56, lon: 40 }, look: { at: "sun" },
-    offset: [0, -0.28], offsetPhone: [0, -0.42], up: "ecliptic", orbits: 44, trail: true, dim: 1, stars: 0.9 },
-  { at: 6, label: "Pro koho · Slunce se stává hvězdou", anchor: "sun", dist: 1800, dir: RAY, look: { at: "sun" },
+  { at: 1, label: "Odlet · Měsíc", anchor: "moon", dist: 5.2 * MOON_R, dir: { frame: "bodySun", lat: 10, lon: 69 }, look: { at: "moon" },
+    offset: [-0.42, -0.04], offsetPhone: [0, 0.32], up: "ecliptic", orbits: 0, dim: 1, stars: 0.55 },
+  { at: 2, label: "2032 · Mars · 6 oběhů", anchor: "mars", dist: NEAR * radius("mars"), dir: { frame: "bodySun", lat: 8, lon: 26 }, look: { at: "mars" },
+    offset: [0.46, -0.08], offsetPhone: [0, -0.48], up: "ecliptic", orbits: 6, trail: true, dim: 1, stars: 0.8 },
+  { at: 3, label: "2044 · Jupiter · 18 oběhů", anchor: "jupiter", dist: NEAR * radius("jupiter"), dir: { frame: "bodySun", lat: 8, lon: -26 }, look: { at: "jupiter" },
+    offset: [-0.46, -0.08], offsetPhone: [0, -0.48], up: "ecliptic", orbits: 18, trail: true, dim: 1, stars: 0.8 },
+  { at: 4, label: "2051 · Saturn · 25 oběhů", anchor: "saturn", dist: 5.6 * radius("saturn"), dir: { frame: "bodySun", lat: 20, lon: 28 }, look: { at: "saturn" },
+    offset: [0.42, -0.08], offsetPhone: [0, -0.46], up: "ecliptic", orbits: 25, trail: true, dim: 1, stars: 0.8 },
+  { at: 4.55, label: "Průlet · Uran", anchor: "uranus", dist: NEAR * radius("uranus"), dir: { frame: "bodySun", lat: 6, lon: -24 }, look: { at: "uranus" },
+    offset: [-0.34, 0.04], offsetPhone: [0, 0.3], up: "ecliptic", orbits: 25, dim: 1, stars: 0.85 },
+  { at: 5, label: "2070 · Neptun · 44 oběhů", anchor: "neptune", dist: NEAR * radius("neptune"), dir: { frame: "bodySun", lat: 8, lon: -26 }, look: { at: "neptune" },
+    offset: [-0.46, -0.08], offsetPhone: [0, -0.48], up: "ecliptic", orbits: 44, trail: true, dim: 1, stars: 0.85 },
+  // The finale: out of the system, the Sun behind becoming a star; one way, no turning back until the Galaxy.
+  { at: 6, label: "Pro koho · Slunce se stává hvězdou", anchor: "sun", dist: 1800, dir: OUT(-36, 140), look: { at: "sun" },
     offset: [-0.35, 0.15], offsetPhone: [0, 0.35], up: "centre", orbits: 44, dim: 1, stars: 1 },
-  { at: 7, label: "Jak to funguje · let hvězdami", anchor: "sun", dist: 3 * LY_AU, dir: RAY, look: RAY,
+  { at: 7, label: "Jak to funguje · let hvězdami", anchor: "sun", dist: 3 * LY_AU, dir: OUT(-42, 142), look: { at: "sun" },
     offset: [0.3, 0.1], offsetPhone: [0, 0.3], up: "centre", orbits: 44, dim: 1, stars: 1 },
-  { at: 8, label: "Strážci · 40 světelných let", anchor: "sun", dist: 40 * LY_AU, dir: RAY, look: RAY,
+  { at: 8, label: "Strážci · 40 světelných let", anchor: "sun", dist: 40 * LY_AU, dir: OUT(-48, 144), look: { at: "sun" },
     offset: [-0.3, 0], offsetPhone: [0, 0.3], up: "centre", orbits: 44, dim: 1, stars: 1 },
-  { at: 9, label: "Některá slova · 400 světelných let", anchor: "sun", dist: 400 * LY_AU, dir: RAY, look: { frame: "galactic", lat: 30, lon: 348 },
+  { at: 9, label: "Některá slova · 400 světelných let", anchor: "sun", dist: 400 * LY_AU, dir: OUT(-54, 146), look: { at: "sun" },
     offset: [0, 0.1], offsetPhone: [0, 0.2], up: "centre", orbits: 44, dim: 1, stars: 1 },
-  { at: 10, label: "Atmosféry · nad diskem", anchor: "sun", dist: 2500 * LY_AU, dir: RAY, look: { at: "sun" },
+  { at: 10, label: "Atmosféry · pod diskem", anchor: "sun", dist: 2500 * LY_AU, dir: OUT(-60, 148), look: { at: "sun" },
     offset: [0.3, 0.2], offsetPhone: [0, 0.4], up: "centre", orbits: 44, dim: 1, stars: 1 },
-  { at: 11, label: "Bezpečnost (kamera stojí)", anchor: "sun", dist: 9000 * LY_AU, dir: RAY, look: { at: "sun" },
+  { at: 11, label: "Bezpečnost (kamera stojí)", anchor: "sun", dist: 9000 * LY_AU, dir: OUT(-66, 150), look: { at: "sun" },
     offset: [0.35, 0.3], offsetPhone: [0.2, 0.55], up: "centre", orbits: 44, dim: 0.5, stars: 0.6 },
-  { at: 12, label: "Ceník · 22 000 světelných let", anchor: "sun", dist: 22_000 * LY_AU, dir: RAY, look: { at: "sun" },
+  { at: 12, label: "Ceník · 22 000 světelných let", anchor: "sun", dist: 22_000 * LY_AU, dir: OUT(-72, 153), look: { at: "sun" },
     offset: [-0.35, 0.3], offsetPhone: [-0.3, 0.6], up: "centre", orbits: 44, dim: 0.9, stars: 1 },
-  { at: 13, label: "FAQ · 38 000 světelných let", anchor: "sun", dist: 38_000 * LY_AU, dir: RAY, look: { at: "sun" },
+  { at: 13, label: "FAQ · 38 000 světelných let", anchor: "sun", dist: 38_000 * LY_AU, dir: OUT(-78, 156), look: { at: "sun" },
     offset: [0.3, 0.25], offsetPhone: [0.2, 0.55], up: "centre", orbits: 44, dim: 0.9, stars: 1 },
-  { at: 14, label: "Mléčná dráha · pohled shora", anchor: "galaxy", dist: 56_000 * LY_AU, dir: { frame: "galactic", lat: 84, lon: 205 }, look: { at: "galaxy" },
+  { at: 14, label: "Mléčná dráha · pohled zvenčí", anchor: "galaxy", dist: 56_000 * LY_AU, dir: OUT(-84, 160), look: { at: "galaxy" },
     offset: [0, 0.08], offsetPhone: [0, 0.1], up: "centre", orbits: 44, dim: 1, stars: 0 },
-  { at: 15, label: "Závěr · zpátky k modré tečce", anchor: "earth", dist: 5.2 * R, dir: { frame: "bodySun", lat: 12, lon: 42 }, look: { at: "earth" },
+  { at: 15, label: "Závěr · zpátky k modré tečce", anchor: "earthNow", dist: 5.2 * R, dir: { frame: "bodySun", lat: 12, lon: 42 }, look: { at: "earthNow" },
     offset: [0, -0.12], offsetPhone: [0, -0.3], up: "pole", orbits: 0, dim: 1, stars: 0.5 },
 ];
 
@@ -181,7 +190,7 @@ export const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 *
  * planet is big on screen — take most of the hop's scroll, and the first
  * ones — where it is a speck — go by quickly.
  */
-export const flightEase = (f: number) => { const u = easeInOut(f); return u - (0.6 * Math.sin(2 * Math.PI * u)) / (2 * Math.PI); };
+export const flightEase = (f: number) => { const u = easeInOut(f); return u - (0.8 * Math.sin(2 * Math.PI * u)) / (2 * Math.PI); };
 export const smoothstep = (a: number, b: number, x: number) => {
   const t = clamp01((x - a) / (b - a));
   return t * t * (3 - 2 * t);

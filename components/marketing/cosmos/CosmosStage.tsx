@@ -120,7 +120,9 @@ export function CosmosStage() {
           setProgress: (s) => engine.jumpTo(s),
           scrollTo: (s) => {
             measure();
-            window.scrollTo(0, Math.max(0, scrollForProgress(marks, s) - window.innerHeight * READING_LINE));
+            // A whole number is a section: its top at the top of the viewport (the camera holds there anyway).
+            const y = Number.isInteger(s) && marks[s] ? marks[s].top : scrollForProgress(marks, s) - window.innerHeight * READING_LINE;
+            window.scrollTo(0, Math.max(0, y));
             apply(engine, s);
             engine.jumpTo(s);
           },

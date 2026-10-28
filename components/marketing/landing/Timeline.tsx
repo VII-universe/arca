@@ -1,13 +1,14 @@
-import { STOP_YEARS, WRITTEN_IN, type WaypointId } from "../cosmos/journey";
+import { STOP_SIDE, STOP_YEARS, WRITTEN_IN, type WaypointId } from "../cosmos/journey";
 import { getCopy } from "./copy";
 import { Waypoint } from "./Waypoint";
 
 type Stop = { year: string; to: string; occasion: string; quote: string };
 
-// The orbits: each sample message is a stop on the Earth's orbit, year −
-// 2026 orbits of the Sun away. The year is the headline; the message, in
-// the warm light of what a person wrote, sits under it; the orbits ring the
-// Sun behind. Screen readers get a plain ordered list.
+// The orbits: each sample message is a stop at a planet on the way out,
+// year − 2026 orbits of the Sun away. The year is the headline; the message,
+// in the warm light of what a person wrote, sits under it; the planet fills
+// the other half of the screen (sides alternate). Screen readers get a plain
+// ordered list.
 
 const STOPS = Object.keys(STOP_YEARS) as (keyof typeof STOP_YEARS)[];
 
@@ -32,7 +33,7 @@ export async function Timeline() {
           const id = STOPS[i] as WaypointId;
           const orbits = Number(stop.year) - WRITTEN_IN;
           return (
-            <Waypoint key={stop.year} waypoint={id} as="li" className="l-stop" data-last={i === stops.length - 1}>
+            <Waypoint key={stop.year} waypoint={id} as="li" className="l-stop" data-last={i === stops.length - 1} data-side={STOP_SIDE[STOPS[i]]}>
               <div className="l-wrap l-stop__frame">
                 <div className="l-stop__text">
                   <p className="l-stop__year l-shade" aria-hidden="true">{stop.year}</p>

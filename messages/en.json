@@ -1180,7 +1180,7 @@
       "starData": "Star data: HYG Database v4.4 (CC BY-SA 4.0), from the ESA Hipparcos and Gaia catalogues. Fainter stars beyond the catalogue and the Milky Way from outside are procedural.",
       "earthData": "Earth and Moon: NASA Blue Marble, Black Marble and LRO (public domain).",
       "planetData": "Planet textures: Solar System Scope (CC BY 4.0).",
-      "positions": "Planet positions for the day of your visit after JPL (approximate Keplerian elements)."
+      "positions": "Planets' orbits and distances from the Sun for the day of your visit per JPL (approximate Keplerian elements); for the flight the planets are lined up along one path and the Moon sits over the night side. The Earth, its rotation and the day are real."
     }
   },
   "Auth": {

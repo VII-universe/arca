@@ -46,27 +46,28 @@ describe("keys", () => {
     expect(KEYS[KEYS.length - 1].at).toBe(JOURNEY.length - 1);
   });
 
-  it("passes the Moon, Mars, Jupiter, Saturn, Uranus and Neptune close enough to fill a third of the screen", () => {
-    const passes = KEYS.filter((k) => !Number.isInteger(k.at));
-    expect(passes.map((k) => k.anchor)).toEqual(["moon", "mars", "jupiter", "saturn", "uranus", "neptune"]);
-    for (const k of passes) {
-      // dist ≤ 6.9 radii → the disc spans ≥ 16.7°, a third of a 50° field
-      const km: Record<string, number> = { moon: 1737.4, mars: 3389.5, jupiter: 69_911, saturn: 58_232, uranus: 25_362, neptune: 24_622 };
-      const radiusAu = km[k.anchor] / 149_597_870.7;
-      expect(k.dist / radiusAu).toBeLessThanOrEqual(6.9);
+  it("stops at a planet filling about half the screen, and passes the rest as close", () => {
+    const km: Record<string, number> = { moon: 1737.4, mars: 3389.5, jupiter: 69_911, saturn: 58_232, uranus: 25_362, neptune: 24_622 };
+    const near = KEYS.filter((k) => k.anchor in km);
+    expect(near.map((k) => k.anchor)).toEqual(["moon", "mars", "jupiter", "saturn", "uranus", "neptune"]);
+    for (const k of near) {
+      // ≤ 6.9 radii → the disc spans ≥ 16.7°, a third of a 50° field
+      expect(k.dist / (km[k.anchor] / 149_597_870.7)).toBeLessThanOrEqual(6.9);
     }
+    for (const id of ["y2032", "y2044", "y2051", "y2070"] as const) expect(keyOf(id).anchor in km).toBe(true);
   });
 
-  it("goes one way out: the distance from the Sun grows from the Earth to the Galaxy, and the stars are flown in one direction", () => {
-    const first = indexOf("y2032"), last = indexOf("galaxy");
-    const stops = KEYS.filter((k) => Number.isInteger(k.at) && k.at >= first && k.at <= last && k.anchor === "sun");
-    for (let i = 1; i < stops.length; i++) expect(stops[i].dist).toBeGreaterThan(stops[i - 1].dist);
-    const ray = KEYS.filter((k) => k.at >= indexOf("forWhom") && k.at <= indexOf("faq")).map((k) => JSON.stringify(k.dir));
-    expect(new Set(ray).size).toBe(1);
+  it("goes one way out: every key from the Moon to the Galaxy is farther from the Sun than the last", () => {
+    const dist: Record<string, number> = { moon: 1, mars: 1.59, jupiter: 5.3, saturn: 9.4, uranus: 19.4, neptune: 29.9, sun: 0, galaxy: 0 };
+    const seq = KEYS.filter((k) => k.at >= 1 && k.at <= indexOf("galaxy")).map((k) => (k.anchor === "sun" ? k.dist : k.anchor === "galaxy" ? 1e12 : dist[k.anchor]));
+    for (let i = 1; i < seq.length; i++) expect(seq[i]).toBeGreaterThan(seq[i - 1]);
   });
 
-  it("segments: a fly-by sits in the middle of its leg", () => {
-    expect(segmentAt(2.25)).toEqual({ i: 3, f: 0.5 });
+  it("segments: the Uranus fly-by sits inside the Saturn → Neptune leg", () => {
+    const i = KEYS.findIndex((k) => k.anchor === "uranus");
+    expect(KEYS[i].at).toBeGreaterThan(4);
+    expect(KEYS[i].at).toBeLessThan(5);
+    expect(segmentAt(4.2).i).toBe(i - 1);
     expect(segmentAt(-1)).toEqual({ i: 0, f: 0 });
     expect(segmentAt(99).f).toBe(1);
   });
@@ -85,9 +86,8 @@ describe("orbits", () => {
     expect(orbitsAt(indexOf("y2070") + 0.5)).toBe(44);
   });
 
-  it("goes round only after the fly-by, on the way to the stop, and is monotonic", () => {
-    expect(orbitsAt(indexOf("y2032") + 0.5)).toBe(6);       // passing Mars: still six
-    expect(orbitsAt(indexOf("y2032") + 0.6)).toBe(6);       // the run starts later in the segment
+  it("goes round on the way to the next stop, after the camera has left, and is monotonic", () => {
+    expect(orbitsAt(indexOf("y2032") + 0.2)).toBe(6);       // leaving Mars: still six
     expect(orbitsAt(indexOf("y2032") + 0.95)).toBe(18);
     let last = 0;
     for (let s = 0; s <= indexOf("y2070"); s += 0.01) {
@@ -97,11 +97,11 @@ describe("orbits", () => {
     }
   });
 
-  it("shows the trail only at the stops: in before a stop, out after it, gone at the fly-bys", () => {
+  it("shows the trail at the stops: in before a stop, gone at the Uranus fly-by, out after the last", () => {
     expect(trailFadeAt(0)).toBe(0);
     expect(trailFadeAt(indexOf("y2044"))).toBe(1);
-    expect(trailFadeAt(indexOf("y2044") + 0.5)).toBe(0);    // Jupiter
-    expect(trailFadeAt(indexOf("y2044") + 0.95)).toBe(1);
+    expect(trailFadeAt(indexOf("y2051") + 0.55)).toBe(0);   // Uranus
+    expect(trailFadeAt(indexOf("y2051") + 0.98)).toBe(1);
     expect(trailFadeAt(indexOf("y2070") + 1)).toBe(0);
   });
 });

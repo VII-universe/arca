@@ -23,7 +23,7 @@ import {
   J2000, PLANETS, SUN_RADIUS_KM, YEAR_DAYS, equatorialToEcliptic, greenwichDirection, julianDay, moonPosition,
   orbitPhase, orbitPoints, planetPosition, type PlanetId, type Vec3, vadd, vcross, vdot, vlen, vnorm, vscale, vsub, MOON_RADIUS_KM,
 } from "./ephemeris";
-import { JOURNEY, KEYS, bilog, clamp01, easeInOut, flightEase, orbitsAt, roundedHop, segmentAt, smoothstep, trailFadeAt, type Anchor, type Direction, type Key, type Look } from "./journey";
+import { ARRANGED_LON, JOURNEY, KEYS, MOON_DIR, bilog, clamp01, easeInOut, flightEase, orbitsAt, roundedHop, segmentAt, smoothstep, trailFadeAt, type Anchor, type Direction, type Key, type Look } from "./journey";
 import { starColor, type RGB } from "./starColor";
 import { QUAD_VERT } from "./shaders/common";
 import { SKYGEN_FRAG, SKYGEN_VERT, SKY_FRAG, SKY_VERT } from "./shaders/sky";
@@ -993,19 +993,37 @@ export class CosmosEngine {
     // at every whole orbit it is back where it is today.)
     if (!(Math.abs(now - this.planetJd) < 1 / 24 / 60)) {
       this.planetJd = now;
+      this.earthNow = planetPosition("earth", now);
+      const earthLon = Math.atan2(this.earthNow[1], this.earthNow[0]);
       for (const b of this.bodies) {
         if (b.id === "earth" || b.id === "moon") continue;
-        b.pos = planetPosition(b.id, now);
+        if (b.id in ARRANGED_LON) {
+          // On the flight line: the point of the planet's real orbit (of the day) nearest the wanted longitude.
+          const want = earthLon + (ARRANGED_LON[b.id as keyof typeof ARRANGED_LON] * Math.PI) / 180;
+          const pts = orbitPoints(b.id, now, 720);
+          let best = 0, bestD = Infinity;
+          for (let k = 0; k < 720; k++) {
+            const lon = Math.atan2(pts[k * 3 + 1], pts[k * 3]);
+            const d = Math.abs(Math.atan2(Math.sin(lon - want), Math.cos(lon - want)));
+            if (d < bestD) { bestD = d; best = k; }
+          }
+          b.pos = [pts[best * 3], pts[best * 3 + 1], pts[best * 3 + 2]];
+        } else {
+          b.pos = planetPosition(b.id, now);
+        }
       }
-      this.earthNow = planetPosition("earth", now);
     }
     if (earthJd !== this.earthJd || orbits !== this.earthOrbits) {
       this.earthJd = earthJd;
       this.earthOrbits = orbits;
       // The Earth rides the end of its trail, which spirals out a hair per orbit so the years read as rings.
       this.earth.pos = vscale(planetPosition("earth", earthJd), 1 + orbits * RING_STEP);
+      // The Moon: its real distance of the day, but always over the night side as a gibbous Moon (the hero and
+      // the lift-off are composed around it; the real Moon would be anywhere, and dark half the month).
+      // Anchored to where the Earth is today (not the Earth running its orbits to the next stop), so nothing
+      // the camera looks at whirls.
       const moon = this.bodies.find((b) => b.id === "moon")!;
-      moon.pos = vadd(this.earth.pos, moonPosition(now));
+      moon.pos = vadd(this.earthNow, vscale(this.dirIn(MOON_DIR, "earthNow"), vlen(moonPosition(now))));
     }
   }
 
@@ -1095,10 +1113,14 @@ export class CosmosEngine {
     let cam = roundedHop(p0, pA, pB, p3, w);
     if (!cam.every(Number.isFinite)) cam = lerp3(pA, pB, w);
     // The look turns from A's subject to B's with the same easing as the flight (a slerp, zero rate at both ends).
-    // The look holds on what it leaves for the first quarter of the hop and has locked onto what it approaches
-    // by three quarters: a planet in frame then only grows (or shrinks) in place, and the turn happens between,
-    // while both are far and small.
-    const look = slerp(this.lookOf(A, cam), this.lookOf(B, cam), smoothstep(0.18, 0.62, u));
+    // The look turns only between the two keys' own looks (each fixed at its key: where the camera will stand,
+    // toward what it frames there) — never after a body the camera has passed. So a planet left behind slides
+    // out at the edge, the next one comes in from the other edge and grows into its place, and the view turns
+    // just the few degrees between two framings. The one turn back (the Galaxy → home) goes by way of the Sun.
+    const lookA = this.lookOf(A, pA), lookB = this.lookOf(B, pB);
+    const look = vdot(lookA, lookB) < -0.6
+      ? (u < 0.5 ? slerp(lookA, vnorm(vscale(cam, -1)), u * 2) : slerp(vnorm(vscale(cam, -1)), lookB, u * 2 - 1))
+      : slerp(lookA, lookB, u);
     const up = slerp(this.upOf(A), this.upOf(B), u);
     const oA = portrait ? A.offsetPhone : A.offset, oB = portrait ? B.offsetPhone : B.offset;
     const offset: [number, number] = [oA[0] + (oB[0] - oA[0]) * u, oA[1] + (oB[1] - oA[1]) * u];
@@ -1316,7 +1338,8 @@ export class CosmosEngine {
       // Orbit line: shows once the camera stands well back from it, fades again when it is a speck.
       if (b.orbitMat && b.orbit && b.a) {
         const ratio = camDistSun / b.a;
-        const alpha = orbitsNear * smoothstep(0.03, 0.6, ratio) * smoothstep(900, 60, ratio) * 0.32 * p.dim;
+        // Faint lines in the background at the stops only, never the subject of a shot.
+        const alpha = orbitsNear * smoothstep(0.03, 0.6, ratio) * smoothstep(900, 60, ratio) * 0.14 * p.dim * p.trail;
         b.orbitMat.uniforms.uAlpha.value = alpha;
         b.orbit.visible = alpha > 0.002;
         b.orbit.position.set(-p.cam[0], -p.cam[1], -p.cam[2]);

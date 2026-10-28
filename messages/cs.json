@@ -1180,7 +1180,7 @@
       "starData": "Hvězdná data: HYG Database v4.4 (CC BY-SA 4.0), z katalogů ESA Hipparcos a Gaia. Slabší hvězdy mimo katalog a Mléčná dráha zvenčí jsou procedurální.",
       "earthData": "Země a Měsíc: NASA Blue Marble, Black Marble a LRO (volné dílo).",
       "planetData": "Textury planet: Solar System Scope (CC BY 4.0).",
-      "positions": "Polohy planet ke dni návštěvy podle JPL (přibližné Keplerovy prvky)."
+      "positions": "Oběžné dráhy a vzdálenosti planet od Slunce ke dni návštěvy podle JPL (přibližné Keplerovy prvky); pro let jsou planety seřazené na jednu dráhu, Měsíc je nad noční stranou. Země, její rotace a den jsou skutečné."
     }
   },
   "Auth": {
