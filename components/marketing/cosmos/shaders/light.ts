@@ -20,11 +20,12 @@ uniform vec3 uColor; uniform float uAlpha;
 ${LOGDEPTH_FRAG_PARS}
 void main(){
   ${LOGDEPTH_FRAG}
+  // r in sprite radii; the sprite is ~64 px, the disc ~8 px, the bloom the rest.
   float r = length(gl_PointCoord - 0.5) * 2.0;
-  float core = exp(-r * r * 28.0) * 1.0;
-  float glow = exp(-r * 3.2) * 0.5;
-  vec3 c = mix(uColor, vec3(1.0, 0.95, 0.85), clamp(core, 0.0, 1.0) * 0.35);
-  gl_FragColor = vec4(c * (core + glow) * uAlpha * smoothstep(1.0, 0.75, r), 1.0);
+  float disc = smoothstep(0.17, 0.09, r) * 1.2;
+  float bloom = exp(-r * r * 9.0) * 0.55 + exp(-r * 2.4) * 0.28;
+  vec3 c = mix(uColor, vec3(1.0, 0.96, 0.88), clamp(disc, 0.0, 1.0) * 0.5);
+  gl_FragColor = vec4(c * (disc + bloom) * uAlpha * smoothstep(1.0, 0.8, r), 1.0);
   ${OUTPUT}
 }`;
 
@@ -86,4 +87,36 @@ void main(){
   float a = exp(-r * r * 5.0) * smoothstep(1.0, 0.6, r);
   gl_FragColor = vec4(uColor * a * vA, 1.0);
   ${OUTPUT}
+}`;
+
+// The ribbon: the filament's trail as one continuous strip of light drawn
+// in screen space (NDC), width and opacity falling off along it; and the
+// ring of light the filament sends out when it arrives at a stop.
+export const RIBBON_VERT = /* glsl */ `
+attribute float aA;
+varying float vA;
+void main(){
+  vA = aA;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
+}`;
+
+export const RIBBON_FRAG = /* glsl */ `
+precision highp float;
+uniform vec3 uColor; uniform float uAlpha;
+varying float vA;
+void main(){
+  gl_FragColor = vec4(uColor * vA * uAlpha, 1.0);
+}`;
+
+export const RING_VERT = /* glsl */ `
+uniform vec2 uCentre; uniform vec2 uRadius;   // NDC centre, NDC radii (x, y)
+void main(){
+  gl_Position = vec4(uCentre + position.xy * uRadius, 0.0, 1.0);
+}`;
+
+export const RING_FRAG = /* glsl */ `
+precision highp float;
+uniform vec3 uColor; uniform float uAlpha;
+void main(){
+  gl_FragColor = vec4(uColor * uAlpha, 1.0);
 }`;

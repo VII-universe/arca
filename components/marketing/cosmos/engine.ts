@@ -23,7 +23,7 @@ import {
   J2000, PLANETS, SUN_RADIUS_KM, YEAR_DAYS, equatorialToEcliptic, greenwichDirection, julianDay, moonPosition,
   orbitPhase, orbitPoints, planetPosition, type PlanetId, type Vec3, vadd, vcross, vdot, vlen, vnorm, vscale, vsub, MOON_RADIUS_KM,
 } from "./ephemeris";
-import { JOURNEY, KEYS, bilog, clamp01, easeInOut, orbitsAt, segmentAt, smoothstep, trailFadeAt, type Anchor, type Direction, type Key, type Look } from "./journey";
+import { JOURNEY, KEYS, bilog, clamp01, easeInOut, flightEase, orbitsAt, roundedHop, segmentAt, smoothstep, trailFadeAt, type Anchor, type Direction, type Key, type Look } from "./journey";
 import { starColor, type RGB } from "./starColor";
 import { QUAD_VERT } from "./shaders/common";
 import { SKYGEN_FRAG, SKYGEN_VERT, SKY_FRAG, SKY_VERT } from "./shaders/sky";
@@ -32,7 +32,7 @@ import { ATMO_FRAG, ATMO_VERT, CLOUDS_FRAG, CLOUDS_VERT, EARTH_FRAG, EARTH_VERT 
 import { CORONA_FRAG, CORONA_VERT, MARKER_FRAG, MARKER_VERT, PLANET_FRAG, PLANET_VERT, RING_FRAG, RING_VERT, SUN_FRAG, SUN_VERT } from "./shaders/bodies";
 import { ORBIT_FRAG, ORBIT_VERT, TRAIL_FRAG, TRAIL_VERT } from "./shaders/lines";
 import { DUST_FRAG, GALAXY_FRAG, GALAXY_VERT } from "./shaders/galaxy";
-import { FILAMENT_FRAG, FILAMENT_VERT, FLOW_FRAG, FLOW_VERT, SPARK_FRAG, SPARK_VERT } from "./shaders/light";
+import { FILAMENT_FRAG, FILAMENT_VERT, FLOW_FRAG, FLOW_VERT, RIBBON_FRAG, RIBBON_VERT, RING_FRAG as LRING_FRAG, RING_VERT as LRING_VERT, SPARK_FRAG, SPARK_VERT } from "./shaders/light";
 import { TEXTURES, type TextureName } from "./textures";
 
 export type CosmosAtmosphere = "nebula" | "sunset" | "ocean" | "midnight" | "stars";
@@ -61,8 +61,10 @@ const TRAIL_SEGMENTS = 180;
 const EARTH_SPIN_S = 240;          // one turn of the Earth on screen, seconds (the real day would read as still)
 const EARTH_SPIN0 = 180;             // where the turn starts (degrees east of the J2000 Greenwich direction): the lit cities face the hero
 const CLOUD_DRIFT = 0.00045;       // clouds slide against the surface, uv per second
-const SPARKS = 200;                // the message's trail, particles
-const SPARK_LIFE = 1.4;            // seconds
+const SPARKS = 90;                 // sparks around the message's light
+const SPARK_LIFE = 0.8;            // seconds
+const RIBBON = 56;                 // the trail: this many frames of history, one strip
+const RIBBON_WIDTH = 9;            // px at the core
 const AMBER: RGB = [1.0, 0.85, 0.63];
 
 // IAU north poles (RA, Dec, J2000) → the axis each globe spins on.
@@ -242,7 +244,19 @@ export class CosmosEngine {
   private reduced: { shown: number; phase: "idle" | "out" | "in"; t: number };
   private lastPose: Pose | null = null;
   private hold = 0;
+  private holdTarget = 0;
   private lastDt = 1 / 60;
+  // The trail of the message's light, in screen space.
+  private readonly ribbon: Mesh;
+  private readonly ribbonMat: ShaderMaterial;
+  private readonly history = new Float64Array(RIBBON * 3);
+  private historyLen = 0;
+  private readonly ring: LineLoop;
+  private readonly ringMat: ShaderMaterial;
+  private ringT = 9;
+  private flash = 0;
+  private wasSettled = false;
+  private readonly lightScene = new Scene();
   private anchorNdc: [number, number] | null = null;
   // The message's light and its trail.
   private readonly filament: Points;
@@ -600,6 +614,34 @@ export class CosmosEngine {
     this.flow.frustumCulled = false;
     this.flow.renderOrder = 4;
     this.world.add(this.flow);
+    // The ribbon and the ring: screen space, over everything.
+    const rg = new BufferGeometry();
+    rg.setAttribute("position", new BufferAttribute(new Float32Array(RIBBON * 2 * 3), 3));
+    rg.setAttribute("aA", new BufferAttribute(new Float32Array(RIBBON * 2), 1));
+    const idx = new Uint16Array((RIBBON - 1) * 6);
+    for (let k = 0; k < RIBBON - 1; k++) {
+      const a = k * 2, b = a + 1, c = a + 2, d = a + 3;
+      idx.set([a, b, c, b, d, c], k * 6);
+    }
+    rg.setIndex(new BufferAttribute(idx, 1));
+    this.ribbonMat = new ShaderMaterial({
+      vertexShader: RIBBON_VERT, fragmentShader: RIBBON_FRAG, transparent: true, depthTest: false, depthWrite: false, blending: AdditiveBlending, side: DoubleSide,
+      uniforms: { uColor: { value: [1.0, 0.72, 0.4] }, uAlpha: { value: 0 } },
+    });
+    this.ribbon = new Mesh(rg, this.ribbonMat);
+    this.ribbon.frustumCulled = false;
+    this.lightScene.add(this.ribbon);
+    const cg = new BufferGeometry();
+    const cpos = new Float32Array(96 * 3);
+    for (let k = 0; k < 96; k++) { const a = (k / 96) * 2 * Math.PI; cpos[k * 3] = Math.cos(a); cpos[k * 3 + 1] = Math.sin(a); }
+    cg.setAttribute("position", new BufferAttribute(cpos, 3));
+    this.ringMat = new ShaderMaterial({
+      vertexShader: LRING_VERT, fragmentShader: LRING_FRAG, transparent: true, depthTest: false, depthWrite: false, blending: AdditiveBlending,
+      uniforms: { uCentre: { value: new Vector2() }, uRadius: { value: new Vector2() }, uColor: { value: [1.0, 0.8, 0.52] }, uAlpha: { value: 0 } },
+    });
+    this.ring = new LineLoop(cg, this.ringMat);
+    this.ring.frustumCulled = false;
+    this.lightScene.add(this.ring);
 
     // Reduced motion: sections cut through a fade instead of flying.
     this.veilMat = new ShaderMaterial({
@@ -624,6 +666,8 @@ export class CosmosEngine {
   }
 
   jumpTo(s: number) {
+    // A real jump (not a capture's next frame): the light starts afresh where the camera lands.
+    if (Math.abs(s - this.smooth) > 0.5) this.resetLights();
     this.setProgress(s);
     this.smooth = this.opts.reducedMotion ? Math.round(this.target) : this.target;
     this.reduced.shown = Math.round(this.target);
@@ -631,12 +675,24 @@ export class CosmosEngine {
 
   /** How far the reader is through the current section's content (0..1): the camera glides a little with it. */
   setHold(h: number) {
-    this.hold = clamp01(h);
+    this.holdTarget = clamp01(h);
   }
 
   /** Where the message's light should settle on screen while the camera stands (NDC), or null to lead the flight. */
   setAnchor(ndc: [number, number] | null) {
     this.anchorNdc = ndc;
+  }
+
+  private resetLights() {
+    this.prevCam = null;
+    this.speed = 0;
+    this.fil.depth = 0;
+    this.flowL = 0;
+    this.historyLen = 0;
+    this.sparkBirth.fill(-1e9);
+    this.sparkAt = null;
+    this.ringT = 9;
+    this.flash = 0;
   }
 
   /** Captures: stop the clock, then advance it by hand with step(). */
@@ -729,7 +785,7 @@ export class CosmosEngine {
     this.opts.canvas.removeEventListener("webglcontextlost", this.onLost, false);
     document.removeEventListener("visibilitychange", this.onVisibility);
     for (const c of this.cubes) c.rt.dispose();
-    for (const scene of [this.genScene, this.skyScene, this.farScene, this.world, this.veilScene]) {
+    for (const scene of [this.genScene, this.skyScene, this.farScene, this.world, this.lightScene, this.veilScene]) {
       scene.traverse((o) => {
         const m = o as Mesh;
         m.geometry?.dispose();
@@ -1016,21 +1072,33 @@ export class CosmosEngine {
   private poseAt(s: number): Pose {
     const { i, f } = segmentAt(s);
     const A = KEYS[i], B = KEYS[i + 1];
-    const u = easeInOut(f);
+    const u = flightEase(f);
     const orbits = orbitsAt(s);
     this.updateEphemeris(orbits);
     const portrait = this.width < this.height;
 
     // The camera never quite stands still: it glides along its orbit of the subject (ISS pace in the hero), and
-    // while the reader is inside a section it slides a little with the scroll — never two screens without motion.
-    const driftLon = this.time * (A.at === 0 ? 0.08 : 0.02) + this.hold * 6;
-    const drift = (k: Key): Key => ({ ...k, dir: { ...k.dir, lon: k.dir.lon + driftLon }, dist: k.dist * (k.at === 0 ? 1 + 0.12 * this.hold : 1) });
+    // through the hero's content it slides with the scroll — then keeps that offset, so the leg starts where the
+    // hold ended (no jump at the section's end).
+    const heroH = s > 1e-4 ? 1 : this.hold;
+    const drift = (k: Key): Key => {
+      const lon = k.dir.lon + this.time * (k.at === 0 ? 0.08 : 0.02) + (k.at === 0 ? heroH * 6 : 0);
+      return { ...k, dir: { ...k.dir, lon }, dist: k.dist * (k.at === 0 ? 1 + 0.12 * heroH : 1) };
+    };
     const pA = this.camOf(drift(A)), pB = this.camOf(drift(B));
     const L = vlen(vsub(pB, pA));
     const w = L < 1e-12 ? u : bilog(u, A.dist / L, B.dist / L);
-    const cam = lerp3(pA, pB, w);
-    // The look pans from A's subject to B's while both are far (w is the place along the line, not the time).
-    const look = slerp(this.lookOf(A, cam), this.lookOf(B, cam), w);
+    // One curve through the keys (each hop rounded with the neighbours as tangents), walked with the zoom
+    // profile w: the camera rounds each key instead of kinking, so a planet in frame only grows and glides.
+    const P = KEYS[Math.max(0, i - 1)], N = KEYS[Math.min(KEYS.length - 1, i + 2)];
+    const p0 = i > 0 ? this.camOf(drift(P)) : pA, p3 = i + 2 < KEYS.length ? this.camOf(drift(N)) : pB;
+    let cam = roundedHop(p0, pA, pB, p3, w);
+    if (!cam.every(Number.isFinite)) cam = lerp3(pA, pB, w);
+    // The look turns from A's subject to B's with the same easing as the flight (a slerp, zero rate at both ends).
+    // The look holds on what it leaves for the first quarter of the hop and has locked onto what it approaches
+    // by three quarters: a planet in frame then only grows (or shrinks) in place, and the turn happens between,
+    // while both are far and small.
+    const look = slerp(this.lookOf(A, cam), this.lookOf(B, cam), smoothstep(0.18, 0.62, u));
     const up = slerp(this.upOf(A), this.upOf(B), u);
     const oA = portrait ? A.offsetPhone : A.offset, oB = portrait ? B.offsetPhone : B.offset;
     const offset: [number, number] = [oA[0] + (oB[0] - oA[0]) * u, oA[1] + (oB[1] - oA[1]) * u];
@@ -1056,6 +1124,7 @@ export class CosmosEngine {
 
     if (this.opts.reducedMotion) this.stepReduced(dt);
     else this.smooth += (this.target - this.smooth) * (1 - Math.exp(-dt / SCROLL_LAG_S));
+    this.hold += (this.holdTarget - this.hold) * (1 - Math.exp(-dt / SCROLL_LAG_S));
     const k = 1 - Math.exp(-dt / 0.9);
     this.pointer.sx += (this.pointer.x - this.pointer.sx) * k;
     this.pointer.sy += (this.pointer.y - this.pointer.sy) * k;
@@ -1321,6 +1390,7 @@ export class CosmosEngine {
     r.render(this.farScene, cam);
     r.clearDepth();
     r.render(this.world, cam);
+    r.render(this.lightScene, this.quadCam);
     if (this.veilMat.uniforms.uA.value > 0.001) r.render(this.veilScene, this.quadCam);
   }
 
@@ -1348,7 +1418,8 @@ export class CosmosEngine {
     const k = 1 - Math.exp(-dt / 0.7);
     f.ndc[0] += (want[0] - f.ndc[0]) * k;
     f.ndc[1] += (want[1] - f.ndc[1]) * k;
-    const wantDepth = Math.max(this.speed * 2.5, 0.015 * nearD);
+    // Ahead by a few seconds of flight, but always within the local scale (never beyond the nearest body).
+    const wantDepth = Math.min(Math.max(this.speed * 2.5, 0.015 * nearD), 0.3 * nearD);
     f.depth = f.depth <= 0 ? wantDepth : Math.exp(Math.log(f.depth) + (Math.log(wantDepth) - Math.log(f.depth)) * (1 - Math.exp(-dt / 0.8)));
     const ref = portrait ? 9 / 16 : 16 / 9;
     const d = new Vector3(f.ndc[0] * (ref / this.camera.aspect) * tx, f.ndc[1] * ty, -1).normalize().applyQuaternion(q);
@@ -1358,19 +1429,31 @@ export class CosmosEngine {
     (this.filament.geometry.attributes.position as BufferAttribute).needsUpdate = true;
     const still = 1 - smoothstep(0.002, 0.02, this.speed / Math.max(nearD, 1e-12));
     f.pulse = still;
-    const beat = 1 + 0.35 * still * (0.5 + 0.5 * Math.sin(this.time * (2 * Math.PI / 1.7)));
-    this.filamentMat.uniforms.uSize.value = 17 * beat;
-    this.filamentMat.uniforms.uAlpha.value = (0.85 + 0.15 * still) * p.dim;
+    // The core breathes (1.5 s); its sprite is a bloom around a disc that never drops under ~8 px.
+    const beat = 1 + (0.12 + 0.22 * still) * (0.5 + 0.5 * Math.sin(this.time * (2 * Math.PI / 1.5)));
+    this.filamentMat.uniforms.uSize.value = 64 * beat;
     this.filamentMat.uniforms.uPx.value = this.sparkMat.uniforms.uPx.value = this.flowMat.uniforms.uPx.value = this.markerMat.uniforms.uPx.value;
 
-    // ── the sparks: one left behind every so often along the path (by distance flown, so the trail is even) ──
-    const since = this.sparkAt ? vlen(vsub(f.world, this.sparkAt)) : Infinity;
-    if (since > 0.012 * nearD && this.time - this.sparkLast > 0.03) {
+    // ── the arrival: when the light settles at a stop it flares and sends out one ring ──
+    const atStop = settled && Math.abs(this.smooth - Math.round(this.smooth)) < 1e-3;
+    if (atStop && !this.wasSettled) { this.ringT = 0; this.flash = 1; }
+    this.wasSettled = atStop;
+    this.flash *= Math.exp(-dt / 0.5);
+    this.ringT += dt;
+    this.filamentMat.uniforms.uAlpha.value = (0.9 + 0.1 * still + 1.3 * this.flash) * p.dim;
+    const ref2 = ref / this.camera.aspect;
+    this.ringMat.uniforms.uCentre.value.set(f.ndc[0] * ref2, f.ndc[1]);
+    const ringR = (16 + 150 * smoothstep(0, 0.9, this.ringT)) / this.height * 2;
+    this.ringMat.uniforms.uRadius.value.set(ringR * (this.height / this.width), ringR);
+    this.ringMat.uniforms.uAlpha.value = this.ringT < 0.9 ? 0.75 * Math.pow(1 - this.ringT / 0.9, 1.4) * p.dim : 0;
+    this.ring.visible = this.ringT < 0.9;
+
+    // ── the sparks: a few around the core, short-lived (an accent, not the trail) ──
+    if (this.time - this.sparkLast > 0.06) {
       this.sparkLast = this.time;
-      this.sparkAt = f.world;
       const i = this.sparkHead;
       this.sparkHead = (i + 1) % SPARKS;
-      const jitter = f.depth * 0.05;
+      const jitter = f.depth * 0.035;
       const r1 = Math.sin(i * 12.9898) * 0.5, r2 = Math.sin(i * 78.233) * 0.5, r3 = Math.sin(i * 37.719) * 0.5;
       this.sparkWorld[i * 3] = f.world[0] + r1 * jitter;
       this.sparkWorld[i * 3 + 1] = f.world[1] + r2 * jitter;
@@ -1385,6 +1468,59 @@ export class CosmosEngine {
       if (age <= SPARK_LIFE) spos.setXYZ(i, this.sparkWorld[i * 3] - p.cam[0], this.sparkWorld[i * 3 + 1] - p.cam[1], this.sparkWorld[i * 3 + 2] - p.cam[2]);
     }
     spos.needsUpdate = sage.needsUpdate = true;
+
+    // ── the ribbon: the light's past places, projected into this frame and drawn as one strip about a third of
+    // the screen long (longer through the stars), so it bends with every turn and never scatters ──
+    {
+      const h = this.history;
+      for (let k = Math.min(this.historyLen, RIBBON - 1); k > 0; k--) { h[k * 3] = h[(k - 1) * 3]; h[k * 3 + 1] = h[(k - 1) * 3 + 1]; h[k * 3 + 2] = h[(k - 1) * 3 + 2]; }
+      h[0] = f.world[0]; h[1] = f.world[1]; h[2] = f.world[2];
+      this.historyLen = Math.min(this.historyLen + 1, RIBBON);
+      const W = this.width, H = this.height;
+      const pts: [number, number][] = [];
+      const v = new Vector3();
+      for (let k = 0; k < this.historyLen; k++) {
+        v.set(h[k * 3] - p.cam[0], h[k * 3 + 1] - p.cam[1], h[k * 3 + 2] - p.cam[2]);
+        // Keep the direction only (any depth will do for the screen position), so nothing sits behind the camera.
+        const z = v.dot(new Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion));
+        if (z <= 0) break;
+        v.project(this.camera);
+        pts.push([v.x * W / 2, v.y * H / 2]);                   // px from the centre
+      }
+      const camLog2 = Math.log10(Math.max(vlen(p.cam), 1e-9));
+      const starBoost = smoothstep(Math.log10(0.3 * LY_AU), Math.log10(30 * LY_AU), camLog2);
+      const targetLen = (H / 3) * (1 + 0.8 * starBoost);
+      let raw = 0;
+      for (let k = 1; k < pts.length; k++) raw += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
+      const scale = raw > 1e-6 ? Math.min(targetLen / raw, 4) : 0;
+      const alpha = scale > 0 ? (0.95 * Math.min(1, (raw * scale) / targetLen)) * (1 - still * 0.85) * p.dim : 0;
+      const rp = this.ribbon.geometry.attributes.position as BufferAttribute;
+      const ra = this.ribbon.geometry.attributes.aA as BufferAttribute;
+      const n = pts.length;
+      const o = pts[0] ?? [0, 0];
+      for (let k = 0; k < RIBBON; k++) {
+        const kk = Math.min(k, n - 1);
+        const q = pts[kk] ?? o;
+        const x = o[0] + (q[0] - o[0]) * scale, y = o[1] + (q[1] - o[1]) * scale;
+        const prev = pts[Math.max(0, kk - 1)] ?? o, next = pts[Math.min(n - 1, kk + 1)] ?? o;
+        let tx = next[0] - prev[0], ty = next[1] - prev[1];
+        const tl = Math.hypot(tx, ty) || 1;
+        tx /= tl; ty /= tl;
+        const t = n > 1 ? kk / (n - 1) : 1;
+        const width = RIBBON_WIDTH * Math.pow(1 - t, 0.8) * (1 + 0.8 * starBoost) * 0.5;
+        const nx = -ty * width, ny = tx * width;
+        rp.setXYZ(k * 2, (x + nx) / (W / 2), (y + ny) / (H / 2), 0);
+        rp.setXYZ(k * 2 + 1, (x - nx) / (W / 2), (y - ny) / (H / 2), 0);
+        const a = k < n ? Math.pow(1 - t, 1.6) : 0;
+        ra.setX(k * 2, a); ra.setX(k * 2 + 1, a);
+      }
+      rp.needsUpdate = ra.needsUpdate = true;
+      this.ribbonMat.uniforms.uAlpha.value = alpha;
+      this.ribbon.visible = alpha > 0.002;
+      // Through the stars the light pulls ahead: a little nearer the centre of the view.
+      f.ndc[0] *= 1 - 0.35 * starBoost;
+      f.ndc[1] *= 1 - 0.35 * starBoost;
+    }
 
     // ── the dust ──
     const wantL = Math.max(this.speed * 4, 0.3 * nearD);
@@ -1402,6 +1538,7 @@ export class CosmosEngine {
     this.flowMat.uniforms.uL.value = L;
     this.flowMat.uniforms.uAlpha.value = 0.6 * p.dim;
     void pxAngle;
+    void ref2;
     this.prevCam = p.cam;
   }
 }

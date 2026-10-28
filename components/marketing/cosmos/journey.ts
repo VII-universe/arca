@@ -11,7 +11,7 @@
 // read, and between sections there are fly-by keys (a planet filling a
 // third of the screen) so the camera always passes something new.
 
-import { EARTH_RADIUS_AU, LY_AU, MOON_RADIUS_KM, AU_KM, PLANET_BY_ID } from "./ephemeris";
+import { EARTH_RADIUS_AU, LY_AU, MOON_RADIUS_KM, AU_KM, PLANET_BY_ID, type Vec3 } from "./ephemeris";
 
 export type WaypointId =
   | "hero" | "liftoff"
@@ -82,12 +82,12 @@ const PASS = 5.5;
 const RAY: Direction = { frame: "galactic", lat: 78, lon: 348 };
 
 export const JOURNEY: JourneySection[] = [
-  { id: "hero", leg: 100, legPhone: 90 },
-  { id: "liftoff", leg: 110, legPhone: 100 },
-  { id: "y2032", leg: 150, legPhone: 130 },
-  { id: "y2044", leg: 150, legPhone: 130 },
-  { id: "y2051", leg: 220, legPhone: 190 },
-  { id: "y2070", leg: 110, legPhone: 90 },
+  { id: "hero", leg: 170, legPhone: 150 },
+  { id: "liftoff", leg: 170, legPhone: 150 },
+  { id: "y2032", leg: 260, legPhone: 220 },
+  { id: "y2044", leg: 260, legPhone: 220 },
+  { id: "y2051", leg: 340, legPhone: 300 },
+  { id: "y2070", leg: 120, legPhone: 100 },
   { id: "forWhom", leg: 90, legPhone: 80 },
   { id: "how", leg: 90, legPhone: 80 },
   { id: "guardians", leg: 90, legPhone: 80 },
@@ -175,6 +175,13 @@ export interface WaypointMark {
 export const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 /** power2.inOut — the camera's easing family. */
 export const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+/**
+ * The flight's easing: power2.inOut, then flattened further at both ends
+ * (rate 0.4 of linear), so that the last e-folds of an approach — where the
+ * planet is big on screen — take most of the hop's scroll, and the first
+ * ones — where it is a speck — go by quickly.
+ */
+export const flightEase = (f: number) => { const u = easeInOut(f); return u - (0.6 * Math.sin(2 * Math.PI * u)) / (2 * Math.PI); };
 export const smoothstep = (a: number, b: number, x: number) => {
   const t = clamp01((x - a) / (b - a));
   return t * t * (3 - 2 * t);
@@ -265,11 +272,41 @@ export function trailFadeAt(s: number): number {
 export function bilog(u: number, xa: number, xb: number): number {
   if (u <= 0) return 0;
   if (u >= 1) return 1;
-  const a = Math.min(0.95, Math.max(1e-9, xa)), b = Math.min(0.95, Math.max(1e-9, xb));
+  // Keys that sit close to their anchors relative to the hop (both within half the line) need no zoom
+  // profile at all: capped at a half, the curve is nearly linear.
+  const a = Math.min(0.5, Math.max(1e-9, xa)), b = Math.min(0.5, Math.max(1e-9, xb));
   const wStar = (1 + b - a) / 2;                                   // where the two profiles move at the same speed
   const la = Math.log(wStar / a + 1), lb = Math.log((1 - wStar) / b + 1);
   const c = la + lb, uStar = la / c;
   return u <= uStar ? a * (Math.exp(c * u) - 1) : 1 - b * (Math.exp(c * (1 - u)) - 1);
+}
+
+/**
+ * The hop from p1 to p2 as a cubic Hermite curve whose end tangents point
+ * along the bisectors of the neighbouring hops (p0 → p1 → p2 → p3), with a
+ * bounded magnitude: the camera rounds every key instead of kinking at it,
+ * and the curve never strays more than a small fraction of the hop from its
+ * chord — whatever the ratio of the hops, which here spans ten orders of
+ * magnitude (a plain Catmull-Rom would bulge or cusp there).
+ */
+export function roundedHop(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, t: number): Vec3 {
+  const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const len = (a: Vec3) => Math.hypot(a[0], a[1], a[2]);
+  const unit = (a: Vec3): Vec3 => { const l = len(a); return l > 0 ? [a[0] / l, a[1] / l, a[2] / l] : [0, 0, 0]; };
+  const chord = sub(p2, p1);
+  const L = len(chord);
+  if (L === 0) return p1;
+  const out = unit(chord);
+  const inA = unit(sub(p1, p0)), outB = unit(sub(p3, p2));
+  // Tangent directions: the bisector of in/out at each end (the chord itself where there is no neighbour).
+  const mA = unit(len(inA) > 0 ? [inA[0] + out[0], inA[1] + out[1], inA[2] + out[2]] : out);
+  const mB = unit(len(outB) > 0 ? [out[0] + outB[0], out[1] + outB[1], out[2] + outB[2]] : out);
+  const k = 0.5 * L;   // tangent magnitude: a gentle curve, bounded well inside the hop
+  const t2 = t * t, t3 = t2 * t;
+  const h00 = 2 * t3 - 3 * t2 + 1, h10 = t3 - 2 * t2 + t, h01 = -2 * t3 + 3 * t2, h11 = t3 - t2;
+  const r: Vec3 = [0, 0, 0];
+  for (let c = 0; c < 3; c++) r[c] = h00 * p1[c] + h10 * k * mA[c] + h01 * p2[c] + h11 * k * mB[c];
+  return r;
 }
 
 /** Distance interpolated on a log scale — the camera "zooms", never jumps. */

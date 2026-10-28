@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { JOURNEY, KEYS, STOP_YEARS, WRITTEN_IN, bilog, indexOf, keyOf, logLerp, orbitsAt, progressAt, scrollForProgress, segmentAt, trailFadeAt } from "./journey";
+import { JOURNEY, KEYS, STOP_YEARS, WRITTEN_IN, bilog, holdAt, roundedHop, indexOf, keyOf, logLerp, orbitsAt, progressAt, scrollForProgress, segmentAt, trailFadeAt } from "./journey";
 import { LY_AU } from "./ephemeris";
 
 describe("journey progress", () => {
@@ -125,6 +125,30 @@ describe("flight", () => {
       }
     }
     expect(logLerp(1, 100, 0.5)).toBeCloseTo(10);
+  });
+
+  it("roundedHop passes through its ends and stays near the chord between hops of wildly different length", () => {
+    const p0: [number, number, number] = [0, 0, 0], p1: [number, number, number] = [1e-4, 0, 0], p2: [number, number, number] = [1, 0.2, 0], p3: [number, number, number] = [9, 1, 0];
+    expect(roundedHop(p0, p1, p2, p3, 0)).toEqual(p1);
+    expect(roundedHop(p0, p1, p2, p3, 1)[0]).toBeCloseTo(p2[0], 9);
+    let lastX = p1[0];
+    for (let t = 0; t <= 1; t += 0.01) {
+      const p = roundedHop(p0, p1, p2, p3, t);
+      expect(p[0]).toBeGreaterThanOrEqual(lastX - 1e-9);     // no backing up along the hop
+      expect(Math.abs(p[1] - 0.2 * p[0])).toBeLessThan(0.08); // within a small fraction of the chord
+      lastX = p[0];
+    }
+    // A hop that reverses (the turn back home): still finite and through the ends.
+    const q = roundedHop([0, 0, 0], [1, 0, 0], [0, 0, 0], [0.5, 0, 0], 0.5);
+    expect(q.every(Number.isFinite)).toBe(true);
+  });
+
+  it("holdAt is 0..1 through a section's content and 0 on its leg", () => {
+    const marks = [{ top: 0, legStart: 800 }, { top: 1000, legStart: 1500 }];
+    expect(holdAt(marks, 0)).toBe(0);
+    expect(holdAt(marks, 400)).toBeCloseTo(0.5);
+    expect(holdAt(marks, 900)).toBe(0);
+    expect(holdAt(marks, 1250)).toBeCloseTo(0.5);
   });
 
   it("slows down with the year between the stops", () => {
