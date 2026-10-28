@@ -1177,7 +1177,7 @@
       "operator": "Operated by",
       "companyId": "Company ID {id}",
       "rights": "All rights reserved.",
-      "starData": "Star data: HYG Database v4.4 (CC BY-SA 4.0), from the ESA Hipparcos and Gaia catalogues.",
+      "starData": "Star data: HYG Database v4.4 (CC BY-SA 4.0), from the ESA Hipparcos and Gaia catalogues. Fainter stars beyond the catalogue and the Milky Way from outside are procedural.",
       "earthData": "Earth and Moon: NASA Blue Marble, Black Marble and LRO (public domain).",
       "planetData": "Planet textures: Solar System Scope (CC BY 4.0).",
       "positions": "Planet positions for the day of your visit after JPL (approximate Keplerian elements)."

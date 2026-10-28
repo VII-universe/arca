@@ -123,19 +123,23 @@
 .l-display em { font-style: italic; letter-spacing: -0.03em; }
 .l-display--hero { max-width: 9.2em; }
 
+/* Section headlines: 8–10 vw, never smaller (brief, section 4). */
 .l-h2 {
   font-family: var(--f-display);
   font-weight: 300;
-  font-variation-settings: "opsz" 60;
-  font-size: clamp(2.4rem, 5.2vw, 5.4rem);
-  line-height: 1;
-  letter-spacing: -0.032em;
+  font-variation-settings: "opsz" 72;
+  font-size: clamp(2.9rem, 8.6vw, 9.8rem);
+  line-height: 0.94;
+  letter-spacing: -0.04em;
   text-wrap: balance;
-  margin-bottom: 28px !important;
+  margin-bottom: 36px !important;
 }
+/* The headline block of a section: the kicker and the headline over the whole width. */
+.l-wrap > .l-head { grid-column: 1 / -1; }
+.l-head .l-h2 { max-width: 11.5em; }
 
 .l-lead {
-  font-size: clamp(1.15rem, 1.45vw, 1.375rem);
+  font-size: clamp(1.2rem, 1.55vw, 1.45rem);
   line-height: 1.5;
   letter-spacing: -0.012em;
   color: var(--ink);
@@ -337,7 +341,7 @@
 
 .l-intro .l-wrap { min-height: 80svh; align-content: center; }
 .l-wrap > .l-intro__text { grid-column: 1 / span 7; max-width: 60ch; }
-.l-h2--intro { font-size: clamp(2.6rem, 6vw, 6.4rem); }
+.l-h2--intro { max-width: 9em; }
 
 .l-stops { list-style: none; margin: 0; padding: 0; }
 /* The year, enormous and centred; the message under it in amber; the rings behind. */
@@ -380,18 +384,79 @@
 
 /* ── sections after the orbits ────────────────────────────────────────── */
 
-.l-section > .l-wrap { padding-block: clamp(96px, 15svh, 180px); row-gap: clamp(36px, 4vw, 56px); }
+.l-section > .l-wrap { padding-block: clamp(96px, 15svh, 180px); row-gap: clamp(36px, 4vw, 64px); }
 
-/* Pro koho: the list on the right, the inner planets on the left. */
-#for-whom .l-wrap > .l-col { grid-column: 8 / span 5; }
-.l-wrap > .l-forwhom { grid-column: 8 / span 5; list-style: none; margin: 0; padding: 0; display: grid; gap: 30px; }
-.l-forwhom li { max-width: 48ch; }
-.l-forwhom h3 { font: 300 1.7rem/1.15 var(--f-display); font-variation-settings: "opsz" 36; letter-spacing: -0.02em; }
+/* Pro koho: the headline across, the lead to the right, five points on one orbit. */
+.l-wrap > .l-forwhom__lead { grid-column: 8 / span 5; margin-top: -8px !important; }
+.l-wrap > .l-points-orbit {
+  grid-column: 1 / -1;
+  position: relative;
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 44px 0 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  column-gap: var(--gap);
+}
+/* The orbit: one thin line the points sit on. */
+.l-points-orbit::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-2) 8%, var(--line-2) 92%, transparent);
+}
+.l-points-orbit li { position: relative; max-width: 34ch; }
+.l-points-orbit__dot {
+  position: absolute;
+  top: -44px;
+  left: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--cool);
+  box-shadow: 0 0 0 5px rgb(220 230 255 / 0.12), 0 0 18px rgb(220 230 255 / 0.5);
+}
+.l-points-orbit li[data-gone="true"] .l-points-orbit__dot { background: var(--amber); box-shadow: 0 0 0 5px rgb(255 217 160 / 0.14), 0 0 18px rgb(255 217 160 / 0.5); }
+.l-points-orbit h3 { font: 300 clamp(1.5rem, 2vw, 2.1rem)/1.1 var(--f-display); font-variation-settings: "opsz" 48; letter-spacing: -0.025em; margin-bottom: 12px; }
 
-.l-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
-.l-steps h3 { font: 300 1.5rem/1.15 var(--f-display); font-variation-settings: "opsz" 36; letter-spacing: -0.02em; }
+/* Jak to funguje: four points on one trajectory, top left to bottom right. */
+.l-wrap > .l-trajectory {
+  grid-column: 1 / -1;
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: clamp(28px, 4svh, 56px);
+}
+.l-trajectory__line { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.l-trajectory__line path { fill: none; stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 2 7; }
+.l-trajectory__step {
+  position: relative;
+  grid-column: calc(1 + var(--i) * 2) / span 5;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 20px;
+  align-items: start;
+}
+.l-trajectory__step > .l-shade { max-width: 40ch; }
+.l-trajectory__step > .l-ui { grid-column: 2; max-width: 40ch; }
+.l-trajectory__n {
+  display: block;
+  margin-top: 6px;
+  font: 300 clamp(2rem, 3.2vw, 3.4rem)/1 var(--f-mono);
+  letter-spacing: -0.02em;
+  color: var(--cool);
+  font-variant-numeric: tabular-nums;
+}
+.l-trajectory h3 { font: 300 clamp(1.7rem, 2.6vw, 2.8rem)/1.05 var(--f-display); font-variation-settings: "opsz" 48; letter-spacing: -0.028em; margin-bottom: 12px; }
 .l-ui {
-  margin-top: 20px;
+  margin-top: 18px;
   padding: 14px 16px;
   border-radius: 14px;
   border: 1px solid var(--line);
@@ -408,15 +473,16 @@
 .l-ui__people strong { font-weight: 500; margin-right: 10px; }
 .l-ui__avatar { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line-2); font: 400 0.75rem/1 var(--f-mono); }
 
-.l-guardians { align-items: center; }
-.l-list { margin: 0 0 22px; padding-left: 1.3em; color: var(--ink-2); }
-.l-list li + li { margin-top: 10px; }
-.l-wrap > .l-guardians__figure { grid-column: 8 / span 5; width: 100%; max-width: 420px; justify-self: center; }
+/* Strážci: the figure large on the left, the mechanics numbered on the right. */
+.l-wrap > .l-guardians__figure { grid-column: 1 / span 6; width: 100%; max-width: 560px; align-self: center; }
+.l-wrap > .l-guardians__text { grid-column: 8 / span 5; }
 .l-thread { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 2 6; }
-.l-glow { fill: var(--amber); opacity: 0.16; }
 .l-light { fill: var(--amber); }
-.l-star { fill: var(--cool); }
-.l-figure-label { fill: var(--ink-2); font: 400 12px var(--f-mono); letter-spacing: 0.08em; }
+.l-figure-label { fill: var(--ink-2); font: 400 13px var(--f-mono); letter-spacing: 0.1em; }
+.l-mech { list-style: none; margin: 8px 0 26px; padding: 0; display: grid; gap: 18px; }
+.l-mech li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; align-items: baseline; }
+.l-mech__n { font: 400 0.8rem/1.5 var(--f-mono); letter-spacing: 0.08em; color: var(--cool); }
+.l-mech p { color: var(--ink-2); }
 
 /* One sentence across the whole width. */
 .l-statement .l-wrap { min-height: 90svh; align-content: center; }
@@ -433,6 +499,7 @@
   max-width: 14ch;
 }
 
+/* Atmosféry: the headline and the choice. */
 .l-atmos { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 18px; }
 .l-atmos__option {
   display: inline-flex;
@@ -450,16 +517,22 @@
 .l-atmos__option[aria-checked="true"] { border-color: var(--ink-2); color: var(--ink); }
 .l-atmos__dot { width: 8px; height: 8px; border-radius: 50%; }
 
-/* Security: the quietest section — two columns of plain facts. */
+/* Security: the quietest section — the headline, then two columns of plain facts. */
+.l-wrap > .l-security__lead { grid-column: 1 / span 5; margin-top: -8px !important; }
 .l-wrap > .l-points { grid-column: 1 / -1; columns: 2; column-gap: clamp(40px, 6vw, 112px); list-style: none; margin: 0; padding: 0; }
-.l-points li { break-inside: avoid; max-width: 58ch; margin-bottom: 30px; }
+.l-points li { break-inside: avoid; max-width: 54ch; margin-bottom: 34px; }
+.l-points h3 { font: 300 1.5rem/1.15 var(--f-display); font-variation-settings: "opsz" 36; letter-spacing: -0.02em; }
 .l-wrap > .l-whatif { grid-column: 1 / span 8; }
-.l-whatif h3 { margin-bottom: 14px; }
+.l-whatif h3 { font: 300 1.5rem/1.15 var(--f-display); font-variation-settings: "opsz" 36; letter-spacing: -0.02em; margin-bottom: 14px; }
 .l-whatif dl > div { padding: 18px 0; border-top: 1px solid var(--line); }
 .l-whatif dt { color: var(--ink); font-weight: 500; margin-bottom: 6px; }
 .l-whatif dd { color: var(--ink-2); }
 
-.l-wrap > .l-plans { grid-column: 1 / span 10; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
+/* Ceník: the headline left, the two cards right. */
+.l-pricing > .l-wrap { align-items: start; }
+.l-wrap > .l-pricing__head { grid-column: 1 / span 5; }
+.l-pricing__head .l-h2 { font-size: clamp(2.9rem, 8vw, 8.6rem); }
+.l-wrap > .l-plans { grid-column: 6 / span 7; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
 .l-plan { display: flex; flex-direction: column; align-items: flex-start; }
 .l-plan--pro { border-color: rgb(255 217 160 / 0.34); }
 .l-plan__name { font: 400 0.8rem/1 var(--f-mono) !important; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cool) !important; }
@@ -472,21 +545,26 @@
 .l-plan li::before { content: ""; position: absolute; left: 2px; top: 0.72em; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
 .l-plan .l-btn { margin-top: auto; }
 
-.l-wrap > .l-faq { grid-column: 1 / span 8; }
+/* FAQ: the headline left, the questions right. */
+.l-faq-s > .l-wrap { align-items: start; }
+.l-wrap > .l-faq__head { grid-column: 1 / span 5; }
+.l-wrap > .l-faq { grid-column: 6 / span 7; }
 .l-faq details { border-top: 1px solid var(--line); background: rgb(5 7 13 / 0.6); }
 .l-faq details:last-child { border-bottom: 1px solid var(--line); }
 .l-faq summary {
   position: relative;
   padding: 22px 44px 22px 0;
   list-style: none;
-  font-size: 1.15rem;
+  font: 300 1.5rem/1.2 var(--f-display);
+  font-variation-settings: "opsz" 36;
+  letter-spacing: -0.02em;
   color: var(--ink);
   cursor: pointer;
 }
 .l-faq summary::-webkit-details-marker { display: none; }
-.l-faq summary::after { content: "+"; position: absolute; right: 4px; top: 19px; font: 300 22px/1 var(--f-mono); color: var(--ink-3); }
+.l-faq summary::after { content: "+"; position: absolute; right: 4px; top: 21px; font: 300 22px/1 var(--f-mono); color: var(--ink-3); }
 .l-faq details[open] summary::after { content: "–"; }
-.l-faq details p { max-width: 64ch; padding-bottom: 24px; }
+.l-faq details p { max-width: 60ch; padding-bottom: 24px; }
 
 /* ── the Galaxy, the end ──────────────────────────────────────────────── */
 
@@ -531,26 +609,34 @@
 
 /* ── narrower screens ─────────────────────────────────────────────────── */
 
-@media (max-width: 1100px) {
-  .l-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 40px; }
-}
-
 @media (max-width: 900px) {
   .l-wrap > .l-col,
-  #for-whom .l-wrap > .l-col,
+  .l-wrap > .l-head,
   .l-wrap > .l-hero__head,
   .l-wrap > .l-hero__lead,
   .l-wrap > .l-hero__composer,
   .l-wrap > .l-intro__text,
   .l-wrap > .l-stop__text,
-  .l-wrap > .l-forwhom,
+  .l-wrap > .l-forwhom__lead,
+  .l-wrap > .l-security__lead,
   .l-wrap > .l-whatif,
+  .l-wrap > .l-pricing__head,
   .l-wrap > .l-plans,
+  .l-wrap > .l-faq__head,
   .l-wrap > .l-faq,
   .l-wrap > .l-guardians__figure,
+  .l-wrap > .l-guardians__text,
   .l-footer__grid > * { grid-column: 1 / -1 !important; }
   .l-wrap > .l-plans { grid-template-columns: 1fr; }
   .l-wrap > .l-points { columns: 1; }
+  .l-wrap > .l-guardians__figure { max-width: 420px; }
+  /* The five points down one line on the left. */
+  .l-wrap > .l-points-orbit { grid-template-columns: 1fr; row-gap: 28px; padding: 0 0 0 36px; }
+  .l-points-orbit::before { top: 6px; bottom: 6px; left: 6px; right: auto; width: 1px; height: auto; background: linear-gradient(180deg, transparent, var(--line-2) 6%, var(--line-2) 94%, transparent); }
+  .l-points-orbit__dot { top: 6px; left: -36px; }
+  /* The four points down one line, too. */
+  .l-trajectory__step { grid-column: 1 / -1 !important; }
+  .l-trajectory__line { display: none; }
   /* Phones: the year and the message at the top, the rings below them. */
   .l-stop__frame { min-height: 100svh; align-content: start; padding-top: 13svh; }
   .l-stop[data-last="true"] .l-stop__frame { min-height: 108svh; }
@@ -559,13 +645,16 @@
 
 @media (max-width: 640px) {
   .l-body { font-size: 17px; }
-  .l-steps { grid-template-columns: 1fr; }
   .l-display { font-size: clamp(3rem, 14vw, 5rem); }
+  .l-h2 { font-size: clamp(2.6rem, 12.5vw, 4.6rem); }
+  .l-pricing__head .l-h2 { font-size: clamp(2.6rem, 12.5vw, 4.6rem); }
   .l-hero__grid { padding-top: 104px; }
   /* The first screen on a phone: the title over the Earth below; the sample comes up as you scroll. */
   .l-wrap > .l-hero__composer { margin-top: 48svh; }
   .l-stop__year { font-size: clamp(4.4rem, 20vw, 7rem); }
   .l-statement__text { font-size: clamp(2.4rem, 11vw, 4rem); }
+  .l-trajectory__step { grid-template-columns: 1fr; }
+  .l-trajectory__step > .l-ui { grid-column: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

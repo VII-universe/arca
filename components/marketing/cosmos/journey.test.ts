@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { JOURNEY, STOP_YEARS, WRITTEN_IN, indexOf, logLerp, orbitsAt, progressAt, trailFadeAt } from "./journey";
+import { JOURNEY, KEYS, STOP_YEARS, WRITTEN_IN, bilog, indexOf, keyOf, logLerp, orbitsAt, progressAt, scrollForProgress, segmentAt, trailFadeAt } from "./journey";
+import { LY_AU } from "./ephemeris";
 
 describe("journey progress", () => {
   const marks = [
@@ -27,12 +28,54 @@ describe("journey progress", () => {
       last = s;
     }
   });
+
+  it("inverts: scrollForProgress lands where progressAt reads the same value", () => {
+    for (const s of [0, 0.25, 0.5, 1, 1.5, 1.99, 2]) {
+      expect(progressAt(marks, scrollForProgress(marks, s))).toBeCloseTo(s, 6);
+    }
+  });
+});
+
+describe("keys", () => {
+  it("has one key per section, at whole numbers, in order, with fly-bys between", () => {
+    for (const [i, section] of JOURNEY.entries()) {
+      const k = KEYS.find((k) => k.at === i);
+      expect(k, section.id).toBeDefined();
+    }
+    for (let i = 1; i < KEYS.length; i++) expect(KEYS[i].at).toBeGreaterThan(KEYS[i - 1].at);
+    expect(KEYS[KEYS.length - 1].at).toBe(JOURNEY.length - 1);
+  });
+
+  it("passes the Moon, Mars, Jupiter, Saturn, Uranus and Neptune close enough to fill a third of the screen", () => {
+    const passes = KEYS.filter((k) => !Number.isInteger(k.at));
+    expect(passes.map((k) => k.anchor)).toEqual(["moon", "mars", "jupiter", "saturn", "uranus", "neptune"]);
+    for (const k of passes) {
+      // dist ≤ 6.9 radii → the disc spans ≥ 16.7°, a third of a 50° field
+      const km: Record<string, number> = { moon: 1737.4, mars: 3389.5, jupiter: 69_911, saturn: 58_232, uranus: 25_362, neptune: 24_622 };
+      const radiusAu = km[k.anchor] / 149_597_870.7;
+      expect(k.dist / radiusAu).toBeLessThanOrEqual(6.9);
+    }
+  });
+
+  it("goes one way out: the distance from the Sun grows from the Earth to the Galaxy, and the stars are flown in one direction", () => {
+    const first = indexOf("y2032"), last = indexOf("galaxy");
+    const stops = KEYS.filter((k) => Number.isInteger(k.at) && k.at >= first && k.at <= last && k.anchor === "sun");
+    for (let i = 1; i < stops.length; i++) expect(stops[i].dist).toBeGreaterThan(stops[i - 1].dist);
+    const ray = KEYS.filter((k) => k.at >= indexOf("forWhom") && k.at <= indexOf("faq")).map((k) => JSON.stringify(k.dir));
+    expect(new Set(ray).size).toBe(1);
+  });
+
+  it("segments: a fly-by sits in the middle of its leg", () => {
+    expect(segmentAt(2.25)).toEqual({ i: 3, f: 0.5 });
+    expect(segmentAt(-1)).toEqual({ i: 0, f: 0 });
+    expect(segmentAt(99).f).toBe(1);
+  });
 });
 
 describe("orbits", () => {
   it("counts year − written year at every stop", () => {
     for (const [id, year] of Object.entries(STOP_YEARS)) {
-      expect(JOURNEY[indexOf(id as keyof typeof STOP_YEARS)].shot.orbits).toBe(year - WRITTEN_IN);
+      expect(keyOf(id as keyof typeof STOP_YEARS).orbits).toBe(year - WRITTEN_IN);
     }
   });
 
@@ -42,9 +85,10 @@ describe("orbits", () => {
     expect(orbitsAt(indexOf("y2070") + 0.5)).toBe(44);
   });
 
-  it("goes round only once the camera has pulled away, and is monotonic", () => {
-    const i = indexOf("y2032");
-    expect(orbitsAt(i + 0.2)).toBe(6);
+  it("goes round only after the fly-by, on the way to the stop, and is monotonic", () => {
+    expect(orbitsAt(indexOf("y2032") + 0.5)).toBe(6);       // passing Mars: still six
+    expect(orbitsAt(indexOf("y2032") + 0.6)).toBe(6);       // the run starts later in the segment
+    expect(orbitsAt(indexOf("y2032") + 0.95)).toBe(18);
     let last = 0;
     for (let s = 0; s <= indexOf("y2070"); s += 0.01) {
       const o = orbitsAt(s);
@@ -53,35 +97,43 @@ describe("orbits", () => {
     }
   });
 
-  it("fades the trail in after the hero and out after the last stop", () => {
+  it("shows the trail only at the stops: in before a stop, out after it, gone at the fly-bys", () => {
     expect(trailFadeAt(0)).toBe(0);
     expect(trailFadeAt(indexOf("y2044"))).toBe(1);
+    expect(trailFadeAt(indexOf("y2044") + 0.5)).toBe(0);    // Jupiter
+    expect(trailFadeAt(indexOf("y2044") + 0.95)).toBe(1);
     expect(trailFadeAt(indexOf("y2070") + 1)).toBe(0);
   });
 });
 
-describe("shots", () => {
-  it("zoom out monotonically from the Earth to the Galaxy", () => {
-    const dists = JOURNEY.slice(0, indexOf("galaxy") + 1).map((s) => s.shot.dist);
-    // The tour dips to Jupiter and Saturn on purpose; outside of it distance only grows.
-    const tour = new Set([indexOf("how"), indexOf("guardians")]);
-    for (let i = 1; i < dists.length; i++) {
-      if (tour.has(i) || tour.has(i - 1)) continue;
-      expect(dists[i]).toBeGreaterThan(dists[i - 1]);
+describe("flight", () => {
+  it("bilog leaves and arrives on a log scale and stays monotonic", () => {
+    expect(bilog(0, 1e-4, 1e-4)).toBe(0);
+    expect(bilog(1, 1e-4, 1e-4)).toBe(1);
+    expect(bilog(0.5, 1e-4, 1e-4)).toBeCloseTo(0.5, 2);
+    // A quarter in, the camera has moved only a few times its starting distance (not a quarter of the way).
+    expect(bilog(0.25, 1e-4, 1e-4)).toBeLessThan(0.02);
+    expect(bilog(0.25, 1e-4, 1e-4)).toBeGreaterThan(1e-4);
+    // Symmetric ends: the hand-over is in the middle, and the two halves mirror.
+    expect(bilog(0.3, 1e-3, 1e-3)).toBeCloseTo(1 - bilog(0.7, 1e-3, 1e-3), 9);
+    for (const [xa, xb] of [[1e-5, 1e-5], [0.06, 0.03], [0.5, 0.5], [0.95, 1e-6]]) {
+      let last = 0;
+      for (let u = 0; u <= 1; u += 0.001) {
+        const w = bilog(u, xa, xb);
+        expect(w).toBeGreaterThanOrEqual(last - 1e-12);
+        last = w;
+      }
     }
     expect(logLerp(1, 100, 0.5)).toBeCloseTo(10);
   });
 
   it("slows down with the year between the stops", () => {
     const leg = (id: string) => JOURNEY.find((s) => s.id === id)!.leg;
-    expect(leg("y2044")).toBeGreaterThan(leg("y2032"));
     expect(leg("y2051")).toBeGreaterThan(leg("y2044"));
+    expect(leg("galaxy")).toBeGreaterThan(leg("security"));
   });
 
-  it("never leaves more than a screen of flight without text", () => {
-    for (const s of JOURNEY) {
-      expect(s.leg).toBeLessThanOrEqual(80);
-      expect(s.legPhone).toBeLessThanOrEqual(80);
-    }
+  it("flies the Galaxy from well above the disc", () => {
+    expect(keyOf("galaxy").dist).toBeGreaterThan(40_000 * LY_AU);
   });
 });

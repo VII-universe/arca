@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.65.0] - Web v3 „Oběhy“, milník M0 podruhé: jízda jedním směrem ven
+Choreografie kamery předělaná podle připomínek: kamera nikdy nekrouží kolem jednoho objektu, letí jedním směrem ven a mezi každými dvěma body trasy mine něco nového. Trasa: Země zblízka → odlet, Měsíc projde (zblízka, osvětlená strana) → 2032 u Země s prvními oběhy → Mars → 2044 → Jupiter → 2051 → Saturn s prstenci → Uran → Neptun → 2070 na okraji soustavy (62 au, celá soustava pod kamerou) → Slunce se stává hvězdou → let hvězdami jedním směrem (ke galaktickému severu) → Galaxie shora → otočka a návrat k modré tečce. Každá míjená planeta vyplní nejméně třetinu výšky obrazovky (5,5 poloměru). Oběhy jsou stopa za Zemí viditelná jen u zastávek. Typografie všech sekcí podle sekce 4 briefu.
+
+### Přidáno
+- `journey.ts` — klíčové body kamery (`KEYS`) nezávislé na sekcích: sekce jsou celočíselné body, průlety zlomkové uvnitř přeletu. Mezi dvěma body kamera letí po přímce s rychlostí úměrnou vzdálenosti od bližší kotvy (`bilog`: exponenciální odlet předaný při shodné rychlosti exponenciálnímu příletu), takže planeta narůstá rovnoměrně a Země se rovnoměrně zmenšuje. Pohled se otáčí podle polohy na trase, ne podle času. Inverze `scrollForProgress` pro capture; testy.
+- Hluboké hvězdné pole: 120 000 procedurálních hvězd (stejný počet v každé dekádě vzdálenosti 1–25 000 ly, zploštělé do disku), aby let hvězdami nebyl prázdný — katalog HYG končí u 7. magnitudy. Uvedeno v patičce jako procedurální.
+- Slunce se za hranicí ~0,4–25 ly mění z koróny na jantarový bod (hvězdu); body Galaxie se zblízka rozšiřují v měkkou záři (disk zevnitř a těsně nad ním), body blíž než 1 500 ly se nekreslí.
+- Měsíc: popelavý svit (noční strana osvětlená Zemí).
+- Capture režim: `window.__cosmos.scrollTo(progress)` a `setScroll(y)` posouvají stránku i kameru bez zpoždění — videa jízdy jsou skutečný scroll stránky včetně textu.
+
+### Změněno
+- Zastávky se dívají na dnešní polohu Země (ne na Slunce); Země jede po konci své stopy (spirála 0,62 % na oběh), stopa je jasná za Zemí a slábne po starších obězích.
+- Přelety mezi zastávkami delší (100–220 svh), aby se průlety daly číst.
+- Sekce Pro koho (pět bodů na jedné dráze), Jak to funguje (čtyři body na jedné trajektorii), Strážci (bod světla a dvě klidné planety vlevo, mechanika číslovaná vpravo), Bezpečnost (dva sloupce), Ceník (nadpis vlevo, karty vpravo), FAQ (nadpis vlevo, otázky vpravo): nadpisy 8,6 vw (mobil 12,5 vw), lead 22 px, text 18 px, mono 0,8 rem.
+
 ## [1.64.0] - Web v3 „Oběhy“, milník M0: koncept ve skutečné scéně
 Nový veřejný web začíná znovu od scény: jedna jízda kamery od nízké oběžné dráhy Země přes oběhy kolem Slunce, Jupiter a Saturn až k pohledu na Mléčnou dráhu a zpět. Rok = jeden oběh Země; zpráva pro rok 2044 čeká 18 oběhů a každý z nich zanechá stopu. Tento milník jsou koncepční rendery (Země z oběžné dráhy, zastávka 2044 s oběhy, Saturn, Galaxie), video oddálení a statický hero + jedna zastávka s finální typografií. Louka, hvězdné zastávky a všechny komponenty v2, které v3 nepoužije, jsou smazané.
 

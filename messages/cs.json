@@ -1177,7 +1177,7 @@
       "operator": "Provozovatel",
       "companyId": "IČO {id}",
       "rights": "Všechna práva vyhrazena.",
-      "starData": "Hvězdná data: HYG Database v4.4 (CC BY-SA 4.0), z katalogů ESA Hipparcos a Gaia.",
+      "starData": "Hvězdná data: HYG Database v4.4 (CC BY-SA 4.0), z katalogů ESA Hipparcos a Gaia. Slabší hvězdy mimo katalog a Mléčná dráha zvenčí jsou procedurální.",
       "earthData": "Země a Měsíc: NASA Blue Marble, Black Marble a LRO (volné dílo).",
       "planetData": "Textury planet: Solar System Scope (CC BY 4.0).",
       "positions": "Polohy planet ke dni návštěvy podle JPL (přibližné Keplerovy prvky)."

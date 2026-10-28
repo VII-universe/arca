@@ -7,15 +7,19 @@
 
 export const GALAXY_VERT = /* glsl */ `
 attribute vec3 aColor; attribute float aSize;
-uniform float uPx; uniform float uAlpha;
+uniform float uPx; uniform float uAlpha; uniform float uRef; uniform float uMaxScale; uniform float uNear;
 varying vec3 vColor; varying float vAlpha;
 void main(){
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
-  // Always seen from far outside: the size is set in pixels.
-  gl_PointSize = aSize * 2.4 * uPx;
+  float d = length(mv.xyz);
+  // From far outside the size is set in pixels; nearer than uRef each point (hundreds of suns) swells
+  // into a soft glow, so the disc seen from inside or just above is a continuous light, not sparse dots.
+  // Points nearer than uNear are the neighbourhood the real stars already show: they go.
+  float k = clamp(uRef / max(d, 1e-3), 1.0, uMaxScale);
+  gl_PointSize = aSize * 2.4 * uPx * k;
   vColor = aColor;
-  vAlpha = uAlpha;
+  vAlpha = uAlpha / sqrt(k) * smoothstep(uNear, uNear * 3.0, d);
 }`;
 
 export const GALAXY_FRAG = /* glsl */ `

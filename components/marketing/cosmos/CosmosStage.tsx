@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useAtmosphere } from "../atmosphere";
 import { loadCatalog } from "./catalog";
-import { progressAt, READING_LINE, JOURNEY, type WaypointMark } from "./journey";
+import { progressAt, scrollForProgress, READING_LINE, JOURNEY, type WaypointMark } from "./journey";
 import type { CosmosEngine } from "./engine";
 
 // The fixed scene behind the landing. The Earth shows at once as a still —
@@ -21,14 +21,14 @@ const noSubscribe = () => () => {};
 const STILLS = ["earth", "orbits", "saturn", "galaxy"] as const;
 /** Which still each waypoint shows without WebGL. */
 const STILL_OF: Record<string, (typeof STILLS)[number]> = {
-  hero: "earth", liftoff: "earth", y2032: "orbits", y2044: "orbits", y2051: "orbits", y2070: "orbits",
-  forWhom: "orbits", how: "saturn", guardians: "saturn", statement: "saturn", atmospheres: "galaxy", security: "galaxy",
+  hero: "earth", liftoff: "earth", y2032: "orbits", y2044: "orbits", y2051: "saturn", y2070: "orbits",
+  forWhom: "orbits", how: "galaxy", guardians: "galaxy", statement: "galaxy", atmospheres: "galaxy", security: "galaxy",
   pricing: "galaxy", faq: "galaxy", galaxy: "galaxy", home: "earth",
 };
 
 declare global {
   interface Window {
-    __cosmos?: { engine: CosmosEngine; setProgress: (s: number) => void };
+    __cosmos?: { engine: CosmosEngine; setProgress: (s: number) => void; scrollTo: (s: number) => void; setScroll: (y: number) => void; pageEnd: () => number };
   }
 }
 
@@ -87,7 +87,26 @@ export function CosmosStage() {
       engineRef.current = engine;
       measure();
       if (capture) {
-        window.__cosmos = { engine, setProgress: (s) => engine.jumpTo(s) };
+        // The capture scripts drive the camera (setProgress) or the page itself (scrollTo: the page scrolls
+        // to where that progress is read, the camera jumps there, no lag) — the ride videos use the latter.
+        window.__cosmos = {
+          engine,
+          setProgress: (s) => engine.jumpTo(s),
+          scrollTo: (s) => {
+            measure();
+            window.scrollTo(0, Math.max(0, scrollForProgress(marks, s) - window.innerHeight * READING_LINE));
+            engine.jumpTo(s);
+            setStill(stillFor(s));
+          },
+          setScroll: (y) => {
+            measure();
+            window.scrollTo(0, y);
+            const s = progress();
+            engine.jumpTo(s);
+            setStill(stillFor(s));
+          },
+          pageEnd: () => { measure(); return marks.length - 1; },
+        };
         engine.jumpTo(Number(params.get("t") ?? 0));
       } else {
         engine.jumpTo(progress());

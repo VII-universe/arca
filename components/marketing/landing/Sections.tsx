@@ -2,30 +2,37 @@ import { formatPrice, type MarketingPricing } from "@/lib/marketing/pricing";
 import { getCopy } from "./copy";
 import { Waypoint } from "./Waypoint";
 
-// The sections after the journey, set on the sky like film titles. Same
-// copy as before; cards only where there's a message or a plan. Their
-// motion (constellation, guardians' mechanics) comes in M5.
+// The sections after the orbits, set on the sky like magazine spreads: a
+// headline of 8–10 vw on every one, three sizes on every screen, and a
+// composition that changes from section to section (brief, section 4).
+// Same copy as before. Their motion (the five points joining up, the
+// guardians' mechanics) comes in M5.
 
 type Card = { key: string; title: string; example: string };
 type Step = { title: string; body: string };
 type Point = { title: string; body: string };
 type QA = { q: string; a: string };
 
+const two = (i: number) => String(i + 1).padStart(2, "0");
+
+// Pro koho: the headline across the width, the five items as five points
+// on one orbit, each with its words under it.
 export async function ForWhom() {
   const { t, raw } = await getCopy("Marketing.forWhom");
   const cards = raw<Card[]>("cards");
   return (
-    <Waypoint waypoint="forWhom" id="for-whom" className="l-section" aria-labelledby="l-for-whom-title">
+    <Waypoint waypoint="forWhom" id="for-whom" className="l-section l-forwhom" aria-labelledby="l-for-whom-title">
       <div className="l-wrap">
-        <div className="l-col l-shade">
+        <div className="l-head l-shade">
           <p className="l-kicker">{t("label")}</p>
           <h2 className="l-h2" id="l-for-whom-title">{t("title")}</h2>
-          <p className="l-lead">{t("lead")}</p>
         </div>
-        <ol className="l-forwhom">
+        <p className="l-lead l-forwhom__lead l-shade">{t("lead")}</p>
+        <ol className="l-points-orbit">
           {cards.map((c, i) => (
-            <li key={c.key} className="l-shade">
-              <span className="l-index" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+            <li key={c.key} className="l-shade" data-gone={c.key === "gone"}>
+              <span className="l-points-orbit__dot" aria-hidden="true" />
+              <span className="l-index" aria-hidden="true">{two(i)}</span>
               <h3>{c.title}</h3>
               <p>{c.example}</p>
             </li>
@@ -36,6 +43,8 @@ export async function ForWhom() {
   );
 }
 
+// Jak to funguje: four points on one trajectory, from the top left to the
+// bottom right; the camera will stop at each (M5).
 export async function HowItWorks() {
   const { t, raw } = await getCopy("Marketing.how");
   const steps = raw<Step[]>("steps");
@@ -66,17 +75,20 @@ export async function HowItWorks() {
     </div>,
   ];
   return (
-    <Waypoint waypoint="how" id="how-it-works" className="l-section" aria-labelledby="l-how-title">
+    <Waypoint waypoint="how" id="how-it-works" className="l-section l-how" aria-labelledby="l-how-title">
       <div className="l-wrap">
-        <div className="l-col l-shade">
+        <div className="l-head l-shade">
           <p className="l-kicker">{t("label")}</p>
           <h2 className="l-h2" id="l-how-title">{t("title")}</h2>
         </div>
-        <ol className="l-steps">
+        <ol className="l-trajectory">
+          <svg className="l-trajectory__line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M 6 4 C 30 30, 40 40, 52 50 S 80 80, 94 97" vectorEffect="non-scaling-stroke" />
+          </svg>
           {steps.map((step, i) => (
-            <li key={step.title}>
+            <li key={step.title} className="l-trajectory__step" style={{ "--i": i } as React.CSSProperties}>
+              <span className="l-trajectory__n" aria-hidden="true">{two(i)}</span>
               <div className="l-shade">
-                <span className="l-index" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
                 <h3>{step.title}</h3>
                 <p>{step.body}</p>
               </div>
@@ -89,43 +101,64 @@ export async function HowItWorks() {
   );
 }
 
-// The message is a point of light; the guardians are two calm stars beside it.
+// The message is a point of light; the guardians are two calm planets beside it.
 function GuardiansFigure({ you, label }: { you: string; label: string }) {
   return (
-    <svg className="l-guardians__figure" viewBox="0 0 360 260" role="img" aria-label={label}>
-      <line x1="120" y1="150" x2="250" y2="82" className="l-thread" />
-      <line x1="120" y1="150" x2="268" y2="196" className="l-thread" />
-      <circle cx="120" cy="150" r="22" className="l-glow" />
-      <circle cx="120" cy="150" r="5" className="l-light" />
-      <circle cx="250" cy="82" r="2.6" className="l-star" />
-      <circle cx="268" cy="196" r="2.2" className="l-star" />
-      <text x="120" y="196" textAnchor="middle" className="l-figure-label">{you}</text>
+    <svg className="l-guardians__figure" viewBox="0 0 520 420" role="img" aria-label={label}>
+      <defs>
+        <radialGradient id="l-g-planet" cx="38%" cy="34%" r="70%">
+          <stop offset="0" stopColor="#dce6ff" stopOpacity="0.9" />
+          <stop offset="0.55" stopColor="#6b7a9c" stopOpacity="0.9" />
+          <stop offset="1" stopColor="#0a0f1c" stopOpacity="1" />
+        </radialGradient>
+        <radialGradient id="l-g-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#ffd9a0" stopOpacity="0.55" />
+          <stop offset="0.4" stopColor="#ffd9a0" stopOpacity="0.12" />
+          <stop offset="1" stopColor="#ffd9a0" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <line x1="150" y1="226" x2="372" y2="118" className="l-thread" />
+      <line x1="150" y1="226" x2="402" y2="318" className="l-thread" />
+      <circle cx="150" cy="226" r="96" fill="url(#l-g-glow)" />
+      <circle cx="150" cy="226" r="7" className="l-light" />
+      <circle cx="372" cy="118" r="34" fill="url(#l-g-planet)" />
+      <circle cx="402" cy="318" r="26" fill="url(#l-g-planet)" />
+      <text x="150" y="282" textAnchor="middle" className="l-figure-label">{you}</text>
     </svg>
   );
 }
 
+// Strážci: the headline over the whole width, the figure large on the
+// left, the mechanics — exactly as the text says — numbered on the right.
 export async function Guardians() {
   const { t, raw } = await getCopy("Marketing.guardians");
   const steps = raw<string[]>("steps");
   return (
-    <Waypoint waypoint="guardians" className="l-section" aria-labelledby="l-guardians-title">
-      <div className="l-wrap l-guardians">
-        <div className="l-col l-shade">
+    <Waypoint waypoint="guardians" className="l-section l-guardians" aria-labelledby="l-guardians-title">
+      <div className="l-wrap">
+        <div className="l-head l-shade">
           <p className="l-kicker">{t("label")}</p>
           <h2 className="l-h2" id="l-guardians-title">{t("title")}</h2>
+        </div>
+        <GuardiansFigure you={t("you")} label={t("diagram")} />
+        <div className="l-guardians__text l-shade">
           <p className="l-lead">{t("lead")}</p>
-          <ol className="l-list">
-            {steps.map((s) => <li key={s}>{s}</li>)}
+          <ol className="l-mech">
+            {steps.map((s, i) => (
+              <li key={s}>
+                <span className="l-mech__n" aria-hidden="true">{two(i)}</span>
+                <p>{s}</p>
+              </li>
+            ))}
           </ol>
           <p className="l-note">{t("noGuardians")} {t("privacy")}</p>
         </div>
-        <GuardiansFigure you={t("you")} label={t("diagram")} />
       </div>
     </Waypoint>
   );
 }
 
-// The quietest section: the camera stands still, the sky dims, two columns of facts.
+// The quietest section: the camera stands still, the sky dims, the facts in two columns.
 export async function Security() {
   const { t, raw } = await getCopy("Marketing.security");
   const points = raw<Point[]>("points");
@@ -133,14 +166,15 @@ export async function Security() {
   return (
     <Waypoint waypoint="security" id="security" className="l-section l-security" aria-labelledby="l-security-title">
       <div className="l-wrap">
-        <div className="l-col l-shade">
+        <div className="l-head l-shade">
           <p className="l-kicker">{t("label")}</p>
           <h2 className="l-h2" id="l-security-title">{t("title")}</h2>
-          <p className="l-lead">{t("lead")}</p>
         </div>
+        <p className="l-lead l-security__lead l-shade">{t("lead")}</p>
         <ul className="l-points l-shade">
-          {points.map((p) => (
+          {points.map((p, i) => (
             <li key={p.title}>
+              <span className="l-index" aria-hidden="true">{two(i)}</span>
               <h3>{p.title}</h3>
               <p>{p.body}</p>
             </li>
@@ -162,6 +196,7 @@ export async function Security() {
   );
 }
 
+// Ceník: the headline left, two matte obsidian cards right.
 export async function Pricing({ pricing }: { pricing: MarketingPricing }) {
   const { t, raw, locale } = await getCopy("Marketing.pricing");
   const freeFeatures = raw<string[]>("free.features");
@@ -174,12 +209,13 @@ export async function Pricing({ pricing }: { pricing: MarketingPricing }) {
   const freePrice = freeCurrency ? formatPrice({ unitAmount: 0, currency: freeCurrency }, locale) : null;
 
   return (
-    <Waypoint waypoint="pricing" id="pricing" className="l-section" aria-labelledby="l-pricing-title">
+    <Waypoint waypoint="pricing" id="pricing" className="l-section l-pricing" aria-labelledby="l-pricing-title">
       <div className="l-wrap">
-        <div className="l-col l-shade">
+        <div className="l-head l-pricing__head l-shade">
           <p className="l-kicker">{t("label")}</p>
           <h2 className="l-h2" id="l-pricing-title">{t("title")}</h2>
           <p className="l-lead">{t("lead")}</p>
+          <p className="l-small">{t("note")}</p>
         </div>
         <div className="l-plans">
           <article className="l-card l-plan" aria-labelledby="l-plan-free">
@@ -207,13 +243,12 @@ export async function Pricing({ pricing }: { pricing: MarketingPricing }) {
             <a href="/dashboard/billing" className="l-btn l-btn--primary">{t("pro.cta")}</a>
           </article>
         </div>
-        <p className="l-small l-shade">{t("note")}</p>
       </div>
     </Waypoint>
   );
 }
 
-// One sentence across the whole width, the whole solar system behind it.
+// One sentence across the whole width, the stars behind it.
 export async function Statement() {
   const { t } = await getCopy("Marketing.timeline");
   return (
@@ -225,14 +260,15 @@ export async function Statement() {
   );
 }
 
+// FAQ: the headline on the left, the questions down the right.
 // Native <details>: keyboard and screen-reader support for free, works without JS.
 export async function Faq() {
   const { t, raw } = await getCopy("Marketing.faq");
   const items = raw<QA[]>("items");
   return (
-    <Waypoint waypoint="faq" className="l-section" aria-labelledby="l-faq-title">
+    <Waypoint waypoint="faq" className="l-section l-faq-s" aria-labelledby="l-faq-title">
       <div className="l-wrap">
-        <div className="l-col l-shade">
+        <div className="l-head l-faq__head l-shade">
           <p className="l-kicker">{t("label")}</p>
           <h2 className="l-h2" id="l-faq-title">{t("title")}</h2>
         </div>

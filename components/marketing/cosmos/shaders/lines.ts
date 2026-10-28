@@ -34,7 +34,8 @@ ${LOGDEPTH_VERT_PARS}
 void main(){
   float age = uOrbits - aS;
   float on = step(0.0, age);
-  float a = on * mix(1.0, 0.35, clamp(age / max(uOrbits, 1.0), 0.0, 1.0)) * uAlpha * uFade;
+  // A trail, not a ring: bright behind the Earth, fading along the older orbits (which stay faintly countable).
+  float a = on * (0.22 + 0.78 * exp(-age / max(uOrbits * 0.35, 1.0))) * uAlpha * uFade;
   // The leading edge: the last tenth of an orbit brightens toward the Earth.
   a *= 1.0 + 0.8 * smoothstep(0.12, 0.0, age);
   vA = a;
