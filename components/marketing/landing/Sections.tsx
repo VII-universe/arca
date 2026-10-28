@@ -66,7 +66,7 @@ export async function HowItWorks() {
     </div>,
   ];
   return (
-    <Waypoint waypoint="howItWorks" id="how-it-works" className="l-section" aria-labelledby="l-how-title">
+    <Waypoint waypoint="how" id="how-it-works" className="l-section" aria-labelledby="l-how-title">
       <div className="l-wrap">
         <div className="l-col l-shade">
           <p className="l-kicker">{t("label")}</p>
@@ -208,6 +208,18 @@ export async function Pricing({ pricing }: { pricing: MarketingPricing }) {
           </article>
         </div>
         <p className="l-small l-shade">{t("note")}</p>
+      </div>
+    </Waypoint>
+  );
+}
+
+// One sentence across the whole width, the whole solar system behind it.
+export async function Statement() {
+  const { t } = await getCopy("Marketing.timeline");
+  return (
+    <Waypoint waypoint="statement" className="l-statement" aria-label={t("finale")}>
+      <div className="l-wrap">
+        <p className="l-statement__text l-shade">{t("finale")}</p>
       </div>
     </Waypoint>
   );

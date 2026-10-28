@@ -1,0 +1,1142 @@
+// The landing's scene: one Three.js scene behind the whole page, the camera
+// flown by scroll from low Earth orbit to a view of the Galaxy and back.
+// Imported dynamically by CosmosStage after the first paint.
+//
+// Units: astronomical units in the heliocentric ecliptic J2000 frame, with
+// the real positions of the day (ephemeris.ts). Floating origin: every
+// object is placed relative to the camera each frame (the camera itself
+// stays at the origin), in JS doubles, so the Earth 1 au from the Sun is as
+// steady up close as Saturn is from 10 au; a logarithmic depth buffer keeps
+// both sharp in one pass.
+
+import {
+  AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CompressedTexture, CubeCamera, CustomBlending, DataTexture, DoubleSide,
+  LinearFilter, LinearMipmapLinearFilter, Line, LineLoop, Matrix4, Mesh, NormalBlending, OneFactor,
+  OneMinusSrcAlphaFactor, OrthographicCamera, PerspectiveCamera, PlaneGeometry, Points, Quaternion, RGBAFormat,
+  RepeatWrapping, RingGeometry, Scene, ShaderMaterial, SphereGeometry, SrcColorFactor, SRGBColorSpace, Texture, Vector2,
+  Vector3, WebGLCubeRenderTarget, WebGLRenderer, ZeroFactor,
+} from "three";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
+import type { Catalog } from "./catalog";
+import {
+  AU_KM, EARTH_POLE, EARTH_RADIUS_AU, GALACTIC_CENTRE, GALACTIC_CENTRE_LY, GALACTIC_NORTH, GALACTIC_Y, LY_AU, PC_AU,
+  PLANETS, SUN_RADIUS_KM, YEAR_DAYS, equatorialToEcliptic, greenwichDirection, julianDay, moonPosition,
+  orbitPhase, orbitPoints, planetPosition, type PlanetId, type Vec3, vadd, vcross, vdot, vlen, vnorm, vscale, vsub, MOON_RADIUS_KM,
+} from "./ephemeris";
+import { JOURNEY, clamp01, easeInOut, logLerp, orbitsAt, smoothstep, trailFadeAt, type Shot } from "./journey";
+import { starColor, type RGB } from "./starColor";
+import { QUAD_VERT } from "./shaders/common";
+import { SKYGEN_FRAG, SKYGEN_VERT, SKY_FRAG, SKY_VERT } from "./shaders/sky";
+import { STAR_FRAG, STAR_VERT } from "./shaders/stars";
+import { ATMO_FRAG, ATMO_VERT, CLOUDS_FRAG, CLOUDS_VERT, EARTH_FRAG, EARTH_VERT } from "./shaders/earth";
+import { CORONA_FRAG, CORONA_VERT, MARKER_FRAG, MARKER_VERT, PLANET_FRAG, PLANET_VERT, RING_FRAG, RING_VERT, SUN_FRAG, SUN_VERT } from "./shaders/bodies";
+import { ORBIT_FRAG, ORBIT_VERT, TRAIL_FRAG, TRAIL_VERT } from "./shaders/lines";
+import { DUST_FRAG, GALAXY_FRAG, GALAXY_VERT } from "./shaders/galaxy";
+import { TEXTURES, type TextureName } from "./textures";
+
+export type CosmosAtmosphere = "nebula" | "sunset" | "ocean" | "midnight" | "stars";
+
+// What each atmosphere changes: the far dust's two tints and amount, and
+// how faint a star still shows. Never the Earth, the planets, or text.
+const ATMOS: Record<CosmosAtmosphere, { a: RGB; b: RGB; amt: number; scale: number; milky: number; mag: number }> = {
+  nebula: { a: [0.16, 0.24, 0.52], b: [0.24, 0.3, 0.58], amt: 0.7, scale: 2.2, milky: 1, mag: 7.2 },
+  sunset: { a: [0.56, 0.32, 0.14], b: [0.4, 0.22, 0.12], amt: 0.7, scale: 2.2, milky: 1, mag: 7.2 },
+  ocean: { a: [0.08, 0.42, 0.44], b: [0.12, 0.28, 0.5], amt: 0.7, scale: 2.2, milky: 1, mag: 7.2 },
+  midnight: { a: [0.14, 0.17, 0.38], b: [0.1, 0.12, 0.28], amt: 0.3, scale: 1.4, milky: 0.8, mag: 7.0 },
+  stars: { a: [0, 0, 0], b: [0, 0, 0], amt: 0, scale: 2.2, milky: 1.15, mag: 8.4 },
+};
+
+const MAX_DPR = 1.5;
+const SCALES = [1, 0.83, 0.66];
+const ATMOS_FADE_S = 1.2;
+const REDUCED_FADE_S = 0.6;
+const POINTER_MAX = (1.5 * Math.PI) / 180;
+const SCROLL_LAG_S = 0.28;
+const SUN_R = SUN_RADIUS_KM / AU_KM;
+const MOON_R = MOON_RADIUS_KM / AU_KM;
+const RING_STEP = 0.0062;           // the trail spirals out this much (of 1 au) per orbit
+const TRAIL_MAX_ORBITS = 50;
+const TRAIL_SEGMENTS = 180;
+
+// IAU north poles (RA, Dec, J2000) → the axis each globe spins on.
+const POLES: Record<PlanetId | "moon", [number, number]> = {
+  mercury: [281.01, 61.45], venus: [272.76, 67.16], earth: [0, 90], mars: [317.68, 52.89], jupiter: [268.06, 64.50],
+  saturn: [40.59, 83.54], uranus: [257.31, -15.18], neptune: [299.36, 43.46], moon: [269.99, 66.54],
+};
+const MARKER_COLOR: Record<PlanetId | "moon", RGB> = {
+  mercury: [0.62, 0.6, 0.57], venus: [0.96, 0.9, 0.76], earth: [0.5, 0.64, 0.96], mars: [0.86, 0.56, 0.36],
+  jupiter: [0.86, 0.76, 0.6], saturn: [0.9, 0.82, 0.62], uranus: [0.62, 0.84, 0.9], neptune: [0.38, 0.52, 0.95], moon: [0.72, 0.72, 0.7],
+};
+const SATURN_EQ_KM = 60_268;
+const SATURN_FLAT = 0.098;
+const SATURN_RING_IN_KM = 74_658;
+const SATURN_RING_OUT_KM = 136_775;
+const JUPITER_FLAT = 0.065;
+
+const poleVector = ([ra, dec]: [number, number]): Vec3 => {
+  const a = (ra * Math.PI) / 180, d = (dec * Math.PI) / 180;
+  return equatorialToEcliptic([Math.cos(d) * Math.cos(a), Math.cos(d) * Math.sin(a), Math.sin(d)]);
+};
+
+export interface CosmosStats {
+  fps: number; frameMs: number; scale: number; dpr: number; width: number; height: number; gpu: string;
+  stars: number; progress: number; section: string; textures: string; distance: string;
+}
+
+export interface BenchResult {
+  seconds: number; frames: number; avgFps: number; low1Fps: number;
+  sections: { label: string; avgFps: number; frames: number }[];
+}
+
+export interface CosmosEngineOptions {
+  canvas: HTMLCanvasElement;
+  catalog: Catalog;
+  atmosphere: CosmosAtmosphere;
+  reducedMotion: boolean;
+  lowPower: boolean;
+  /** Julian day the scene shows as "today" (defaults to now, and keeps ticking). */
+  baseJd?: number;
+  onReady: () => void;
+  onContextLost: () => void;
+}
+
+interface Body {
+  id: PlanetId | "moon";
+  mesh: Mesh;
+  mat: ShaderMaterial;
+  radius: number;      // au, equatorial
+  flat: number;
+  axis: Vec3;
+  pos: Vec3;           // world, au
+  ring?: Mesh;
+  ringMat?: ShaderMaterial;
+  orbit?: LineLoop;
+  orbitMat?: ShaderMaterial;
+  a?: number;          // semi-major axis, au
+  marker: number;      // index in the marker points
+}
+
+interface Pose {
+  cam: Vec3; target: Vec3; dir: Vec3; up: Vec3; dist: number; offset: [number, number];
+  orbits: number; dim: number; stars: number; trail: number; travel: number; section: number;
+}
+
+const v3 = (v: Vec3) => new Vector3(v[0], v[1], v[2]);
+const slerp = (a: Vec3, b: Vec3, t: number): Vec3 => {
+  const d = Math.max(-1, Math.min(1, vdot(a, b)));
+  const th = Math.acos(d);
+  if (th < 1e-6) return a;
+  if (Math.PI - th < 1e-4) {
+    const axis = vnorm(vcross(Math.abs(a[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0], a));
+    const q = new Quaternion().setFromAxisAngle(v3(axis), th * t);
+    const r = v3(a).applyQuaternion(q);
+    return [r.x, r.y, r.z];
+  }
+  const s = Math.sin(th);
+  return vnorm(vadd(vscale(a, Math.sin((1 - t) * th) / s), vscale(b, Math.sin(t * th) / s)));
+};
+const lerp3 = (a: Vec3, b: Vec3, t: number): Vec3 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const orthoUp = (up: Vec3, look: Vec3): Vec3 => {
+  const u = vsub(up, vscale(look, vdot(up, look)));
+  return vlen(u) < 1e-9 ? [0, 0, 1] : vnorm(u);
+};
+
+function sphere(wSeg: number, hSeg: number) {
+  return new SphereGeometry(1, wSeg, hSeg);
+}
+
+export class CosmosEngine {
+  static create(opts: CosmosEngineOptions): CosmosEngine | null {
+    let renderer: WebGLRenderer;
+    try {
+      renderer = new WebGLRenderer({ canvas: opts.canvas, antialias: false, alpha: false, powerPreference: "high-performance", logarithmicDepthBuffer: true });
+    } catch {
+      return null;
+    }
+    return new CosmosEngine(renderer, opts);
+  }
+
+  private readonly renderer: WebGLRenderer;
+  private readonly opts: CosmosEngineOptions;
+  private readonly camera = new PerspectiveCamera(50, 1, 1e-6, 1e13);
+  private readonly quadCam = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+  // far sky
+  private readonly genMat: ShaderMaterial;
+  private readonly genScene = new Scene();
+  private readonly cubeCam: CubeCamera;
+  private readonly cubeSize: number;
+  private cubes: { rt: WebGLCubeRenderTarget; atm: CosmosAtmosphere; tiles: number }[] = [];
+  private atmFrom: CosmosAtmosphere;
+  private atmTo: CosmosAtmosphere;
+  private atmWanted: CosmosAtmosphere;
+  private mix = 1;
+  private readonly skyMat: ShaderMaterial;
+  private readonly skyScene = new Scene();
+  private readonly starMat: ShaderMaterial;
+  private readonly farScene = new Scene();
+  private readonly galaxyMat: ShaderMaterial;
+  private readonly dustMat: ShaderMaterial;
+  private readonly galaxy: Points;
+  private readonly dust: Points;
+
+  // the solar system
+  private readonly world = new Scene();
+  private readonly bodies: Body[] = [];
+  private earth!: Body;
+  private readonly earthMat: ShaderMaterial;
+  private readonly cloudsMat: ShaderMaterial;
+  private readonly atmoMat: ShaderMaterial;
+  private readonly clouds: Mesh;
+  private readonly atmo: Mesh;
+  private readonly sun: Mesh;
+  private readonly sunMat: ShaderMaterial;
+  private readonly corona: Mesh;
+  private readonly coronaMat: ShaderMaterial;
+  private readonly markers: Points;
+  private readonly markerMat: ShaderMaterial;
+  private readonly markerAlpha: Float32Array;
+  private readonly trail: Line;
+  private readonly trailMat: ShaderMaterial;
+  private readonly veilMat: ShaderMaterial;
+  private readonly veilScene = new Scene();
+
+  private readonly ktx2: KTX2Loader;
+  private readonly textures = new Map<TextureName, Texture>();
+  private loaded = new Set<string>();
+  private loading = new Set<string>();
+
+  // time
+  private readonly baseJd: number;
+  private readonly t0 = performance.now();
+  private readonly liveClock: boolean;
+  private planetJd = NaN;
+  private earthJd = NaN;
+  private phase0 = 0;
+
+  private target = 0;
+  private smooth = 0;
+  private pointer = { x: 0, y: 0, sx: 0, sy: 0 };
+  private reduced: { shown: number; phase: "idle" | "out" | "in"; t: number };
+  private lastPose: Pose | null = null;
+
+  private raf = 0;
+  private last = 0;
+  private time = 0;
+  private running = false;
+  private disposed = false;
+  private readyFired = false;
+  private width = 1;
+  private height = 1;
+  private dpr = 1;
+  private scaleStep = 0;
+  private scaleCooldown = 0;
+  private window = { frames: 0, time: 0, goodWindows: 0 };
+  private fps = 0;
+  private frameMs = 16.7;
+  private gpu = "";
+  private bench: { t: number; dts: number[]; bySection: Map<number, number[]> } | null = null;
+
+  private constructor(renderer: WebGLRenderer, opts: CosmosEngineOptions) {
+    this.renderer = renderer;
+    this.opts = opts;
+    renderer.autoClear = false;
+    renderer.outputColorSpace = SRGBColorSpace;
+    this.atmFrom = this.atmTo = this.atmWanted = opts.atmosphere;
+    this.reduced = { shown: 0, phase: "idle", t: 0 };
+    this.scaleStep = opts.lowPower ? 1 : 0;
+    this.cubeSize = opts.lowPower ? 768 : 1024;
+    this.liveClock = opts.baseJd === undefined;
+    this.baseJd = opts.baseJd ?? julianDay(new Date());
+
+    this.ktx2 = new KTX2Loader().setTranscoderPath("/cosmos/basis/").detectSupport(renderer);
+
+    // ── far sky: dust and the band, baked per atmosphere ──
+    const atm = ATMOS[opts.atmosphere];
+    this.genMat = new ShaderMaterial({
+      vertexShader: SKYGEN_VERT, fragmentShader: SKYGEN_FRAG, side: BackSide, depthTest: false, depthWrite: false,
+      uniforms: {
+        uNebA: { value: atm.a }, uNebB: { value: atm.b }, uNebAmt: { value: atm.amt }, uNebScale: { value: atm.scale }, uMilky: { value: atm.milky },
+        uG0: { value: v3(GALACTIC_CENTRE) }, uG1: { value: v3(GALACTIC_Y) }, uG2: { value: v3(GALACTIC_NORTH) },
+      },
+    });
+    this.genScene.add(new Mesh(new SphereGeometry(1, 64, 32), this.genMat));
+    const firstCube = this.newCube(opts.atmosphere);
+    this.cubes = [firstCube];
+    this.cubeCam = new CubeCamera(0.1, 10, firstCube.rt);
+    this.cubeCam.coordinateSystem = renderer.coordinateSystem;
+    this.cubeCam.updateCoordinateSystem();
+    this.cubeCam.updateMatrixWorld(true);
+
+    this.skyMat = new ShaderMaterial({
+      vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, depthTest: false, depthWrite: false,
+      uniforms: {
+        uViewDir: { value: new Matrix4() }, uCubeA: { value: firstCube.rt.texture }, uCubeB: { value: firstCube.rt.texture },
+        uMix: { value: 0 }, uCubeFlip: { value: 1 }, uMilky: { value: atm.milky }, uBand: { value: 1 }, uDim: { value: 1 }, uPx: { value: 1 },
+      },
+    });
+    this.skyScene.add(new Mesh(new PlaneGeometry(2, 2), this.skyMat));
+
+    // ── stars: the catalogue in au ──
+    const { catalog } = opts;
+    const pos = new Float32Array(catalog.count * 3);
+    const colors = new Float32Array(catalog.count * 3);
+    const seeds = new Float32Array(catalog.count);
+    for (let i = 0; i < catalog.count; i++) {
+      const p = equatorialToEcliptic([catalog.positions[i * 3], catalog.positions[i * 3 + 1], catalog.positions[i * 3 + 2]]);
+      pos[i * 3] = p[0] * PC_AU; pos[i * 3 + 1] = p[1] * PC_AU; pos[i * 3 + 2] = p[2] * PC_AU;
+      colors.set(starColor(catalog.colorIndex[i]), i * 3);
+      seeds[i] = Math.abs((Math.sin(i * 12.9898) * 43758.5453) % 1);
+    }
+    const sgeo = new BufferGeometry();
+    sgeo.setAttribute("position", new BufferAttribute(pos, 3));
+    sgeo.setAttribute("aAbs", new BufferAttribute(catalog.absMag, 1));
+    sgeo.setAttribute("aColor", new BufferAttribute(colors, 3));
+    sgeo.setAttribute("aSeed", new BufferAttribute(seeds, 1));
+    this.starMat = new ShaderMaterial({
+      vertexShader: STAR_VERT, fragmentShader: STAR_FRAG, transparent: true, depthTest: false, depthWrite: false, blending: AdditiveBlending,
+      uniforms: {
+        uCam: { value: new Vector3() }, uPx: { value: 1 }, uTime: { value: 0 }, uMagLimit: { value: atm.mag }, uDim: { value: 1 },
+        uTwinkle: { value: 0.08 }, uPcPerUnit: { value: 1 / PC_AU },
+      },
+    });
+    const stars = new Points(sgeo, this.starMat);
+    stars.frustumCulled = false;
+    this.farScene.add(stars);
+
+    // ── the Galaxy, procedural ──
+    const g = this.buildGalaxy(opts.lowPower ? 60_000 : 120_000, opts.lowPower ? 6000 : 11_000);
+    this.galaxyMat = new ShaderMaterial({
+      vertexShader: GALAXY_VERT, fragmentShader: GALAXY_FRAG, transparent: true, depthTest: false, depthWrite: false, blending: AdditiveBlending,
+      uniforms: { uPx: { value: 1 }, uAlpha: { value: 0 } },
+    });
+    this.dustMat = new ShaderMaterial({
+      vertexShader: GALAXY_VERT, fragmentShader: DUST_FRAG, transparent: true, depthTest: false, depthWrite: false,
+      blending: CustomBlending, blendSrc: ZeroFactor, blendDst: SrcColorFactor,
+      uniforms: { uPx: { value: 1 }, uAlpha: { value: 0 } },
+    });
+    this.galaxy = new Points(g.stars, this.galaxyMat);
+    this.dust = new Points(g.dust, this.dustMat);
+    this.galaxy.frustumCulled = this.dust.frustumCulled = false;
+    this.galaxy.visible = this.dust.visible = false;
+    this.dust.renderOrder = 1;                         // the lanes darken the arms, so they go over them
+    this.farScene.add(this.galaxy, this.dust);
+
+    // ── the Sun ──
+    this.sunMat = new ShaderMaterial({
+      vertexShader: SUN_VERT, fragmentShader: SUN_FRAG, uniforms: { uTime: { value: 0 }, uExposure: { value: 1 } },
+    });
+    this.sun = new Mesh(sphere(64, 48), this.sunMat);
+    this.sun.scale.setScalar(SUN_R);
+    this.world.add(this.sun);
+    this.coronaMat = new ShaderMaterial({
+      vertexShader: CORONA_VERT, fragmentShader: CORONA_FRAG, transparent: true, depthTest: true, depthWrite: false, blending: AdditiveBlending,
+      uniforms: { uColor: { value: [1.0, 0.84, 0.58] }, uIntensity: { value: 1 }, uTime: { value: 0 }, uDisc: { value: 0.1 } },
+    });
+    this.corona = new Mesh(new PlaneGeometry(1, 1), this.coronaMat);
+    this.corona.renderOrder = 5;
+    this.world.add(this.corona);
+
+    // ── the Earth ──
+    const placeholder = (r: number, g: number, b: number) => {
+      const t = new DataTexture(new Uint8Array([r, g, b, 255]), 1, 1, RGBAFormat);
+      t.needsUpdate = true;
+      return t;
+    };
+    const earthGeo = sphere(160, 120);
+    this.earthMat = new ShaderMaterial({
+      vertexShader: EARTH_VERT, fragmentShader: EARTH_FRAG,
+      uniforms: {
+        uDay: { value: placeholder(30, 50, 90) }, uNight: { value: placeholder(0, 0, 0) }, uClouds: { value: placeholder(0, 0, 0) },
+        uNormal: { value: placeholder(128, 128, 255) }, uSpec: { value: placeholder(0, 0, 0) },
+        uSun: { value: new Vector3(1, 0, 0) }, uCentre: { value: new Vector3() }, uCloudShift: { value: 0 }, uExposure: { value: 1 }, uNightLift: { value: 0 },
+      },
+    });
+    const earthMesh = new Mesh(earthGeo, this.earthMat);
+    this.cloudsMat = new ShaderMaterial({
+      vertexShader: CLOUDS_VERT, fragmentShader: CLOUDS_FRAG, transparent: true, depthWrite: false,
+      blending: CustomBlending, blendSrc: OneFactor, blendDst: OneMinusSrcAlphaFactor,
+      uniforms: { uClouds: { value: placeholder(0, 0, 0) }, uSun: { value: new Vector3(1, 0, 0) }, uCloudShift: { value: 0 }, uExposure: { value: 1 } },
+    });
+    this.clouds = new Mesh(earthGeo, this.cloudsMat);
+    this.clouds.renderOrder = 1;
+    this.atmoMat = new ShaderMaterial({
+      vertexShader: ATMO_VERT, fragmentShader: ATMO_FRAG, transparent: true, depthWrite: false,
+      blending: CustomBlending, blendSrc: OneFactor, blendDst: OneMinusSrcAlphaFactor,
+      uniforms: {
+        uCentre: { value: new Vector3() }, uSun: { value: new Vector3(1, 0, 0) }, uRadius: { value: EARTH_RADIUS_AU }, uKmPerUnit: { value: AU_KM },
+        uExposure: { value: 1 }, uSteps: { value: opts.lowPower ? 8 : 12 },
+      },
+    });
+    this.atmo = new Mesh(sphere(96, 64), this.atmoMat);
+    this.atmo.renderOrder = 2;
+    this.world.add(earthMesh, this.clouds, this.atmo);
+
+    // ── planets and the Moon ──
+    const planetGeo = sphere(96, 64);
+    const markerPos = new Float32Array(10 * 3);
+    const markerCol = new Float32Array(10 * 3);
+    this.markerAlpha = new Float32Array(10);
+    let m = 0;
+    const addBody = (id: PlanetId | "moon", radiusKm: number, flat = 0, a?: number): Body => {
+      const isEarth = id === "earth";
+      const mat = isEarth ? this.earthMat : new ShaderMaterial({
+        vertexShader: PLANET_VERT, fragmentShader: PLANET_FRAG,
+        uniforms: {
+          uMap: { value: placeholder(90, 85, 80) }, uSun: { value: new Vector3(1, 0, 0) }, uExposure: { value: 1 }, uAmbient: { value: 0.012 },
+          uHasRing: { value: 0 }, uCentre: { value: new Vector3() }, uRingNormal: { value: new Vector3(0, 0, 1) }, uRingInner: { value: 0 }, uRingOuter: { value: 0 },
+          uRing: { value: placeholder(0, 0, 0) }, uHaze: { value: id === "jupiter" || id === "saturn" ? 0.5 : id === "venus" ? 0.7 : 0 },
+          uHazeColor: { value: id === "venus" ? [0.9, 0.85, 0.7] : [0.75, 0.72, 0.65] },
+        },
+      });
+      const mesh = isEarth ? earthMesh : new Mesh(planetGeo, mat);
+      if (!isEarth) this.world.add(mesh);
+      const colour = MARKER_COLOR[id];
+      markerCol.set(colour, m * 3);
+      const body: Body = { id, mesh, mat, radius: radiusKm / AU_KM, flat, axis: poleVector(POLES[id]), pos: [0, 0, 0], a, marker: m++ };
+      if (id === "earth") body.axis = EARTH_POLE;
+      this.bodies.push(body);
+      if (isEarth) this.earth = body;
+      return body;
+    };
+    for (const p of PLANETS) {
+      const body = addBody(p.id, p.id === "saturn" ? SATURN_EQ_KM : p.radiusKm, p.id === "saturn" ? SATURN_FLAT : p.id === "jupiter" ? JUPITER_FLAT : 0, p.el[0]);
+      // Orbit line.
+      const pts = orbitPoints(p.id, this.baseJd, 360);
+      const og = new BufferGeometry();
+      og.setAttribute("position", new BufferAttribute(pts.slice(0, 360 * 3), 3));
+      const omat = new ShaderMaterial({
+        vertexShader: ORBIT_VERT, fragmentShader: ORBIT_FRAG, transparent: true, depthWrite: false, blending: AdditiveBlending,
+        uniforms: { uAlpha: { value: 0 }, uColor: { value: p.id === "earth" ? [0.86, 0.9, 1.0] : [0.72, 0.78, 0.92] } },
+      });
+      body.orbit = new LineLoop(og, omat);
+      body.orbit.frustumCulled = false;
+      body.orbitMat = omat;
+      this.world.add(body.orbit);
+      if (p.id === "saturn") {
+        const rin = SATURN_RING_IN_KM / AU_KM, rout = SATURN_RING_OUT_KM / AU_KM;
+        const rg = new RingGeometry(rin, rout, 180, 1);
+        // uv.x = radius 0..1 (RingGeometry's uv is planar by default).
+        const uv = rg.attributes.uv as BufferAttribute;
+        const rp = rg.attributes.position as BufferAttribute;
+        for (let k = 0; k < uv.count; k++) {
+          const r = Math.hypot(rp.getX(k), rp.getY(k));
+          uv.setXY(k, (r - rin) / (rout - rin), 0.5);
+        }
+        const rmat = new ShaderMaterial({
+          vertexShader: RING_VERT, fragmentShader: RING_FRAG, transparent: true, depthWrite: false, side: DoubleSide,
+          blending: CustomBlending, blendSrc: OneFactor, blendDst: OneMinusSrcAlphaFactor,
+          uniforms: {
+            uRing: { value: placeholder(0, 0, 0) }, uSun: { value: new Vector3(1, 0, 0) }, uCentre: { value: new Vector3() },
+            uPlanetRadius: { value: body.radius }, uNormal: { value: new Vector3(0, 0, 1) }, uExposure: { value: 1 },
+          },
+        });
+        body.ring = new Mesh(rg, rmat);
+        body.ring.renderOrder = 1;
+        body.ringMat = rmat;
+        this.world.add(body.ring);
+        body.mat.uniforms.uHasRing.value = 1;
+        body.mat.uniforms.uRingInner.value = rin;
+        body.mat.uniforms.uRingOuter.value = rout;
+        body.mat.uniforms.uRing.value = rmat.uniforms.uRing.value;
+      }
+    }
+    addBody("moon", MOON_RADIUS_KM);
+    markerCol.set([1.0, 0.86, 0.62], 9 * 3);   // the Sun, from the Galaxy
+    const mg = new BufferGeometry();
+    mg.setAttribute("position", new BufferAttribute(markerPos, 3));
+    mg.setAttribute("aColor", new BufferAttribute(markerCol, 3));
+    mg.setAttribute("aAlpha", new BufferAttribute(this.markerAlpha, 1));
+    this.markerMat = new ShaderMaterial({
+      vertexShader: MARKER_VERT, fragmentShader: MARKER_FRAG, transparent: true, depthTest: true, depthWrite: false, blending: AdditiveBlending,
+      uniforms: { uPx: { value: 1 } },
+    });
+    this.markers = new Points(mg, this.markerMat);
+    this.markers.frustumCulled = false;
+    this.markers.renderOrder = 6;
+    this.world.add(this.markers);
+
+    // ── the Earth's trail: a spiral along its orbit, one turn per orbit ──
+    this.phase0 = orbitPhase("earth", this.baseJd);
+    const orbit = orbitPoints("earth", this.baseJd, TRAIL_SEGMENTS);
+    const n = TRAIL_MAX_ORBITS * TRAIL_SEGMENTS + 1;
+    const tp = new Float32Array(n * 3);
+    const ts = new Float32Array(n);
+    for (let k = 0; k < n; k++) {
+      const s = k / TRAIL_SEGMENTS;                           // orbits since today
+      const ph = (this.phase0 + s) % 1;
+      const seg = ph * TRAIL_SEGMENTS, i0 = Math.floor(seg), f = seg - i0;
+      const i1 = (i0 + 1) % TRAIL_SEGMENTS;
+      const grow = 1 + s * RING_STEP;
+      for (let c = 0; c < 3; c++) tp[k * 3 + c] = (orbit[i0 * 3 + c] * (1 - f) + orbit[i1 * 3 + c] * f) * grow;
+      ts[k] = s;
+    }
+    const tg = new BufferGeometry();
+    tg.setAttribute("position", new BufferAttribute(tp, 3));
+    tg.setAttribute("aS", new BufferAttribute(ts, 1));
+    this.trailMat = new ShaderMaterial({
+      vertexShader: TRAIL_VERT, fragmentShader: TRAIL_FRAG, transparent: true, depthWrite: false, blending: AdditiveBlending,
+      uniforms: { uOrbits: { value: 0 }, uFade: { value: 0 }, uAlpha: { value: 0.55 }, uColor: { value: [1.0, 0.85, 0.63] } },
+    });
+    this.trail = new Line(tg, this.trailMat);
+    this.trail.frustumCulled = false;
+    this.trail.renderOrder = 3;
+    this.world.add(this.trail);
+
+    // Reduced motion: sections cut through a fade instead of flying.
+    this.veilMat = new ShaderMaterial({
+      vertexShader: QUAD_VERT, transparent: true, depthTest: false, depthWrite: false, blending: NormalBlending,
+      fragmentShader: "precision highp float; uniform float uA; void main(){ gl_FragColor = vec4(0.0196, 0.0275, 0.051, uA); }",
+      uniforms: { uA: { value: 0 } },
+    });
+    this.veilScene.add(new Mesh(new PlaneGeometry(2, 2), this.veilMat));
+
+    this.resize();
+    this.loadGroup("earth");
+
+    opts.canvas.addEventListener("webglcontextlost", this.onLost, false);
+    document.addEventListener("visibilitychange", this.onVisibility);
+    this.start();
+  }
+
+  // ── public API ──
+
+  setProgress(s: number) {
+    this.target = Math.max(0, Math.min(JOURNEY.length - 1, s));
+  }
+
+  jumpTo(s: number) {
+    this.setProgress(s);
+    this.smooth = this.opts.reducedMotion ? Math.round(this.target) : this.target;
+    this.reduced.shown = Math.round(this.target);
+  }
+
+  setPointer(nx: number, ny: number) {
+    this.pointer.x = Math.max(-1, Math.min(1, nx));
+    this.pointer.y = Math.max(-1, Math.min(1, ny));
+  }
+
+  setAtmosphere(a: CosmosAtmosphere) {
+    this.atmWanted = a;
+  }
+
+  /** Renders one frame now (captures, when the loop is stopped). */
+  renderOnce() {
+    if (!this.running) this.frame(performance.now());
+  }
+
+  resize() {
+    const c = this.opts.canvas;
+    this.width = Math.max(1, c.clientWidth);
+    this.height = Math.max(1, c.clientHeight);
+    this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    this.applyScale();
+    this.camera.aspect = this.width / this.height;
+    this.camera.fov = this.width < this.height ? 62 : 50;
+    this.camera.updateProjectionMatrix();
+  }
+
+  startBenchmark() {
+    this.bench = { t: 0, dts: [], bySection: new Map() };
+  }
+
+  stopBenchmark(): BenchResult | null {
+    const b = this.bench;
+    this.bench = null;
+    if (!b || b.dts.length === 0) return null;
+    const fpsOf = (dts: number[]) => dts.length / Math.max(1e-6, dts.reduce((s, x) => s + x, 0));
+    const sorted = [...b.dts].sort((x, y) => y - x);
+    const worst = sorted.slice(0, Math.max(1, Math.floor(sorted.length / 100)));
+    return {
+      seconds: b.t, frames: b.dts.length, avgFps: fpsOf(b.dts), low1Fps: 1 / (worst.reduce((s, x) => s + x, 0) / worst.length),
+      sections: [...b.bySection.entries()].sort((x, y) => x[0] - y[0]).map(([i, dts]) => ({ label: JOURNEY[i].label, avgFps: fpsOf(dts), frames: dts.length })),
+    };
+  }
+
+  stats(): CosmosStats {
+    if (!this.gpu) {
+      const gl = this.renderer.getContext();
+      const ext = gl.getExtension("WEBGL_debug_renderer_info");
+      this.gpu = String((ext && gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) || gl.getParameter(gl.RENDERER) || "?");
+    }
+    const d = this.lastPose ? vlen(this.lastPose.cam) : 0;
+    const distance = d > 0.5 * LY_AU ? `${(d / LY_AU).toFixed(1)} ly` : d > 0.01 ? `${d.toFixed(3)} au` : `${(d * AU_KM).toFixed(0)} km`;
+    return {
+      fps: this.fps, frameMs: this.frameMs, scale: SCALES[this.scaleStep], dpr: this.dpr,
+      width: Math.round(this.width * this.dpr * SCALES[this.scaleStep]), height: Math.round(this.height * this.dpr * SCALES[this.scaleStep]),
+      gpu: this.gpu, stars: this.opts.catalog.count, progress: this.smooth,
+      section: JOURNEY[Math.min(JOURNEY.length - 1, Math.round(this.smooth))].label,
+      textures: `${this.loaded.size}/${Object.keys(TEXTURES).length}`, distance,
+    };
+  }
+
+  /** Screen position (CSS px) of a body's centre, for DOM labels; null when behind the camera. */
+  project(id: PlanetId | "moon" | "sun"): { x: number; y: number; px: number } | null {
+    const pose = this.lastPose;
+    if (!pose) return null;
+    const world: Vec3 = id === "sun" ? [0, 0, 0] : this.bodies.find((b) => b.id === id)!.pos;
+    const rel = v3(vsub(world, pose.cam));
+    const dist = rel.length();
+    const p = rel.project(this.camera);
+    if (p.z > 1) return null;
+    const radius = id === "sun" ? SUN_R : this.bodies.find((b) => b.id === id)!.radius;
+    const px = (radius / dist) * this.height / (2 * Math.tan((this.camera.fov * Math.PI) / 360));
+    return { x: (p.x + 1) / 2 * this.width, y: (1 - p.y) / 2 * this.height, px };
+  }
+
+  dispose() {
+    this.disposed = true;
+    this.stop();
+    this.opts.canvas.removeEventListener("webglcontextlost", this.onLost, false);
+    document.removeEventListener("visibilitychange", this.onVisibility);
+    for (const c of this.cubes) c.rt.dispose();
+    for (const scene of [this.genScene, this.skyScene, this.farScene, this.world, this.veilScene]) {
+      scene.traverse((o) => {
+        const m = o as Mesh;
+        m.geometry?.dispose();
+        (m.material as ShaderMaterial | undefined)?.dispose?.();
+      });
+    }
+    for (const t of this.textures.values()) t.dispose();
+    this.ktx2.dispose();
+    this.renderer.dispose();
+  }
+
+  // ── lifecycle ──
+
+  private onLost = (e: Event) => {
+    e.preventDefault();
+    this.stop();
+    this.opts.onContextLost();
+  };
+
+  private onVisibility = () => {
+    if (document.hidden) this.stop();
+    else this.start();
+  };
+
+  private start() {
+    if (this.running || this.disposed || document.hidden) return;
+    this.running = true;
+    this.last = performance.now();
+    this.raf = requestAnimationFrame(this.frame);
+  }
+
+  private stop() {
+    this.running = false;
+    cancelAnimationFrame(this.raf);
+  }
+
+  private applyScale() {
+    this.renderer.setPixelRatio(this.dpr * SCALES[this.scaleStep]);
+    this.renderer.setSize(this.width, this.height, false);
+    const px = this.dpr * SCALES[this.scaleStep];
+    for (const m of [this.starMat, this.skyMat, this.galaxyMat, this.dustMat, this.markerMat]) m.uniforms.uPx.value = px;
+  }
+
+  // ── textures, in the order the journey needs them ──
+
+  private loadGroup(group: "earth" | "moon" | "planets") {
+    if (this.loading.has(group)) return;
+    this.loading.add(group);
+    const names = (Object.keys(TEXTURES) as TextureName[]).filter((n) => TEXTURES[n].group === group);
+    const jobs = names.map(async (name) => {
+      try {
+        const tex = (await this.ktx2.loadAsync(TEXTURES[name].url)) as CompressedTexture;
+        if (this.disposed) { tex.dispose(); return; }
+        tex.colorSpace = TEXTURES[name].srgb ? SRGBColorSpace : "";
+        tex.wrapS = RepeatWrapping;
+        tex.minFilter = LinearMipmapLinearFilter;
+        tex.magFilter = LinearFilter;
+        tex.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
+        tex.needsUpdate = true;
+        this.textures.set(name, tex);
+        this.loaded.add(name);
+        this.applyTexture(name, tex);
+      } catch (err) {
+        console.error(`[cosmos] texture ${name}:`, err);
+        this.loaded.add(name);   // don't wait forever for a missing file
+      }
+    });
+    void Promise.all(jobs);
+  }
+
+  private applyTexture(name: TextureName, tex: Texture) {
+    const body = (id: PlanetId | "moon") => this.bodies.find((b) => b.id === id)!;
+    switch (name) {
+      case "earthDay": this.earthMat.uniforms.uDay.value = tex; break;
+      case "earthNight": this.earthMat.uniforms.uNight.value = tex; break;
+      case "earthClouds": this.earthMat.uniforms.uClouds.value = tex; this.cloudsMat.uniforms.uClouds.value = tex; break;
+      case "earthNormal": this.earthMat.uniforms.uNormal.value = tex; break;
+      case "earthSpecular": this.earthMat.uniforms.uSpec.value = tex; break;
+      case "saturnRing": { const s = body("saturn"); s.ringMat!.uniforms.uRing.value = tex; s.mat.uniforms.uRing.value = tex; break; }
+      default: body(name as PlanetId | "moon").mat.uniforms.uMap.value = tex;
+    }
+  }
+
+  private earthReady() {
+    return (["earthDay", "earthNight", "earthClouds", "earthNormal", "earthSpecular"] as const).every((n) => this.loaded.has(n));
+  }
+
+  // ── far sky cubes (as in v2: baked a tile at a time) ──
+
+  private newCube(atm: CosmosAtmosphere) {
+    const rt = new WebGLCubeRenderTarget(this.cubeSize, { generateMipmaps: false, minFilter: LinearFilter, magFilter: LinearFilter, depthBuffer: false });
+    return { rt, atm, tiles: 0 };
+  }
+
+  private bake(cube: { rt: WebGLCubeRenderTarget; atm: CosmosAtmosphere; tiles: number }, budget: number): boolean {
+    const a = ATMOS[cube.atm];
+    const u = this.genMat.uniforms;
+    u.uNebA.value = a.a; u.uNebB.value = a.b; u.uNebAmt.value = a.amt; u.uNebScale.value = a.scale; u.uMilky.value = a.milky;
+    const half = this.cubeSize / 2;
+    while (budget-- > 0 && cube.tiles < 24) {
+      const face = Math.floor(cube.tiles / 4), q = cube.tiles % 4;
+      cube.rt.viewport.set(0, 0, this.cubeSize, this.cubeSize);
+      cube.rt.scissor.set((q % 2) * half, Math.floor(q / 2) * half, half, half);
+      cube.rt.scissorTest = true;
+      this.renderer.setRenderTarget(cube.rt, face);
+      this.renderer.render(this.genScene, this.cubeCam.children[face] as PerspectiveCamera);
+      cube.tiles++;
+    }
+    cube.rt.scissorTest = false;
+    this.renderer.setRenderTarget(null);
+    return cube.tiles >= 24;
+  }
+
+  private updateAtmosphere(dt: number) {
+    const shown = this.cubes[0];
+    if (shown.tiles < 24) {
+      this.bake(shown, this.readyFired ? 1 : 6);
+      return;
+    }
+    if (this.cubes.length === 1 && this.atmWanted !== shown.atm) {
+      this.cubes.push(this.newCube(this.atmWanted));
+      this.atmFrom = shown.atm;
+      this.atmTo = this.atmWanted;
+      this.mix = 0;
+    }
+    if (this.cubes.length === 2) {
+      const next = this.cubes[1];
+      if (next.tiles < 24) { this.bake(next, 1); return; }
+      this.mix = Math.min(1, this.mix + dt / ATMOS_FADE_S);
+      if (this.mix >= 1) {
+        shown.rt.dispose();
+        this.cubes = [next];
+        this.atmFrom = this.atmTo = next.atm;
+      }
+    }
+  }
+
+  // ── the Galaxy's points ──
+
+  private buildGalaxy(nStars: number, nDust: number) {
+    const R_SUN = GALACTIC_CENTRE_LY * LY_AU;
+    const R_DISC = 50_000 * LY_AU;
+    const rnd = (() => { let s = 12345; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; })();
+    const gauss = () => { const u = Math.max(rnd(), 1e-9), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    const C = v3(GALACTIC_CENTRE).multiplyScalar(R_SUN);   // the centre, from the Sun
+    const X = v3(GALACTIC_CENTRE), Y = v3(GALACTIC_Y), Z = v3(GALACTIC_NORTH);
+    // Four arms as log spirals (pitch ~12°), two of them stronger; a bar in the middle.
+    const armDensity = (r: number, th: number) => {
+      const lr = Math.log(Math.max(r, 0.02));
+      let d = 0;
+      for (let k = 0; k < 4; k++) {
+        const phase = (k * Math.PI) / 2 + lr / Math.tan((19 * Math.PI) / 180);
+        const dth = Math.atan2(Math.sin(th - phase), Math.cos(th - phase));
+        d += (k % 2 === 0 ? 1 : 0.55) * Math.exp(-(dth * dth) / (2 * 0.22 * 0.22));
+      }
+      return d;
+    };
+    const place = (count: number, dustLike: boolean) => {
+      const pos = new Float32Array(count * 3), col = new Float32Array(count * 3), size = new Float32Array(count);
+      let i = 0, tries = 0;
+      while (i < count && tries++ < count * 40) {
+        // Exponential disc (surface density ∝ e^(−r/h), scale length h = 0.23 R ≈ 11 500 ly), thin.
+        const r = -(Math.log(Math.max(rnd(), 1e-9)) + Math.log(Math.max(rnd(), 1e-9))) * 0.23 * (dustLike ? 0.9 : 1);
+        if (r > 1.05) continue;
+        const th = rnd() * 2 * Math.PI;
+        const arms = armDensity(r, th + (dustLike ? 0.16 : 0));   // dust on the inner edges
+        const bulge = Math.exp(-r / 0.07) * 1.2;
+        const bar = Math.exp(-r / 0.2) * Math.exp(-Math.pow(Math.sin(th - 0.4), 2) / 0.08) * 0.8;
+        const dens = dustLike ? arms * smoothstep(0.1, 0.2, r) : 0.1 + arms + bulge + bar;
+        if (rnd() * 3.2 > dens) continue;
+        const z = gauss() * (dustLike ? 0.006 : 0.012 + 0.05 * Math.exp(-r / 0.08));
+        const p = C.clone().add(X.clone().multiplyScalar(Math.cos(th) * r * R_DISC)).add(Y.clone().multiplyScalar(Math.sin(th) * r * R_DISC)).add(Z.clone().multiplyScalar(z * R_DISC));
+        pos.set([p.x, p.y, p.z], i * 3);
+        if (dustLike) {
+          col.set([0, 0, 0], i * 3);
+          size[i] = 2.2 + rnd() * 2.2;
+        } else {
+          // Warm in the bulge, cool blue-white in the arms, soft yellow-white between.
+          const inArm = Math.min(1, arms * 0.6);
+          const warm: RGB = [1.0, 0.84, 0.6], cool: RGB = [0.62, 0.74, 1.0], mid: RGB = [0.9, 0.88, 0.82];
+          const w = Math.exp(-r / 0.1);
+          const c: RGB = [0, 0, 0];
+          for (let k = 0; k < 3; k++) c[k] = (mid[k] * (1 - inArm) + cool[k] * inArm) * (1 - w) + warm[k] * w;
+          const bright = 0.5 + rnd() * 0.8 + (rnd() < 0.03 ? 1.5 : 0);
+          col.set([c[0] * bright * 0.42, c[1] * bright * 0.42, c[2] * bright * 0.42], i * 3);
+          size[i] = 0.8 + rnd() * 1.0 + (bright > 2.0 ? 1.0 : 0.0);
+        }
+        i++;
+      }
+      const g = new BufferGeometry();
+      g.setAttribute("position", new BufferAttribute(pos.subarray(0, i * 3), 3));
+      g.setAttribute("aColor", new BufferAttribute(col.subarray(0, i * 3), 3));
+      g.setAttribute("aSize", new BufferAttribute(size.subarray(0, i), 1));
+      return g;
+    };
+    return { stars: place(nStars, false), dust: place(nDust, true) };
+  }
+
+  // ── the day ──
+
+  private updateEphemeris(orbits: number) {
+    const now = this.liveClock ? this.baseJd + (performance.now() - this.t0) / 86_400_000 : this.baseJd;
+    const earthJd = now + orbits * YEAR_DAYS;
+    // Planets, the Moon: today. (During the stops only the Earth goes round;
+    // at every whole orbit it is back where it is today.)
+    if (!(Math.abs(now - this.planetJd) < 1 / 24 / 60)) {
+      this.planetJd = now;
+      for (const b of this.bodies) {
+        if (b.id === "earth" || b.id === "moon") continue;
+        b.pos = planetPosition(b.id, now);
+      }
+    }
+    if (earthJd !== this.earthJd) {
+      this.earthJd = earthJd;
+      this.earth.pos = planetPosition("earth", earthJd);
+      const moon = this.bodies.find((b) => b.id === "moon")!;
+      moon.pos = vadd(this.earth.pos, moonPosition(now));
+    }
+  }
+
+  /** World position of what a shot orbits. */
+  private targetPos(t: Shot["target"]): Vec3 {
+    switch (t) {
+      case "earth": return this.earth.pos;
+      case "sun": return [0, 0, 0];
+      case "mars": case "jupiter": case "saturn": return this.bodies.find((b) => b.id === t)!.pos;
+      case "galaxy": return vscale(GALACTIC_CENTRE, 0.62 * GALACTIC_CENTRE_LY * LY_AU);   // between the Sun and the centre: the disc and the Sun both fit
+    }
+  }
+
+  /** Unit direction from the target to the camera for a shot. */
+  private dirOf(shot: Shot): Vec3 {
+    const lat = (shot.lat * Math.PI) / 180, lon = (shot.lon * Math.PI) / 180;
+    let S: Vec3, U: Vec3;
+    switch (shot.frame) {
+      case "bodySun": {
+        const p = this.targetPos(shot.target);
+        S = vnorm(vscale(p, -1));                 // toward the Sun
+        U = orthoUp([0, 0, 1], S);
+        break;
+      }
+      case "earthMoon": {
+        const moon = this.bodies.find((b) => b.id === "moon")!;
+        S = vnorm(vsub(moon.pos, this.earth.pos));
+        U = orthoUp([0, 0, 1], S);
+        break;
+      }
+      case "ecliptic": {
+        const base = shot.lonFromEarth ? Math.atan2(this.earth.pos[1], this.earth.pos[0]) : 0;
+        const l = base + lon;
+        return [Math.cos(lat) * Math.cos(l), Math.cos(lat) * Math.sin(l), Math.sin(lat)];
+      }
+      case "galactic": {
+        const c = Math.cos(lat);
+        return vnorm(vadd(vadd(vscale(GALACTIC_CENTRE, c * Math.cos(lon)), vscale(GALACTIC_Y, c * Math.sin(lon))), vscale(GALACTIC_NORTH, Math.sin(lat))));
+      }
+    }
+    const Rt = vcross(S, U);
+    return vnorm(vadd(vadd(vscale(S, Math.cos(lat) * Math.cos(lon)), vscale(Rt, Math.cos(lat) * Math.sin(lon))), vscale(U, Math.sin(lat))));
+  }
+
+  private upOf(shot: Shot): Vec3 {
+    switch (shot.up) {
+      case "pole": return EARTH_POLE;
+      case "ecliptic": return [0, 0, 1];
+      case "galactic": return GALACTIC_NORTH;
+      case "sunward": return GALACTIC_CENTRE;   // the centre up, the Sun low in the frame
+    }
+  }
+
+  private poseAt(s: number): Pose {
+    const n = JOURNEY.length;
+    const i = Math.min(n - 2, Math.floor(s));
+    const f = clamp01(s - i);
+    const u = easeInOut(f);
+    const A = JOURNEY[i].shot, B = JOURNEY[i + 1].shot;
+    const orbits = orbitsAt(s);
+    this.updateEphemeris(orbits);
+    const portrait = this.width < this.height;
+
+    const target = lerp3(this.targetPos(A.target), this.targetPos(B.target), u);
+    const dist = logLerp(A.dist, B.dist, u);
+    const dir = slerp(this.dirOf(A), this.dirOf(B), u);
+    // Slow drift in the hero: the camera moves along its orbit at ISS pace.
+    const cam = vadd(target, vscale(dir, dist));
+    const up = slerp(this.upOf(A), this.upOf(B), u);
+    const oA = portrait ? A.offsetPhone : A.offset, oB = portrait ? B.offsetPhone : B.offset;
+    const offset: [number, number] = [oA[0] + (oB[0] - oA[0]) * u, oA[1] + (oB[1] - oA[1]) * u];
+    return {
+      cam, target, dir, up, dist, offset, orbits, dim: A.dim + (B.dim - A.dim) * u, stars: A.stars + (B.stars - A.stars) * u,
+      trail: trailFadeAt(s), travel: f, section: i,
+    };
+  }
+
+  // ── frame ──
+
+  private frame = (now: number) => {
+    if (this.disposed) return;
+    if (this.running) this.raf = requestAnimationFrame(this.frame);
+    const dt = Math.min(0.1, Math.max(0.001, (now - this.last) / 1000));
+    this.last = now;
+    this.time += this.opts.reducedMotion ? dt * 0.3 : dt;
+    this.measure(dt);
+
+    this.updateAtmosphere(dt);
+    if (this.cubes[0].tiles < 24) return;
+
+    if (this.opts.reducedMotion) this.stepReduced(dt);
+    else this.smooth += (this.target - this.smooth) * (1 - Math.exp(-dt / SCROLL_LAG_S));
+    const k = 1 - Math.exp(-dt / 0.9);
+    this.pointer.sx += (this.pointer.x - this.pointer.sx) * k;
+    this.pointer.sy += (this.pointer.y - this.pointer.sy) * k;
+
+    // Textures for what's coming.
+    if (this.smooth > 0.3) this.loadGroup("moon");
+    if (this.smooth > 1.2) this.loadGroup("planets");
+
+    this.render();
+    if (!this.readyFired && this.earthReady()) {
+      this.readyFired = true;
+      this.opts.onReady();
+    }
+  };
+
+  private stepReduced(dt: number) {
+    const r = this.reduced;
+    const want = Math.round(this.target);
+    if (r.phase === "idle" && want !== r.shown) { r.phase = "out"; r.t = 0; }
+    if (r.phase === "out") {
+      r.t += dt / REDUCED_FADE_S;
+      if (r.t >= 1) { r.shown = Math.round(this.target); this.smooth = r.shown; r.phase = "in"; r.t = 0; }
+    } else if (r.phase === "in") {
+      r.t += dt / REDUCED_FADE_S;
+      if (r.t >= 1) r.phase = "idle";
+    }
+    this.veilMat.uniforms.uA.value = r.phase === "out" ? clamp01(r.t) : r.phase === "in" ? 1 - clamp01(r.t) : 0;
+  }
+
+  private measure(dt: number) {
+    this.frameMs += (dt * 1000 - this.frameMs) * 0.1;
+    const w = this.window;
+    w.frames++;
+    w.time += dt;
+    if (this.bench) {
+      this.bench.t += dt;
+      this.bench.dts.push(dt);
+      const sec = Math.min(JOURNEY.length - 1, Math.round(this.smooth));
+      const arr = this.bench.bySection.get(sec) ?? [];
+      arr.push(dt);
+      this.bench.bySection.set(sec, arr);
+    }
+    if (w.time < 1) return;
+    this.fps = w.frames / w.time;
+    const avg = w.time / w.frames;
+    w.frames = 0;
+    w.time = 0;
+    this.scaleCooldown = Math.max(0, this.scaleCooldown - 1);
+    if (this.scaleCooldown > 0 || !this.readyFired) return;
+    if (avg > 0.022 && this.scaleStep < SCALES.length - 1) {
+      this.scaleStep++;
+      this.scaleCooldown = 2;
+      w.goodWindows = 0;
+      this.applyScale();
+    } else if (avg < 0.0175 && this.scaleStep > 0) {
+      if (++w.goodWindows >= 5) {
+        this.scaleStep--;
+        this.scaleCooldown = 3;
+        w.goodWindows = 0;
+        this.applyScale();
+      }
+    } else {
+      w.goodWindows = 0;
+    }
+  }
+
+  private render() {
+    const p = this.poseAt(this.smooth);
+    this.lastPose = p;
+    const cam = this.camera;
+    const r = this.renderer;
+
+    // ── the camera: at the origin, looking at the target with it placed at the shot's offset ──
+    const look = vnorm(vsub(p.target, p.cam));
+    const up = orthoUp(p.up, look);
+    const m = new Matrix4().lookAt(new Vector3(), v3(look), v3(up));   // camera basis with −z toward the target
+    const q = new Quaternion().setFromRotationMatrix(m);
+    const ty = Math.tan((cam.fov * Math.PI) / 360), tx = ty * cam.aspect;
+    // Offsets are given for a 16:9 (landscape) or 9:16 (portrait) frame; other aspects see the same
+    // picture cropped at the sides, exactly like the stills (fitted to the height, centred).
+    const ref = this.width < this.height ? 9 / 16 : 16 / 9;
+    const d = new Vector3(p.offset[0] * (ref / cam.aspect) * tx, p.offset[1] * ty, -1).normalize();
+    q.multiply(new Quaternion().setFromUnitVectors(d, new Vector3(0, 0, -1)));
+    // Pointer: a slow turn of at most 1.5°; at rest a breath.
+    const settled = Math.abs(this.target - this.smooth) < 1e-3 && !this.opts.reducedMotion;
+    const breath = settled ? Math.sin(this.time * ((2 * Math.PI) / 9)) * 0.0004 : 0;
+    const yaw = this.opts.reducedMotion ? 0 : this.pointer.sx * POINTER_MAX;
+    const pitch = this.opts.reducedMotion ? 0 : -this.pointer.sy * POINTER_MAX * 0.6 + breath;
+    q.multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -yaw)).multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), pitch));
+    cam.position.set(0, 0, 0);
+    cam.quaternion.copy(q);
+    cam.updateMatrixWorld();
+    const pxAngle = (2 * ty) / this.height;   // radians per CSS pixel at the centre
+
+    const camDistSun = vlen(p.cam);
+    const camLog = Math.log10(Math.max(camDistSun, 1e-9));
+    // Leaving the neighbourhood: catalogue stars and the band fade from ~300 ly, the Galaxy's disc fades in.
+    const neighbourhood = 1 - smoothstep(Math.log10(300 * LY_AU), Math.log10(6000 * LY_AU), camLog);
+    const galaxyOn = smoothstep(Math.log10(30 * LY_AU), Math.log10(20_000 * LY_AU), camLog);
+
+    // ── sky ──
+    const rot = new Matrix4().extractRotation(cam.matrixWorld);
+    const scale = new Matrix4().set(tx, 0, 0, 0, 0, ty, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0);
+    const su = this.skyMat.uniforms;
+    su.uViewDir.value.multiplyMatrices(rot, scale);
+    su.uCubeA.value = this.cubes[0].rt.texture;
+    su.uCubeB.value = (this.cubes[1] ?? this.cubes[0]).rt.texture;
+    const mixv = this.cubes.length === 2 && this.cubes[1].tiles >= 24 ? easeInOut(this.mix) : 0;
+    su.uMix.value = mixv;
+    const from = ATMOS[this.atmFrom], to = ATMOS[this.atmTo];
+    su.uMilky.value = from.milky + (to.milky - from.milky) * mixv;
+    su.uBand.value = neighbourhood;
+    su.uDim.value = p.dim;
+
+    // ── stars ──
+    const st = this.starMat.uniforms;
+    st.uCam.value.set(p.cam[0], p.cam[1], p.cam[2]);
+    st.uTime.value = this.time;
+    st.uDim.value = p.dim * p.stars * neighbourhood;
+    st.uMagLimit.value = from.mag + (to.mag - from.mag) * mixv;
+
+    // ── the Galaxy ──
+    this.galaxy.visible = this.dust.visible = galaxyOn > 0.001;
+    this.galaxyMat.uniforms.uAlpha.value = galaxyOn * p.dim;
+    this.dustMat.uniforms.uAlpha.value = galaxyOn;
+    this.galaxy.position.set(-p.cam[0], -p.cam[1], -p.cam[2]);
+    this.dust.position.copy(this.galaxy.position);
+
+    // ── bodies, relative to the camera ──
+    const exposure = 1;
+    const erel = vsub(this.earth.pos, p.cam);
+    const edist = vlen(erel);
+    // Orbit lines show once the camera stands well back from the Earth, and fade again when the orbit is a speck.
+    const orbitsNear = smoothstep(0.012, 0.25, edist);
+    // Beyond ~1500 au the planets stop being points of their own; the Sun's glare stands for the system.
+    const systemNear = 1 - smoothstep(Math.log10(800), Math.log10(4000), camLog);
+    for (const b of this.bodies) {
+      const rel = vsub(b.pos, p.cam);
+      const dist = vlen(rel);
+      const px = (b.radius / dist) / pxAngle;                  // apparent radius in CSS px
+      const mesh = b.mesh;
+      mesh.position.set(rel[0], rel[1], rel[2]);
+      mesh.scale.set(b.radius, b.radius * (1 - b.flat), b.radius);
+      // Orientation: local +y is the pole; Greenwich (local +x) for the Earth, else the pole only.
+      const axis = b.axis;
+      const east = b.id === "earth" ? greenwichDirection(this.earthJd) : orthoUp([1, 0, 0], axis);
+      const z = vcross(east, axis);
+      mesh.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(v3(east), v3(axis), v3(z)));
+      mesh.visible = px > 0.35 && dist > b.radius * 1.001;
+      mesh.updateMatrixWorld();
+      const sunDir = vnorm(vscale(b.pos, -1));
+      const u = b.mat.uniforms;
+      u.uSun.value.set(sunDir[0], sunDir[1], sunDir[2]);
+      u.uExposure.value = exposure;
+      if (b.id !== "earth") u.uCentre.value.set(rel[0], rel[1], rel[2]);
+      if (b.ring && b.ringMat) {
+        b.ring.position.copy(mesh.position);
+        b.ring.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), v3(axis));
+        b.ring.visible = px > 0.6;
+        const ru = b.ringMat.uniforms;
+        ru.uSun.value.copy(u.uSun.value);
+        ru.uCentre.value.copy(u.uCentre.value);
+        ru.uNormal.value.set(axis[0], axis[1], axis[2]);
+        u.uRingNormal.value.copy(ru.uNormal.value);
+      }
+      // Marker: readable when the disc would be too small.
+      this.markerAlpha[b.marker] = smoothstep(3.2, 1.2, px) * p.dim * (b.id === "moon" ? 0.4 : 1) * (dist > 1e-6 ? 1 : 0) * systemNear;
+      (this.markers.geometry.attributes.position as BufferAttribute).setXYZ(b.marker, rel[0], rel[1], rel[2]);
+      // Orbit line: shows once the camera stands well back from it, fades again when it is a speck.
+      if (b.orbitMat && b.orbit && b.a) {
+        const ratio = camDistSun / b.a;
+        const alpha = orbitsNear * smoothstep(0.03, 0.6, ratio) * smoothstep(900, 60, ratio) * 0.32 * p.dim;
+        b.orbitMat.uniforms.uAlpha.value = alpha;
+        b.orbit.visible = alpha > 0.002;
+        b.orbit.position.set(-p.cam[0], -p.cam[1], -p.cam[2]);
+      }
+    }
+    (this.markers.geometry.attributes.position as BufferAttribute).needsUpdate = true;
+    (this.markers.geometry.attributes.aAlpha as BufferAttribute).needsUpdate = true;
+
+    // The Earth's layers.
+    const e = this.earth;
+    const epx = (e.radius / edist) / pxAngle;
+    const eSun = vnorm(vscale(e.pos, -1));
+    this.earthMat.uniforms.uCentre.value.set(erel[0], erel[1], erel[2]);
+    this.earthMat.uniforms.uCloudShift.value = (this.time * 0.00002) % 1;
+    this.earthMat.uniforms.uNightLift.value = 0.2;
+    this.cloudsMat.uniforms.uSun.value.set(eSun[0], eSun[1], eSun[2]);
+    this.cloudsMat.uniforms.uCloudShift.value = this.earthMat.uniforms.uCloudShift.value;
+    this.clouds.position.copy(e.mesh.position);
+    this.clouds.quaternion.copy(e.mesh.quaternion);
+    this.clouds.scale.setScalar(e.radius * (1 + 9 / 6371));
+    this.clouds.visible = epx > 3;
+    this.atmo.position.copy(e.mesh.position);
+    this.atmo.scale.setScalar(e.radius * (1 + 100 / 6371));
+    this.atmo.visible = epx > 2;
+    const au = this.atmoMat.uniforms;
+    au.uCentre.value.set(erel[0], erel[1], erel[2]);
+    au.uSun.value.set(eSun[0], eSun[1], eSun[2]);
+
+    // The Sun and its corona: the disc, and a glare that stays a few pixels wide from any distance.
+    const srel = vscale(p.cam, -1);
+    const sdist = camDistSun;
+    const spx = (SUN_R / sdist) / pxAngle;
+    this.sun.position.set(srel[0], srel[1], srel[2]);
+    this.sun.visible = spx > 0.4 && galaxyOn < 0.98;
+    this.sunMat.uniforms.uTime.value = this.time;
+    const glarePx = Math.max(spx * 7, 56);
+    const glare = glarePx * pxAngle * sdist;
+    this.corona.position.copy(this.sun.position);
+    this.corona.scale.set(glare * 2, glare * 2, 1);
+    this.corona.visible = galaxyOn < 0.98;
+    const cu = this.coronaMat.uniforms;
+    cu.uDisc.value = Math.min(spx / glarePx, 0.9);
+    cu.uTime.value = this.time;
+    cu.uIntensity.value = (0.8 + 0.5 * smoothstep(0, 40, spx)) * p.dim * (1 - galaxyOn);
+    // From the Galaxy the Sun is one point among the arm's: an amber marker takes over from the glare.
+    const sunMarker = 9;
+    this.markerAlpha[sunMarker] = galaxyOn * p.dim;
+    (this.markers.geometry.attributes.position as BufferAttribute).setXYZ(sunMarker, srel[0], srel[1], srel[2]);
+    (this.markers.geometry.attributes.position as BufferAttribute).needsUpdate = true;
+    (this.markers.geometry.attributes.aAlpha as BufferAttribute).needsUpdate = true;
+
+    // The trail.
+    this.trailMat.uniforms.uOrbits.value = p.orbits;
+    this.trailMat.uniforms.uFade.value = p.trail * p.dim * smoothstep(0.012, 0.25, edist) * smoothstep(60, 12, camDistSun);
+    this.trail.visible = this.trailMat.uniforms.uFade.value > 0.002;
+    this.trail.position.set(-p.cam[0], -p.cam[1], -p.cam[2]);
+
+    // ── draw ──
+    r.setRenderTarget(null);
+    r.clear();
+    r.render(this.skyScene, this.quadCam);
+    r.render(this.farScene, cam);
+    r.clearDepth();
+    r.render(this.world, cam);
+    if (this.veilMat.uniforms.uA.value > 0.001) r.render(this.veilScene, this.quadCam);
+  }
+}
+

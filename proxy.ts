@@ -145,6 +145,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // The landing's scene assets (public/cosmos: textures, stills, the Basis
+    // transcoder) are static files — no session, no locale, no proxy.
+    "/((?!_next/static|_next/image|favicon.ico|cosmos/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

@@ -4,12 +4,13 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Geist_Mono, Inter, Newsreader } from "next/font/google";
 import { getLocale } from "next-intl/server";
 import { SITE_URL } from "@/lib/site-url";
-import "@/components/marketing/sky/sky.css";
+import "@/components/marketing/cosmos/cosmos.css";
 import "@/components/marketing/landing/landing.css";
 
 // Root layout of the public landing ("/", "/en", "/cs"). Separate from the
 // app's (app/(app)/layout.tsx): only fonts, the sky and i18n — no app
 // providers, no app stylesheet, no Sentry (see instrumentation-client.ts).
+// The scene (components/marketing/cosmos) sits fixed behind the content.
 // i18n is resolved on the server; client components get their copy as props,
 // so no message catalogue or formatter ships to the browser. Moving between
 // the landing and the app is a full page load.

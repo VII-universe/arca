@@ -2,7 +2,24 @@ import type { OperatorInfo } from "@/lib/marketing/operator";
 import { getCopy } from "./copy";
 import { Waypoint } from "./Waypoint";
 
-// The camera turns back toward home; the last question, then the footer.
+// The widest view: the Galaxy from above, the Sun a point in the Orion arm,
+// one line of type and silence. Then the camera turns back toward the blue
+// dot for the last question, and the footer.
+export async function Galaxy() {
+  const { t } = await getCopy("Marketing.galaxy");
+  return (
+    <Waypoint waypoint="galaxy" className="l-galaxy" aria-label={t("label")}>
+      <div className="l-wrap">
+        <p className="l-galaxy__caption l-shade">
+          <span className="l-galaxy__sun">{t("sun")}</span>
+          <span aria-hidden="true"> · </span>
+          <span>{t("caption")}</span>
+        </p>
+      </div>
+    </Waypoint>
+  );
+}
+
 export async function FinalCta() {
   const { t } = await getCopy("Marketing.finalCta");
   return (
@@ -61,7 +78,12 @@ export async function Footer({ operator }: { operator: OperatorInfo }) {
       </div>
       <div className="l-wrap l-footer__bottom">
         <span>© {new Date().getFullYear()} ARCA. {t("rights")}</span>
-        <span>{t("starData")}</span>
+        <span className="l-footer__credits">
+          <span>{t("starData")}</span>
+          <span>{t("earthData")}</span>
+          <span>{t("planetData")}</span>
+          <span>{t("positions")}</span>
+        </span>
       </div>
     </footer>
   );

@@ -924,7 +924,9 @@
         "sealedGone": "Until the moment comes.",
         "demoNote": "This is only a demo. Nothing was sent.",
         "saveCta": "Keep it for real",
-        "again": "Write another"
+        "again": "Write another",
+        "sealedOrbits": "On its way to {year}. {count, plural, one {# orbit} other {# orbits}}.",
+        "skip": "Skip the animation"
       }
     },
     "timeline": {
@@ -959,9 +961,8 @@
         }
       ],
       "finale": "Some words are meant to arrive later.",
-      "stars": ["Barnard's Star", "Gliese 251", "Vega", "Titawin"],
-      "distance": "{ly, plural, one {# light year} other {# light years}}",
-      "lightNote": "Light leaving it today reaches Earth in {year}. Just like a message you write today."
+      "orbits": "{count, plural, one {# orbit of the Earth around the Sun} other {# orbits of the Earth around the Sun}}",
+      "orbitsNote": "A year is one orbit of the Earth around the Sun. A message for 2044 waits eighteen orbits. Each one leaves a trace here."
     },
     "forWhom": {
       "label": "Who it's for",
@@ -1156,6 +1157,11 @@
         }
       ]
     },
+    "galaxy": {
+      "label": "The Milky Way",
+      "sun": "The Sun",
+      "caption": "26,700 light years from the centre of the Galaxy, in the Orion arm"
+    },
     "finalCta": {
       "title": "Who will you write to first?",
       "lead": "A few sentences are enough. The rest can wait.",
@@ -1171,7 +1177,10 @@
       "operator": "Operated by",
       "companyId": "Company ID {id}",
       "rights": "All rights reserved.",
-      "starData": "Star data: HYG Database v4.4 (CC BY-SA 4.0), from the ESA Hipparcos and Gaia catalogues."
+      "starData": "Star data: HYG Database v4.4 (CC BY-SA 4.0), from the ESA Hipparcos and Gaia catalogues.",
+      "earthData": "Earth and Moon: NASA Blue Marble, Black Marble and LRO (public domain).",
+      "planetData": "Planet textures: Solar System Scope (CC BY 4.0).",
+      "positions": "Planet positions for the day of your visit after JPL (approximate Keplerian elements)."
     }
   },
   "Auth": {

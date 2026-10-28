@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef, CSSProperties, ElementType } from "react";
-import { JOURNEY, type WaypointId } from "../sky/journey";
+import { JOURNEY, type WaypointId } from "../cosmos/journey";
 
 // One stretch of the page = one waypoint of the camera: the section's content
 // (the camera holds while it's read), then its leg (the camera flies on to the

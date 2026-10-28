@@ -31,7 +31,7 @@ export async function marketingMetadata(path: string): Promise<Metadata> {
   };
 }
 
-// v2 („Světlo na cestě“): the sky, the journey and every section.
+// v3 („Oběhy“): the scene, the journey and every section.
 export async function MarketingPage() {
   return <LandingPage />;
 }

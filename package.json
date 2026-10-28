@@ -101,6 +101,8 @@
     "@types/three": "0.186.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.0",
+    "ktx2-encoder": "^0.6.0",
+    "sharp": "^0.34.5",
     "supabase": "^2.98.1",
     "vitest": "^5.0.3"
   }

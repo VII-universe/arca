@@ -924,7 +924,9 @@
         "sealedGone": "Až přijde ta chvíle.",
         "demoNote": "Tohle je jen ukázka. Nic se neodeslalo.",
         "saveCta": "Ulož ji doopravdy",
-        "again": "Napsat jinou"
+        "again": "Napsat jinou",
+        "sealedOrbits": "Na cestě do roku {year}. {count, plural, one {# oběh} few {# oběhy} other {# oběhů}}.",
+        "skip": "Přeskočit animaci"
       }
     },
     "timeline": {
@@ -959,9 +961,8 @@
         }
       ],
       "finale": "Některá slova mají přijít později.",
-      "stars": ["Barnardova hvězda", "Gliese 251", "Vega", "Titawin"],
-      "distance": "{ly, plural, one {# světelný rok} few {# světelné roky} other {# světelných let}}",
-      "lightNote": "Světlo, které z ní vyrazí dnes, dorazí k Zemi v roce {year}. Stejně jako zpráva, kterou dnes napíšeš."
+      "orbits": "{count, plural, one {# oběh Země kolem Slunce} few {# oběhy Země kolem Slunce} other {# oběhů Země kolem Slunce}}",
+      "orbitsNote": "Rok je jeden oběh Země kolem Slunce. Zpráva pro rok 2044 čeká osmnáct oběhů. Každý z nich tady zanechá stopu."
     },
     "forWhom": {
       "label": "Pro koho",
@@ -1156,6 +1157,11 @@
         }
       ]
     },
+    "galaxy": {
+      "label": "Mléčná dráha",
+      "sun": "Slunce",
+      "caption": "26 700 světelných let od středu Galaxie, v rameni Orionu"
+    },
     "finalCta": {
       "title": "Komu napíšeš první?",
       "lead": "Stačí pár vět. Zbytek počká.",
@@ -1171,7 +1177,10 @@
       "operator": "Provozovatel",
       "companyId": "IČO {id}",
       "rights": "Všechna práva vyhrazena.",
-      "starData": "Hvězdná data: HYG Database v4.4 (CC BY-SA 4.0), z katalogů ESA Hipparcos a Gaia."
+      "starData": "Hvězdná data: HYG Database v4.4 (CC BY-SA 4.0), z katalogů ESA Hipparcos a Gaia.",
+      "earthData": "Země a Měsíc: NASA Blue Marble, Black Marble a LRO (volné dílo).",
+      "planetData": "Textury planet: Solar System Scope (CC BY 4.0).",
+      "positions": "Polohy planet ke dni návštěvy podle JPL (přibližné Keplerovy prvky)."
     }
   },
   "Auth": {

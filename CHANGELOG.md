@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.64.0] - Web v3 „Oběhy“, milník M0: koncept ve skutečné scéně
+Nový veřejný web začíná znovu od scény: jedna jízda kamery od nízké oběžné dráhy Země přes oběhy kolem Slunce, Jupiter a Saturn až k pohledu na Mléčnou dráhu a zpět. Rok = jeden oběh Země; zpráva pro rok 2044 čeká 18 oběhů a každý z nich zanechá stopu. Tento milník jsou koncepční rendery (Země z oběžné dráhy, zastávka 2044 s oběhy, Saturn, Galaxie), video oddálení a statický hero + jedna zastávka s finální typografií. Louka, hvězdné zastávky a všechny komponenty v2, které v3 nepoužije, jsou smazané.
+
+### Přidáno
+- `components/marketing/cosmos/` — scéna v3: `engine.ts` (Three.js 0.186, floating origin v jednotkách au, logaritmický depth buffer, adaptivní rozlišení, panel `?perf=1`), `journey.ts` (záběry pro každou sekci, logaritmická vzdálenost kamery, oběhy; testy), `ephemeris.ts` (polohy planet podle přibližných Keplerových prvků JPL, Měsíc podle Astronomical Almanac, rotace Země podle GMST, galaktická soustava; testy proti referenčním hodnotám), shadery pro Zemi (den/noc/oblaka/odlesk oceánu/atmosféra s Rayleighovým a Mieho rozptylem), planety, Saturnovy prstence se stíny, Slunce s korónou, oběžné dráhy, stopu oběhů Země a procedurální Mléčnou dráhu.
+- `public/cosmos/tex/` — textury v KTX2 (Basis ETC1S, 3,4 MB celkem): NASA Blue Marble (4k), Black Marble (4k), oblačnost, Měsíc z LRO (volné dílo); normálová a specular mapa Země a planety ze Solar System Scope (CC BY 4.0, poděkování v patičce). `scripts/build-cosmos-textures.mjs` (sharp + ktx2-encoder) je sestaví ze zdrojů; licence v `public/cosmos/TEXTURES-LICENSE.md`. Transcoder Basis v `public/cosmos/basis/`.
+- `public/cosmos/stills/` — AVIF/JPG snímky čtyř klíčových pohledů z téže scény: hero se zobrazí okamžitě, bez WebGL se snímky přepínají podle scrollu.
+- Hero: nadpis přes osm sloupců (Newsreader opsz 72, 10,5 vw), Země zprava, ukázka zprávy pod ním. Zastávky: obří rok vystředěný, ukázka zprávy v jantarové kurzívě, mono řádek s počtem oběhů, prsteny oběhů v pozadí. Nová sekce „Některá slova mají přijít později.“ přes celou šířku a tichý pohled na Galaxii.
+- `messages/*.json` — počet oběhů (plurály), poznámka o oběhu, titulek Galaxie, poděkování za textury a polohy planet v patičce, text po zapečetění s oběhy.
+- `proxy.ts` — `/cosmos/` (statické soubory scény) mimo matcher proxy.
+
+### Změněno
+- `app/(marketing)/layout.tsx`, `components/marketing/landing/` — sekce ukotvené na nové záběry cesty; typografie: text 18 px, lead 22 px, mono 0,8 rem, kompozice se mezi sekcemi střídá.
+- Katalog hvězd (`stars.bin`, HYG) přesunut do `components/marketing/cosmos/`; `scripts/build-sky-catalog.mjs` zapisuje tam.
+
+### Odstraněno
+- `components/marketing/sky/` (nebe v2, louka, snímky louky), `components/marketing/scene/` a nepoužívané komponenty webu v1 (`HeroComposer`, `Odometer`, `LifeTimeline`, `MarketingNav`, `MarketingFooter`, …, `marketing.css`).
+
 ## [1.63.0] - Web v2, milník M2: typografie a rozvržení ve scéně
 Všechny sekce stojí staticky ve skutečném nebi, v češtině i angličtině: text sedí na scéně jako titulky ve filmu (Newsreader, Inter s `ss01`/`cv11`, Geist Mono), karty jen tam, kde je zpráva nebo plán (matný obsidián, žádné sklo). Ukázkové zprávy jsou zastávky u hvězd ve vzdálenosti „rok − 2026“ světelných let. Animace přijdou v M3–M6.
 

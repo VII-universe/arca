@@ -1,9 +1,9 @@
-// Builds components/marketing/sky/stars.bin — the landing's star field — from the HYG
+// Builds components/marketing/cosmos/stars.bin — the landing's star field — from the HYG
 // Database (v4.4, CC BY-SA 4.0, https://codeberg.org/astronexus/hyg).
 //
 //   node scripts/build-sky-catalog.mjs <hyg_v44.csv.gz> [count=30000]
 //
-// Layout (little-endian), decoded by components/marketing/sky/catalog.ts:
+// Layout (little-endian), decoded by components/marketing/cosmos/catalog.ts:
 //   header 16 B: "ARSK", u16 version (1), u16 0, u32 star count, u32 0
 //   per star 8 B: u16 octX, u16 octY  — direction from the Sun, octahedral
 //                 u16 logDist         — log10(parsecs) over [-1, 4]
@@ -103,8 +103,8 @@ stars.forEach((s, i) => {
   buf.writeUInt8(clampInt((s.ci + 0.5) / 0.01, 255), o + 7);
 });
 
-writeFileSync("components/marketing/sky/stars.bin", buf);
-console.log(`components/marketing/sky/stars.bin: ${stars.length} stars, ${buf.length} bytes`);
+writeFileSync("components/marketing/cosmos/stars.bin", buf);
+console.log(`components/marketing/cosmos/stars.bin: ${stars.length} stars, ${buf.length} bytes`);
 for (const [i, s] of stars.slice(1, 5).entries()) {
   console.log(`  [${i + 1}] ${s.stop.year} ${s.stop.name}: ${(s.dist * 3.26156).toFixed(2)} ly`);
 }
