@@ -123,9 +123,9 @@ function GuardiansFigure({ you, label }: { you: string; label: string }) {
           <stop offset="1" stopColor="#0a0f1c" stopOpacity="1" />
         </radialGradient>
         <radialGradient id="l-g-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0" stopColor="#ffd9a0" stopOpacity="0.55" />
-          <stop offset="0.4" stopColor="#ffd9a0" stopOpacity="0.12" />
-          <stop offset="1" stopColor="#ffd9a0" stopOpacity="0" />
+          <stop offset="0" style={{ stopColor: "var(--amber)" }} stopOpacity="0.55" />
+          <stop offset="0.4" style={{ stopColor: "var(--amber)" }} stopOpacity="0.12" />
+          <stop offset="1" style={{ stopColor: "var(--amber)" }} stopOpacity="0" />
         </radialGradient>
       </defs>
       <line x1={L.x} y1={L.y} x2={G1.x} y2={G1.y} className="l-thread" />

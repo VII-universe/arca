@@ -45,6 +45,8 @@ export function CosmosStage() {
   useEffect(() => {
     atmosphereRef.current = atmosphere;
     engineRef.current?.setAtmosphere(atmosphere);
+    // The page's accents follow the atmosphere too (landing.css, .l-body[data-atmosphere]).
+    document.body.dataset.atmosphere = atmosphere;
   }, [atmosphere]);
 
   useEffect(() => {

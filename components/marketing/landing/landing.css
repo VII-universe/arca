@@ -12,12 +12,12 @@
   --ink-2: #d3d0c8;
   --ink-3: #b7b4ac;
   --cool: #dce6ff;         /* metadata, distances */
-  --amber: #ffd9a0;        /* the light of a message — what a person wrote, the orbits, the main CTA */
+  --amber: #ffd9a0;        /* the light of a message — what a person wrote, the orbits, the main CTA (per atmosphere, below) */
   --amber-ink: #1d1407;
   --line: rgb(244 239 230 / 0.14);
   --line-2: rgb(244 239 230 / 0.28);
   --obsidian: linear-gradient(180deg, rgb(17 20 30 / 0.96), rgb(9 11 18 / 0.98));
-  --shade: rgb(5 7 13 / 0.55);
+  --shade: rgb(5 7 13 / 0.72);
 
   --f-display: var(--font-display), "Iowan Old Style", Georgia, serif;
   --f-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
@@ -47,9 +47,19 @@
   text-rendering: optimizeLegibility;
 }
 
+/* The atmosphere (Atmospheres.tsx, CosmosStage sets data-atmosphere on the body) also colours the light of a message:
+   the scene's light, its trail, the orbits and the UI's accents follow it, crossfading over 1.2 s. */
+@property --amber { syntax: "<color>"; inherits: true; initial-value: #ffd9a0; }
+.l-body { transition: --amber 1.2s cubic-bezier(0.45, 0, 0.55, 1); }
+.l-body[data-atmosphere="sunset"] { --amber: #ffb488; }     /* warm coral orange (never pink: brief, section 7) */
+.l-body[data-atmosphere="ocean"] { --amber: #86e3d8; }      /* turquoise */
+.l-body[data-atmosphere="midnight"] { --amber: #c9ced8; }   /* muted silver */
+.l-body[data-atmosphere="stars"] { --amber: #ffffff; }      /* pure white */
+@media (prefers-reduced-motion: reduce) { .l-body { transition: none; } }
+
 .l-body a:not(.l-btn) { color: inherit; }
 .l-body :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
-.l-body ::selection { background: rgb(255 217 160 / 0.35); color: var(--ink); }
+.l-body ::selection { background: color-mix(in srgb, var(--amber) 35%, transparent); color: var(--ink); }
 
 .l-sr {
   position: absolute;
@@ -86,14 +96,15 @@
 /* Contrast on the scene: a soft, feathered darkening right under the text
    (WCAG 4.5 : 1 over the brightest parts of the scene). */
 .l-shade { position: relative; isolation: isolate; }
+/* A soft radial darkening that fades to nothing well beyond the text (no edge anywhere), plus a faint shadow on
+   the glyphs themselves. */
+.l-shade { text-shadow: 0 0 18px rgb(5 7 13 / 0.55); }
 .l-shade::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -150px -170px;
   z-index: -1;
-  border-radius: 48px;
-  background: var(--shade);
-  box-shadow: 0 0 72px 56px var(--shade);
+  background: radial-gradient(closest-side, var(--shade) 0%, var(--shade) 66%, color-mix(in srgb, var(--shade) 55%, transparent) 84%, transparent 100%);
   pointer-events: none;
 }
 
@@ -106,8 +117,9 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--cool);
-  opacity: 0.8;
+  opacity: 1;
   margin-bottom: 24px !important;
+  text-shadow: 0 0 2px rgb(5 7 13 / 0.9), 0 0 12px rgb(5 7 13 / 0.85);   /* small text at the shade's edge */
 }
 
 /* Display: Newsreader at opsz 72, light, tight. */
@@ -150,7 +162,7 @@
 
 .l-body h3 { font: 500 1.1rem/1.4 var(--f-sans); letter-spacing: -0.012em; color: var(--ink); margin-bottom: 8px; }
 .l-body p { color: var(--ink-2); text-wrap: pretty; }
-.l-small { font-size: 0.9rem; line-height: 1.5; color: var(--ink-3) !important; }
+.l-small { font-size: 0.9rem; line-height: 1.5; color: var(--ink-2) !important; }   /* ink-2: holds 4.5 : 1 over the brightest atmosphere */
 .l-note { color: var(--ink-2); max-width: 44ch; }
 .l-link { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; }
 
@@ -174,7 +186,7 @@
   transition: background-color 0.3s var(--ease-out), border-color 0.3s var(--ease-out), color 0.3s var(--ease-out);
 }
 .l-btn--primary { background: var(--amber); color: var(--amber-ink); }
-.l-btn--primary:hover { background: #ffe6bf; }
+.l-btn--primary:hover { background: color-mix(in srgb, var(--amber) 72%, white); }
 .l-btn--primary:disabled { opacity: 0.45; cursor: default; }
 .l-btn--ghost { background: transparent; color: var(--ink); border-color: var(--line-2); }
 .l-btn--ghost:hover { border-color: var(--ink-2); }
@@ -354,7 +366,7 @@
 }
 .l-gather__seal { position: absolute; margin: 0; pointer-events: none; animation: l-gather-glow 0.7s ease-out both; }
 .l-gather__skip { position: absolute; pointer-events: auto; }
-@keyframes l-gather-glow { 0% { box-shadow: 0 0 0 0 rgb(255 217 160 / 0); } 100% { box-shadow: 0 0 36px 10px rgb(255 217 160 / 0.45); } }
+@keyframes l-gather-glow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--amber) 0%, transparent); } 100% { box-shadow: 0 0 36px 10px color-mix(in srgb, var(--amber) 45%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .l-gather__words span, .l-gather__seal { animation: none; } }
 .l-sealed { display: grid; justify-items: center; gap: 12px; padding: 24px 0 8px; text-align: center; }
 .l-sealed__year { font: 300 4.6rem/1 var(--f-display); color: var(--amber) !important; font-variant-numeric: tabular-nums; }
@@ -414,6 +426,7 @@
 .l-stop__meta { font: 400 0.8rem/1.5 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-3) !important; margin-top: 10px !important; }
 .l-stop__count { color: var(--amber); }
 .l-stop .l-shade { --shade: rgb(5 7 13 / 0.5); }
+.l-intro .l-shade { --shade: rgb(5 7 13 / 0.84); }   /* beside the full Moon */
 
 /* ── sections after the orbits ────────────────────────────────────────── */
 
@@ -459,7 +472,7 @@
   position: absolute;
   inset: 0 6px;
   height: 1px;
-  background: rgb(255 217 160 / 0.7);
+  background: color-mix(in srgb, var(--amber) 70%, transparent);
   transform-origin: left center;
   transform: scaleX(var(--progress, 0));
   pointer-events: none;
@@ -477,7 +490,7 @@
   background: var(--cool);
   box-shadow: 0 0 0 5px rgb(220 230 255 / 0.12), 0 0 18px rgb(220 230 255 / 0.5);
 }
-.l-points-orbit li[data-gone="true"] .l-points-orbit__dot { background: var(--amber); box-shadow: 0 0 0 5px rgb(255 217 160 / 0.14), 0 0 18px rgb(255 217 160 / 0.5); }
+.l-points-orbit li[data-gone="true"] .l-points-orbit__dot { background: var(--amber); box-shadow: 0 0 0 5px color-mix(in srgb, var(--amber) 14%, transparent), 0 0 18px color-mix(in srgb, var(--amber) 50%, transparent); }
 .l-points-orbit h3 { font: 300 clamp(1.5rem, 2vw, 2.1rem)/1.1 var(--f-display); font-variation-settings: "opsz" 48; letter-spacing: -0.025em; margin-bottom: 12px; }
 
 /* Jak to funguje: four points on one trajectory, top left to bottom right. */
@@ -497,7 +510,7 @@
 .l-wrap > .l-trajectory { padding-left: 44px; }
 .l-trajectory__line path { fill: none; stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 2 7; }
 /* The drawn part of the trajectory and the light travelling along it, stopping at each step (Motion.tsx). */
-.l-trajectory__line .l-trajectory__drawn { stroke: rgb(255 217 160 / 0.75); stroke-width: 1.5; stroke-dasharray: 0 99999; }
+.l-trajectory__line .l-trajectory__drawn { stroke: color-mix(in srgb, var(--amber) 75%, transparent); stroke-width: 1.5; stroke-dasharray: 0 99999; }
 .l-trajectory__light {
   position: absolute;
   left: 0;
@@ -507,7 +520,7 @@
   margin: -9px 0 0 -9px;
   border-radius: 50%;
   background: var(--amber);
-  box-shadow: 0 0 0 6px rgb(255 217 160 / 0.14), 0 0 28px 6px rgb(255 217 160 / 0.55);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--amber) 14%, transparent), 0 0 28px 6px color-mix(in srgb, var(--amber) 55%, transparent);
   transform: translate(var(--lx, 0px), var(--ly, 0px));
   pointer-events: none;
   z-index: 1;
@@ -556,7 +569,7 @@
 .l-wrap > .l-guardians__figure { grid-column: 1 / span 6; width: 100%; max-width: 560px; align-self: start; position: sticky; top: 18svh; }
 .l-wrap > .l-guardians__text { grid-column: 8 / span 5; }
 .l-thread { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 2 6; }
-.l-g-ring-track { fill: none; stroke: rgb(255 217 160 / 0.14); stroke-width: 2; }
+.l-g-ring-track { fill: none; stroke: color-mix(in srgb, var(--amber) 14%, transparent); stroke-width: 2; }
 .l-g-ring { fill: none; stroke: var(--amber); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 0; stroke-linecap: round; }
 .l-g-pulse { fill: var(--cool); opacity: 0; }
 .l-g-pulse--back { fill: var(--cool); }
@@ -620,7 +633,7 @@
 .l-pricing__head .l-h2 { font-size: clamp(2.9rem, 8vw, 8.6rem); }
 .l-wrap > .l-plans { grid-column: 6 / span 7; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
 .l-plan { display: flex; flex-direction: column; align-items: flex-start; }
-.l-plan--pro { border-color: rgb(255 217 160 / 0.34); }
+.l-plan--pro { border-color: color-mix(in srgb, var(--amber) 34%, transparent); }
 .l-plan__name { font: 400 0.8rem/1 var(--f-mono) !important; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cool) !important; }
 .l-plan__price { font: 300 3.6rem/1 var(--f-display); color: var(--ink) !important; margin: 18px 0 6px !important; font-variant-numeric: tabular-nums; }
 .l-plan__price small { margin-left: 6px; font: 400 0.9rem var(--f-sans); color: var(--ink-3); }

@@ -39,12 +39,15 @@ export type CosmosAtmosphere = "nebula" | "sunset" | "ocean" | "midnight" | "sta
 
 // What each atmosphere changes: the far dust's two tints and amount, and
 // how faint a star still shows. Never the Earth, the planets, or text.
-const ATMOS: Record<CosmosAtmosphere, { a: RGB; b: RGB; amt: number; scale: number; milky: number; mag: number }> = {
-  nebula: { a: [0.16, 0.24, 0.52], b: [0.24, 0.3, 0.58], amt: 0.7, scale: 2.2, milky: 1, mag: 7.2 },
-  sunset: { a: [0.56, 0.32, 0.14], b: [0.4, 0.22, 0.12], amt: 0.7, scale: 2.2, milky: 1, mag: 7.2 },
-  ocean: { a: [0.08, 0.42, 0.44], b: [0.12, 0.28, 0.5], amt: 0.7, scale: 2.2, milky: 1, mag: 7.2 },
-  midnight: { a: [0.14, 0.17, 0.38], b: [0.1, 0.12, 0.28], amt: 0.3, scale: 1.4, milky: 0.8, mag: 7.0 },
-  stars: { a: [0, 0, 0], b: [0, 0, 0], amt: 0, scale: 2.2, milky: 1.15, mag: 8.4 },
+// `wash`: how strongly the tints cover the whole sky (and so how bright each atmosphere is — they must differ
+// in brightness, not only in hue). `accent`: the colour of the light of a message (the scene's light, its trail,
+// the orbits; the page's UI accents follow it in landing.css).
+const ATMOS: Record<CosmosAtmosphere, { a: RGB; b: RGB; amt: number; scale: number; milky: number; mag: number; wash: number; accent: RGB }> = {
+  nebula: { a: [0.16, 0.24, 0.52], b: [0.24, 0.3, 0.58], amt: 0.7, scale: 2.2, milky: 1, mag: 7.2, wash: 0.62, accent: [1.0, 0.85, 0.63] },
+  sunset: { a: [0.62, 0.34, 0.14], b: [0.46, 0.22, 0.12], amt: 0.7, scale: 2.2, milky: 1, mag: 7.2, wash: 0.72, accent: [1.0, 0.71, 0.53] },
+  ocean: { a: [0.08, 0.46, 0.46], b: [0.12, 0.3, 0.5], amt: 0.7, scale: 2.2, milky: 1, mag: 7.2, wash: 0.6, accent: [0.53, 0.89, 0.85] },
+  midnight: { a: [0.14, 0.17, 0.38], b: [0.1, 0.12, 0.28], amt: 0.3, scale: 1.4, milky: 0.8, mag: 7.0, wash: 0.34, accent: [0.79, 0.81, 0.85] },
+  stars: { a: [0, 0, 0], b: [0, 0, 0], amt: 0, scale: 2.2, milky: 1.15, mag: 8.8, wash: 0, accent: [1.0, 1.0, 1.0] },
 };
 
 const MAX_DPR = 1.5;
@@ -214,6 +217,9 @@ export class CosmosEngine {
   private atmFrom: CosmosAtmosphere;
   private atmTo: CosmosAtmosphere;
   private atmWanted: CosmosAtmosphere;
+  // The wash and the accent follow the chosen atmosphere at once (the sky cube's crossfade has to wait for the
+  // new cube to be baked): eased toward the wanted values, ~95 % in 1.2 s.
+  private tint: { a: RGB; b: RGB; wash: number; accent: RGB } | null = null;
   private mix = 1;
   private readonly skyMat: ShaderMaterial;
   private readonly skyScene = new Scene();
@@ -1414,14 +1420,28 @@ export class CosmosEngine {
     su.uMilky.value = from.milky + (to.milky - from.milky) * mixv;
     su.uBand.value = neighbourhood;
     su.uDim.value = p.dim;
-    // The wash: the chosen atmosphere's tints (crossfaded with the cube), strong once the band has faded, none
-    // outside the Galaxy (there it is space, dark).
-    for (let k = 0; k < 3; k++) {
-      (su.uTintA.value as Vector3).setComponent(k, from.a[k] + (to.a[k] - from.a[k]) * mixv);
-      (su.uTintB.value as Vector3).setComponent(k, from.b[k] + (to.b[k] - from.b[k]) * mixv);
+    // The wash and the light's colour: the chosen atmosphere's, eased in at once (not waiting for the cube).
+    {
+      const want = ATMOS[this.atmWanted];
+      if (!this.tint) this.tint = { a: [...want.a], b: [...want.b], wash: want.wash, accent: [...want.accent] };
+      const k = 1 - Math.exp(-this.lastDt / 0.4);
+      const T = this.tint;
+      for (let c = 0; c < 3; c++) {
+        T.a[c] += (want.a[c] - T.a[c]) * k; T.b[c] += (want.b[c] - T.b[c]) * k; T.accent[c] += (want.accent[c] - T.accent[c]) * k;
+      }
+      T.wash += (want.wash - T.wash) * k;
+      (su.uTintA.value as Vector3).set(T.a[0], T.a[1], T.a[2]);
+      (su.uTintB.value as Vector3).set(T.b[0], T.b[1], T.b[2]);
     }
     const outside = smoothstep(Math.log10(20_000 * LY_AU), Math.log10(50_000 * LY_AU), camLog);
-    su.uWash.value = (from.amt + (to.amt - from.amt) * mixv) * (0.35 + 0.65 * (1 - neighbourhood)) * (1 - outside);
+    su.uWash.value = this.tint!.wash * (0.45 + 0.55 * (1 - neighbourhood)) * (1 - outside);
+    const acc: RGB = this.tint!.accent;
+    this.trailMat.uniforms.uColor.value = acc;
+    this.yearsMat.uniforms.uColor.value = acc;
+    this.filamentMat.uniforms.uColor.value = [acc[0], acc[1] * 0.94, acc[2] * 0.86];
+    this.sparkMat.uniforms.uColor.value = [acc[0], acc[1] * 0.85, acc[2] * 0.7];
+    this.ribbonMat.uniforms.uColor.value = [acc[0], acc[1] * 0.88, acc[2] * 0.72];
+    this.ringMat.uniforms.uColor.value = [acc[0], acc[1] * 0.96, acc[2] * 0.9];
 
     // ── stars ──
     const st = this.starMat.uniforms;

@@ -9,6 +9,11 @@
 - Výrok „Některá slova mají přijít později.“ připnutý uprostřed jako zastávka.
 - Atmosféry: odstíny zvolené atmosféry jsou jemným závojem přes celé nebe v jakékoli vzdálenosti (pás a prach Mléčné dráhy s odletem mizí, závoj ne; mimo Galaxii zmizí), přechod 1,2 s jako dřív. Dřív v místě sekce „Tvůj vlastní svět“ (2 500 ly) přepnutí nebylo vidět.
 
+### Opraveno po kontrole M5
+- Atmosféry: závoj oblohy zhruba 3× silnější a každá varianta jinak jasná (jas oblohy 0–255: Soumrak 87, Oceán 64, Výchozí 51, Půlnoc 22, Hvězdy 9 — rozlišitelné i černobíle). Závoj a barva světla naběhnou hned po kliknutí (dřív čekaly na upečení nové krychle oblohy, což mohlo trvat sekundy). Se zvolenou atmosférou se mění i barva světla zprávy, jeho stopy, oběhů, letokruhů v hero a akcenty stránky (hlavní tlačítko, linky, body, ukázky): Výchozí jantar, Soumrak teplá korálově oranžová (do oranžova, ne do růžova — brief, sekce 7), Oceán tyrkys, Půlnoc tlumená stříbrná, Hvězdy čistá bílá; přechod 1,2 s (`@property --amber`).
+- Ztmavení pod textem je měkký radiální přechod bez hrany (plus jemný stín písma) místo obdélníku se zaoblenými rohy.
+- Jak to funguje: dráha vede kolem karet — svisle podél volného místa vlevo od čísla kroku, napříč mezerou mezi řádky ke dalšímu číslu, se zaoblenými rohy; nikdy neprotne kartu ani text (ověřeno 601 vzorky na trase).
+
 ### Ověřeno
 - Kontrast všech textů v klidu (reduced motion) nad vykreslenou scénou: 785 měření (CS/EN × desktop/telefon), 0 pod hranicí. Světlo zprávy ani světlo trajektorie nikdy nekříží text.
 

@@ -138,18 +138,34 @@ export function Motion() {
             let pxLen = 1;
             const place = () => {
               const box = svg.getBoundingClientRect();
-              // The trajectory runs through the stops — each just left of its step's number, where nothing is
-              // written — from the top left to the bottom right, as a smooth curve (Catmull-Rom → Bézier).
+              // The trajectory runs through the stops — each just left of its step's number, where nothing is written.
               const pts = steps.map((st) => {
                 const r = st.querySelector(".l-trajectory__n")!.getBoundingClientRect();
                 return [((r.left - 22 - box.left) / box.width) * 100, ((r.top + r.height / 2 - box.top) / box.height) * 100] as [number, number];
               });
-              const all: [number, number][] = [[Math.max(0.5, pts[0][0] - 2), 1], ...pts, [97, 99]];
-              let d = `M ${all[0][0].toFixed(2)} ${all[0][1].toFixed(2)}`;
-              for (let i = 0; i < all.length - 1; i++) {
-                const p0 = all[Math.max(0, i - 1)], p1 = all[i], p2 = all[i + 1], p3 = all[Math.min(all.length - 1, i + 2)];
-                const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
-                d += ` C ${c1[0].toFixed(2)} ${c1[1].toFixed(2)}, ${c2[0].toFixed(2)} ${c2[1].toFixed(2)}, ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`;
+              // Around the cards, never across them: down the clear left side of a step's number, across the gap
+              // between that step and the next, down to the next number — with rounded corners.
+              const rx = (18 / box.width) * 100, ry = (18 / box.height) * 100;
+              const gaps = steps.slice(0, -1).map((st, j) => {
+                const a2 = st.getBoundingClientRect(), b2 = steps[j + 1].getBoundingClientRect();
+                return ((((a2.bottom + b2.top) / 2) - box.top) / box.height) * 100;
+              });
+              const way: [number, number][] = [[pts[0][0], 0.5]];
+              pts.forEach((q, j) => {
+                way.push(q);
+                if (j < pts.length - 1) { way.push([q[0], gaps[j]]); way.push([pts[j + 1][0], gaps[j]]); }
+              });
+              way.push([pts[pts.length - 1][0], 99.5]);
+              let d = `M ${way[0][0].toFixed(2)} ${way[0][1].toFixed(2)}`;
+              for (let i = 1; i < way.length; i++) {
+                const p0 = way[i - 1], p1 = way[i], p2 = way[i + 1];
+                const turn = p2 && (Math.abs(p1[0] - p0[0]) > 0.01) !== (Math.abs(p2[0] - p1[0]) > 0.01);
+                if (!turn) { d += ` L ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}`; continue; }
+                // A corner at p1: stop short of it, curve through it.
+                const inX = Math.sign(p1[0] - p0[0]), inY = Math.sign(p1[1] - p0[1]);
+                const outX = Math.sign(p2[0] - p1[0]), outY = Math.sign(p2[1] - p1[1]);
+                const a1: [number, number] = [p1[0] - inX * rx, p1[1] - inY * ry], b1: [number, number] = [p1[0] + outX * rx, p1[1] + outY * ry];
+                d += ` L ${a1[0].toFixed(2)} ${a1[1].toFixed(2)} Q ${p1[0].toFixed(2)} ${p1[1].toFixed(2)} ${b1[0].toFixed(2)} ${b1[1].toFixed(2)}`;
               }
               base.setAttribute("d", d);
               path.setAttribute("d", d);

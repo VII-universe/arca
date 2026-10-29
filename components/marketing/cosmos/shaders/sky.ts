@@ -80,7 +80,7 @@ void main(){
   // with distance, this does not), so a chosen atmosphere shows wherever the camera is.
   float w1 = wfbm(d * 1.7 + 3.1) / 0.875, w2 = wfbm(d * 3.4 + 11.0) / 0.875;
   vec3 wash = uTintA * smoothstep(0.35, 0.9, w1 * 0.5 + 0.5) + uTintB * smoothstep(0.45, 0.95, w2 * 0.5 + 0.5) * 0.6;
-  col += wash * uWash * 0.34;
+  col += wash * uWash * 1.05;
 
   float grain = 0.0;
   for (int k = 0; k < 2; k++) {
