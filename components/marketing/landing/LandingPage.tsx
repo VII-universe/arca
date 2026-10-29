@@ -9,6 +9,7 @@ import { Nav, type NavCopy } from "./Nav";
 import { getCopy } from "./copy";
 import { Faq, ForWhom, Guardians, HowItWorks, Pricing, Security, Statement } from "./Sections";
 import { Timeline } from "./Timeline";
+import { Motion } from "./Motion";
 
 // v3 „Oběhy“: one scene behind the whole page, one camera flown by scroll
 // from low Earth orbit to the Galaxy and back; every section below is a
@@ -20,6 +21,7 @@ export async function LandingPage() {
   return (
     <div className="l-page">
       <CosmosStage />
+      <Motion />
       <Nav copy={marketing.raw<NavCopy>("nav")} locale={marketing.locale} />
       <main id="main" className="l-main">
         <Hero />

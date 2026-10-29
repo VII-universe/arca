@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.69.0] - Web v3 „Oběhy“, milník M4: pohyb textu se scrollem
+Slova přicházejí po řádcích zpoza masky, když jejich sekce vjede do obrazu, a odcházejí o něco později, než přišla; větší bloky (body na dráze, kroky, karty, otázky) vyjíždějí celé. Vše je svázané se scrollem (GSAP ScrollTrigger, scrub se zpožděním 0,8 s — stejným, jaké má kamera), takže text a scéna jedou spolu. U zastávek přichází rok a ukázka až s planetou na místě (horní okraj zastávky od 56 % do 34 % výšky obrazovky). Nadpis hero (LCP) se nehýbe; bez JS a při `prefers-reduced-motion` všechno stojí; v capture režimu je scrub okamžitý.
+
+### Přidáno
+- `landing/Motion.tsx` — SplitText (řádky s maskou, `autoSplit` při změně šířky) a ScrollTrigger; jedna časová osa na prvek přes celý jeho průchod obrazem.
+
+### Odstraněno
+- CSS reveal přes `animation-timeline: view()` u zastávek (Motion to dělá ve všech prohlížečích včetně Firefoxu).
+
 ## [1.68.0] - Web v3 „Oběhy“, milník M3: posuvník roku a zapečetění
 Hero odpovídá na formulář. S každým rokem na posuvníku se nad Zemí vykreslí další oběžná linka (jedna rovina, každý rok o kousek dál, jako prsteny stopy); u „Až tu nebudu“ se linky rozplynou a kamera se jemně oddálí. Zapečetění: slova z karty se sbíhají do světla u tlačítka (700 ms), světlo zprávy se objeví na noční straně Země, odlepí se od povrchu (záblesk a kruh), vystoupá na nízkou dráhu a obíhá přes noční stranu, kamera ho chvíli sleduje; po 2,9 s pokračuje v obíhání, dokud se neodscrolluje. Karta drží výšku (bez posunu rozvržení), čtečce se oznámí „Tvoje zpráva počká. Na cestě do roku 2044. 18 oběhů.“, fokus jde na „Ulož ji doopravdy“, animaci jde přeskočit; při `prefers-reduced-motion` se skočí rovnou na výsledek. Předání konceptu do editoru zůstává.
 

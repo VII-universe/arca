@@ -42,7 +42,8 @@ export async function Timeline() {
                     <span className="l-badge">{t("sample")}</span>
                     <span>{stop.to} · {stop.occasion}</span>
                   </p>
-                  <blockquote className="l-stop__quote l-shade"><q>{stop.quote}</q></blockquote>
+                  {/* The marks are part of the text (not q::before/::after), so a quote split into lines keeps one pair. */}
+                  <blockquote className="l-stop__quote l-shade"><span className="l-stop__mark" aria-hidden="true">“</span>{stop.quote}<span className="l-stop__mark" aria-hidden="true">”</span></blockquote>
                   <p className="l-stop__meta l-shade">
                     <span>{t("writtenIn", { year: WRITTEN_IN })}</span>
                     <span aria-hidden="true"> · </span>
