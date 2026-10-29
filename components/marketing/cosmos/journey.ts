@@ -157,7 +157,7 @@ export const KEYS: Key[] = [
   { at: 14, label: "Mléčná dráha · pohled zvenčí", anchor: "galaxy", dist: 56_000 * LY_AU, dir: OUT(-84, 160), look: { at: "galaxy" },
     offset: [0, 0.08], offsetPhone: [0, 0.1], up: "centre", orbits: 44, dim: 1, stars: 0 },
   { at: 15, label: "Závěr · zpátky k modré tečce", anchor: "earthNow", dist: 5.2 * R, dir: { frame: "bodySun", lat: 12, lon: 42 }, look: { at: "earthNow" },
-    offset: [0, -0.12], offsetPhone: [0, -0.3], up: "pole", orbits: 0, dim: 1, stars: 0.5 },
+    offset: [0.5, -0.18], offsetPhone: [0.1, -0.66], up: "pole", orbits: 0, dim: 1, stars: 0.5 },
 ];
 
 /** The key of a section (for stills and labels). */

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.67.0] - Web v3 „Oběhy“, milník M2: typografie všech sekcí, CS i EN, desktop i mobil
+Každá sekce prošla ve čtyřech kombinacích (čeština a angličtina, 1440×900 a 390×844) a kontrast textu nad skutečně vykresleným pozadím je měřený skriptem (text se skryje, snímek se změří pod každým textovým prvkem, 95. percentil jasu): 0 textů pod 4,5:1 (velké pod 3:1) ve všech 720 měřeních.
+
+### Změněno
+- Závěr: Země vpravo, poslední otázka a CTA vlevo (na telefonu Země níž pod textem), aby text neležel přes Zemi; patička má neprůhledné pozadí od 140 px.
+- Světlo zprávy v letu stojí vpravo dole (telefon vpravo nahoře), mimo sloupce textu; „začátky vět“ v ukázce mají světlejší tón (ink-2).
+
 ## [1.66.0] - Web v3 „Oběhy“, milník M1: scéna dýchá
 Choreografie z M0 schválená; M1 oživuje scénu. Hero: Země se viditelně otáčí (jedna otočka za 4 minuty, start nad Evropou v noci s úsvitem na okraji), oblaka plynou jinou rychlostí než povrch, kamera velmi pomalu klouže po dráze a při scrollu přes formulář klouže dál. Světlo: ostrý terminátor s krátkým měkkým přechodem na všech planetách, tenký fresnel v barvě planety (Mars, Uran, Neptun, Venuše, obři), stín Saturnu na prstencích a prstenců na Saturnu, stín Měsíce na Zemi a Země na Měsíci, když to geometrie dovolí (zatmění). Světelné vlákno zprávy: jantarový bod letí jízdou lehce před kamerou, zanechává stopu částic (každá slábne sama), u zastávky se usadí vedle ukázky, pulzuje a text z něj vyteče (scroll-driven odhalení). Prach proudící kolem kamery dává každému přeletu hloubku. Měsíc při odletu dostává přisvícení od kamery (hero moment, ne učebnice).
 

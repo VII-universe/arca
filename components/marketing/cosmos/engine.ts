@@ -1437,7 +1437,8 @@ export class CosmosEngine {
     // ── the filament ──
     const f = this.fil;
     const settled = Math.abs(this.target - this.smooth) < 1e-3;
-    const want: [number, number] = this.anchorNdc && settled ? this.anchorNdc : portrait ? [0.02, -0.28] : [-0.1, -0.24];
+    // In flight the light rides low on the right (desktop) or high on the right (phone), clear of the text columns.
+    const want: [number, number] = this.anchorNdc && settled ? this.anchorNdc : portrait ? [0.55, 0.62] : [0.58, -0.58];
     const k = 1 - Math.exp(-dt / 0.7);
     f.ndc[0] += (want[0] - f.ndc[0]) * k;
     f.ndc[1] += (want[1] - f.ndc[1]) * k;
