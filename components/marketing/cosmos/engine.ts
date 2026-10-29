@@ -69,7 +69,7 @@ const RIBBON_LEN = 0.3;            // of the screen's height, everywhere
 // The sealing's beats, seconds: while the words gather in the card the light is gone; it reappears on the Earth's
 // night side, lifts off into a low orbit, and keeps going round.
 const SEAL_GATHER = 0.7, SEAL_ARRIVE = 0.95, SEAL_LIFT = 1.8, SEAL_ORBIT = 2.9;
-const SEAL_ORBIT_R = 1.32;         // Earth radii
+const SEAL_ORBIT_R = 1.25;         // Earth radii
 const AMBER: RGB = [1.0, 0.85, 0.63];
 
 // IAU north poles (RA, Dec, J2000) → the axis each globe spins on.
@@ -295,7 +295,7 @@ export class CosmosEngine {
   private yearsNow = 0;
   private goneWant = 0;
   private gone = 0;
-  private seal: { t: number; from: [number, number]; n: Vec3; e: Vec3; theta: number; done: boolean } | null = null;
+  private seal: { t: number; from: [number, number]; n: Vec3; e: Vec3; theta: number; done: boolean; avoid: { x0: number; x1: number } | null } | null = null;
   private sealLook: [number, number] = [0, 0];
   private anchorNdc: [number, number] | null = null;
   // The message's light and its trail.
@@ -806,16 +806,19 @@ export class CosmosEngine {
    * Sealing: the message's light gathers at `from` (CSS px, where the words converged), flies to the Earth's
    * night side, lifts off into a low orbit and keeps going round while the camera follows it a little.
    */
-  sealMessage(from: [number, number]) {
-    const toCam = vnorm(vsub(this.lastPose?.cam ?? [1, 0, 0], this.earth.pos));
+  sealMessage(from: [number, number], avoid: { x0: number; x1: number } | null = null) {
+    // The orbit: in a plane tilted 36° from the screen, so that (at 1.25 radii) its near side crosses in front of
+    // the Earth's limb and its far side passes just behind the limb, through the atmosphere — the light is never
+    // out of sight. Lift-off from the night-side limb on the left, then up and over the top, in front.
+    const q = this.camera.quaternion;
+    const fwd = new Vector3(0, 0, -1).applyQuaternion(q), up = new Vector3(0, 1, 0).applyQuaternion(q), right = new Vector3(1, 0, 0).applyQuaternion(q);
     const night = vnorm(this.earth.pos);                              // away from the Sun
-    const n = vnorm(vadd(toCam, vscale(night, 0.6)));                 // on the visible night side
-    // The orbit's plane holds the lift-off point and the screen's leftward direction, so the light crosses the
-    // night side in view (then passes behind the Earth and comes round again) instead of leaving the frame.
-    const right = new Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
     const left: Vec3 = [-right.x, -right.y, -right.z];
-    const e = vnorm(vsub(left, vscale(n, vdot(left, n))));
-    this.seal = { t: 0, from, n, e, theta: 0, done: false };
+    const nightLeft = vdot(left, night) >= 0 ? left : [right.x, right.y, right.z] as Vec3;   // whichever limb is the night one
+    const n = nightLeft;
+    const tilt = (36 * Math.PI) / 180;
+    const e: Vec3 = vnorm([up.x * Math.cos(tilt) - fwd.x * Math.sin(tilt), up.y * Math.cos(tilt) - fwd.y * Math.sin(tilt), up.z * Math.cos(tilt) - fwd.z * Math.sin(tilt)]);
+    this.seal = { t: 0, from, n, e, theta: 0, done: false, avoid };
     this.sparkBirth.fill(-1e9);
   }
 
@@ -1645,15 +1648,38 @@ export class CosmosEngine {
       } else if (S.t < SEAL_ARRIVE) {
         appear = (S.t - SEAL_GATHER) / (SEAL_ARRIVE - SEAL_GATHER);      // it shows on the ground
         sealWorld = surface;
-      } else if (S.t < SEAL_LIFT) {
-        const u = easeInOut((S.t - SEAL_ARRIVE) / (SEAL_LIFT - SEAL_ARRIVE));
-        sealWorld = vadd(E, vscale(S.n, R * (1.01 + (SEAL_ORBIT_R - 1.01) * u)));
-        if (this.ringT > 5 && S.t - dt < SEAL_ARRIVE) { this.ringT = 0; this.flash = 1; }   // lift-off: a flash and a ring
       } else {
-        const u = S.t < SEAL_ORBIT ? easeInOut((S.t - SEAL_LIFT) / (SEAL_ORBIT - SEAL_LIFT)) : 1;
-        S.theta = (Math.PI / 3) * u + (S.t > SEAL_ORBIT ? (S.t - SEAL_ORBIT) * 0.22 : 0);
-        sealWorld = vadd(E, vscale(vadd(vscale(S.n, Math.cos(S.theta)), vscale(S.e, Math.sin(S.theta))), R * SEAL_ORBIT_R));
-        S.done = true;
+        // In orbit, laid out on screen around the Earth: a flat ellipse that fits between the card and the screen's
+        // edge; its lower arc passes in front of the Earth, its upper arc dips just behind the limb (inside the
+        // atmosphere's band), where the light only dims. (An orbit in 3D, this close to the camera, would swing
+        // far out of the frame on its near side.)
+        const ec = this.project("earth");
+        if (ec) {
+          const W = this.width, H = this.height, Rp = ec.px;
+          const left = S.avoid ? Math.max(24, S.avoid.x1 + 18) : 24;
+          // Narrow screens (a phone: the Earth is as wide as the screen) shrink the ellipse to fit; its far arc then
+          // crosses more of the disc, dimmed, still in sight.
+          const A = Math.max(Rp * 0.6, Math.min(Rp * 1.2, ec.x - left, W - 24 - ec.x));
+          const B = Math.max(Rp * 0.5, Math.min(Rp * 0.95, H - 28 - ec.y, ec.y - 28));
+          const lift = smoothstep(SEAL_ARRIVE, SEAL_LIFT, S.t);                  // from the ground up to the orbit
+          const u = S.t < SEAL_ORBIT ? easeInOut(clamp01((S.t - SEAL_LIFT) / (SEAL_ORBIT - SEAL_LIFT))) : 1;
+          // Start on the night limb (left), go down and across the front, then up the far side and over the top.
+          S.theta = Math.PI + (S.t > SEAL_LIFT ? (Math.PI / 3) * u + (S.t > SEAL_ORBIT ? (S.t - SEAL_ORBIT) * 0.28 : 0) : 0);
+          const r = 0.98 + (1 - 0.98) * lift;
+          const sx = ec.x + Math.cos(S.theta) * A * r, sy = ec.y - Math.sin(S.theta) * B * r * lift;
+          const front = Math.sin(S.theta) < 0;                                  // the lower arc (screen y below the centre)
+          const inDisc = Math.hypot(sx - ec.x, sy - ec.y) < Rp;
+          if (!front && inDisc) appear = Math.min(appear, 0.45);                 // through the atmosphere, behind the limb
+          if (S.t >= SEAL_LIFT && this.ringT > 5 && S.t - dt < SEAL_LIFT) { /* the ring fired at lift-off */ }
+          if (S.t - dt < SEAL_ARRIVE && S.t >= SEAL_ARRIVE) { this.ringT = 0; this.flash = 1; }
+          // Back into the world on the ray through that pixel: nearer than the Earth's front on the front arc.
+          const ndcx = (sx / W) * 2 - 1, ndcy = 1 - (sy / H) * 2;
+          const v = new Vector3(ndcx, ndcy, 0.5).unproject(this.camera).normalize();
+          const dE = vlen(vsub(E, p.cam));
+          const depth = front || inDisc ? dE - R * 1.15 : dE + R * 0.2;
+          sealWorld = vadd(p.cam, vscale([v.x, v.y, v.z], depth));
+        }
+        S.done = S.t >= SEAL_ORBIT;
       }
       if (sealWorld) sealScreen = toNdc(sealWorld);
       if (sealScreen) {

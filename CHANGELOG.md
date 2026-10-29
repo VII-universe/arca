@@ -3,6 +3,13 @@
 ## [1.68.0] - Web v3 „Oběhy“, milník M3: posuvník roku a zapečetění
 Hero odpovídá na formulář. S každým rokem na posuvníku se nad Zemí vykreslí další oběžná linka (jedna rovina, každý rok o kousek dál, jako prsteny stopy); u „Až tu nebudu“ se linky rozplynou a kamera se jemně oddálí. Zapečetění: slova z karty se sbíhají do světla u tlačítka (700 ms), světlo zprávy se objeví na noční straně Země, odlepí se od povrchu (záblesk a kruh), vystoupá na nízkou dráhu a obíhá přes noční stranu, kamera ho chvíli sleduje; po 2,9 s pokračuje v obíhání, dokud se neodscrolluje. Karta drží výšku (bez posunu rozvržení), čtečce se oznámí „Tvoje zpráva počká. Na cestě do roku 2044. 18 oběhů.“, fokus jde na „Ulož ji doopravdy“, animaci jde přeskočit; při `prefers-reduced-motion` se skočí rovnou na výsledek. Předání konceptu do editoru zůstává.
 
+### Opraveno po první kontrole M3
+- Sbíhání: překryv leží nad kartou (ne v ní), každé slovo letí samo z místa, kde stálo v poli zprávy, do světla u tlačítka (0,55 s, odstup 0,18 s); zapečetěný pohled je pod ním rozvržený, ale skrytý; jen jedno „Přeskočit animaci“.
+- Karta se po zapečetění plynule zkrátí na obsah (min-height 0,7 s); CLS 0.
+- Oběžné linky v hero od prvního snímku (stav formuláře je na `window` dřív, než scéna naběhne).
+- Dráha světla po zapečetění nakloněná 36° k obrazovce: přední část vede před Zemí, zadní těsně za okrajem skrz atmosféru (světlo jen pohasne, nikdy nezmizí).
+- Telefon: po zapečetění se stránka sama posune, karta nahoře, Země se světlem pod ní.
+
 ### Přidáno
 - `engine.ts` — `setHeroYears`, `sealMessage`, `skipSeal`, `unseal`; prstence let (`YEARS_VERT/FRAG` v `shaders/lines.ts`).
 - `landing/plural.ts` — malý formátovač ICU plurálu pro „{count, plural, …}“ na klientu (rok se volí v prohlížeči); test.

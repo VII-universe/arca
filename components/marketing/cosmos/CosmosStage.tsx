@@ -207,9 +207,20 @@ export function CosmosStage() {
 
       // The hero's composer: rings per year, and the sealing of a message.
       const onYears = (e: Event) => { const d = (e as CustomEvent<{ years: number; gone: boolean }>).detail; engine.setHeroYears(d.years, d.gone); };
-      const onSeal = (e: Event) => { const d = (e as CustomEvent<{ from: [number, number] }>).detail; engine.sealMessage(toNdc(d.from[0], d.from[1])); };
+      const onSeal = (e: Event) => {
+        const d = (e as CustomEvent<{ from: [number, number]; avoid?: { x0: number; x1: number } }>).detail;
+        engine.sealMessage(toNdc(d.from[0], d.from[1]), d.avoid ?? null);
+      };
       const onSkip = () => engine.skipSeal();
       const onUnseal = () => engine.unseal();
+      const onScrollTo = (e: Event) => {
+        const y = (e as CustomEvent<{ y: number }>).detail.y;
+        if (lenisRef.current) lenisRef.current.scrollTo(y, { duration: 0.9 });
+        else window.scrollTo({ top: y, behavior: reducedMotion ? "auto" : "smooth" });
+      };
+      if (window.__arcaYears) engine.setHeroYears(window.__arcaYears.years, window.__arcaYears.gone);   // the card rendered first
+      window.addEventListener("arca:scroll", onScrollTo);
+      cleanups.push(() => window.removeEventListener("arca:scroll", onScrollTo));
       window.addEventListener("arca:years", onYears);
       window.addEventListener("arca:seal", onSeal);
       window.addEventListener("arca:seal-skip", onSkip);

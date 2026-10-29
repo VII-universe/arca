@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { saveLandingDraft, type DraftRecipient, type DraftWhen } from "@/lib/marketing/landing-draft";
 import { formatIcuPlural } from "./plural";
 
@@ -15,10 +15,13 @@ import { formatIcuPlural } from "./plural";
 // layout shift, announced to screen readers, focus on the CTA.
 // Copy comes in as props from the server (no i18n runtime on the client).
 
-export const SEAL_EVENTS = { years: "arca:years", seal: "arca:seal", skip: "arca:seal-skip", unseal: "arca:unseal" } as const;
+export const SEAL_EVENTS = { years: "arca:years", seal: "arca:seal", skip: "arca:seal-skip", unseal: "arca:unseal", scroll: "arca:scroll" } as const;
+declare global {
+  interface Window { __arcaYears?: YearsDetail }
+}
 export interface YearsDetail { years: number; gone: boolean }
-export interface SealDetail { from: [number, number] }
-const GATHER_MS = 700;
+export interface SealDetail { from: [number, number]; avoid: { x0: number; x1: number } | null }
+const GATHER_MS = 760;   // the last word (0.18 s late) lands at 0.73 s
 
 export interface ComposerCopy {
   label: string;
@@ -64,17 +67,39 @@ export function Composer({ copy, locale }: { copy: ComposerCopy; locale: string 
   const [gathering, setGathering] = useState(false);
   const [animating, setAnimating] = useState(false);
   const sealBtnRef = useRef<HTMLButtonElement>(null);
+  const gatherRef = useRef<HTMLDivElement>(null);
   const gatherTimer = useRef<number>(0);
+  // Where the words and the seal button were when sealing began (card-relative), for the overlay.
+  const gatherFrom = useRef<{ words: DOMRect; button: DOMRect; card: DOMRect } | null>(null);
 
   const showsYear = when === "oneYear" || when === "tenYears" || when === "year";
   const orbits = year - thisYear;
 
-  // The scene draws a ring per year of waiting.
+  // The scene draws a ring per year of waiting — from the first frame: the scene boots later than this card,
+  // so the current state is also kept on the window for it to read when it is ready.
   useEffect(() => {
     const detail: YearsDetail = { years: when === "gone" ? 0 : when === "eighteen" ? 18 : orbits, gone: when === "gone" };
+    window.__arcaYears = detail;
     window.dispatchEvent(new CustomEvent(SEAL_EVENTS.years, { detail }));
   }, [when, orbits]);
+
+  // The gathering: each word flies on its own into the light at the seal button, from where it stood.
+  useLayoutEffect(() => {
+    if (!gathering || !gatherRef.current || !gatherFrom.current) return;
+    const { button, card } = gatherFrom.current;
+    const bx = button.left + button.width / 2 - card.left, by = button.top + button.height / 2 - card.top;
+    for (const span of gatherRef.current.querySelectorAll<HTMLElement>(".l-gather__words span")) {
+      const r = span.getBoundingClientRect();
+      const wx = r.left + r.width / 2 - card.left, wy = r.top + r.height / 2 - card.top;
+      span.style.setProperty("--gx", `${(bx - wx).toFixed(1)}px`);
+      span.style.setProperty("--gy", `${(by - wy).toFixed(1)}px`);
+    }
+  }, [gathering]);
   useEffect(() => () => window.clearTimeout(gatherTimer.current), []);
+  // Focus the CTA once the sealed view is actually shown (it is hidden while the words gather).
+  useEffect(() => {
+    if (sealed && !gathering) ctaRef.current?.focus({ preventScroll: true });
+  }, [sealed, gathering]);
 
   function pickRecipient(r: DraftRecipient) {
     setRecipient(r);
@@ -99,14 +124,18 @@ export function Composer({ copy, locale }: { copy: ComposerCopy; locale: string 
 
   function seal() {
     saveLandingDraft({ text, recipient, when, year });
-    // Keep the card's height: the sealed view is shorter (no layout shift).
+    // Keep the card's height while the words gather (no layout shift); it eases down to the result afterwards.
     const card = cardRef.current;
-    if (card) card.style.minHeight = `${card.getBoundingClientRect().height}px`;
+    const cardRect = card?.getBoundingClientRect();
+    if (card && cardRect) { card.style.transition = "none"; card.style.minHeight = `${cardRect.height}px`; }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // The words gather into the light at the button; the scene takes it from there.
     const b = sealBtnRef.current?.getBoundingClientRect();
+    const w = textRef.current?.getBoundingClientRect();
+    if (b && w && cardRect) gatherFrom.current = { words: w, button: b, card: cardRect };
     const from: [number, number] = b ? [b.left + b.width / 2, b.top + b.height / 2] : [window.innerWidth / 2, window.innerHeight / 2];
-    window.dispatchEvent(new CustomEvent(SEAL_EVENTS.seal, { detail: { from } satisfies SealDetail }));
+    // The orbit keeps clear of the card where the card stands beside the Earth (desktop), not on a phone.
+    const avoid = cardRect && window.innerWidth >= window.innerHeight ? { x0: cardRect.left, x1: cardRect.right } : null;
+    window.dispatchEvent(new CustomEvent(SEAL_EVENTS.seal, { detail: { from, avoid } satisfies SealDetail }));
     if (reduced) {
       window.dispatchEvent(new Event(SEAL_EVENTS.skip));
       finish();
@@ -121,7 +150,22 @@ export function Composer({ copy, locale }: { copy: ComposerCopy; locale: string 
   function finish() {
     setGathering(false);
     setSealed(true);
-    requestAnimationFrame(() => ctaRef.current?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => {
+      // The card eases down to its content (nothing above it moves; below it there is only sky).
+      const card = cardRef.current;
+      const inner = card?.querySelector<HTMLElement>(".l-sealed");
+      if (card && inner) {
+        const cs = getComputedStyle(card);
+        const target = inner.offsetHeight + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + 2;
+        card.style.transition = "min-height 0.7s cubic-bezier(0.16, 1, 0.3, 1)";
+        requestAnimationFrame(() => { card.style.minHeight = `${target}px`; });
+      }
+      // On a phone the card sits under the Earth: bring the result up, the Earth and its light below it.
+      if (window.innerWidth < window.innerHeight && card) {
+        const y = card.getBoundingClientRect().top + window.scrollY - 24;
+        window.dispatchEvent(new CustomEvent(SEAL_EVENTS.scroll, { detail: { y } }));
+      }
+    });
   }
 
   function skip() {
@@ -133,7 +177,7 @@ export function Composer({ copy, locale }: { copy: ComposerCopy; locale: string 
 
   function reset() {
     const card = cardRef.current;
-    if (card) card.style.minHeight = "";
+    if (card) { card.style.transition = "none"; card.style.minHeight = ""; }
     window.dispatchEvent(new Event(SEAL_EVENTS.unseal));
     setSealed(false);
     setAnimating(false);
@@ -147,12 +191,13 @@ export function Composer({ copy, locale }: { copy: ComposerCopy; locale: string 
   const words = text.trim().split(/\s+/).slice(0, 80);
 
   return (
+    <div className="l-composer-wrap">
     <section ref={cardRef} className="l-card l-composer" aria-label={copy.label} data-sealed={sealed} data-gathering={gathering}>
       {/* Announces the result to screen readers. */}
       <p className="l-sr" aria-live="polite">{sealed ? `${copy.sealedTitle} ${sealedWhen}` : ""}</p>
 
       {sealed || gathering ? (
-        // The sealed view is laid out at once (hidden while the words gather over it), so nothing ever moves.
+        // The sealed view is laid out at once (hidden while the words gather over the card), so nothing ever moves.
         <div className="l-sealed" data-hidden={gathering}>
           {showsYear && <p className="l-sealed__year" aria-hidden="true">{year}</p>}
           <p className="l-sealed__title">{copy.sealedTitle}</p>
@@ -162,24 +207,10 @@ export function Composer({ copy, locale }: { copy: ComposerCopy; locale: string 
               {copy.saveCta}
             </a>
             <button type="button" className="l-btn l-btn--ghost" onClick={reset} tabIndex={gathering ? -1 : 0}>{copy.again}</button>
-            {/* Always in the row (hidden once the light is in orbit), so nothing shifts when it goes. */}
-            <button type="button" className="l-btn l-btn--sm l-btn--ghost" onClick={skip} style={{ visibility: animating ? "visible" : "hidden" }} aria-hidden={!animating} tabIndex={animating && !gathering ? 0 : -1}>{copy.skip}</button>
+            {/* Keeps its place in the row (hidden once the light is in orbit), so nothing shifts when it goes. */}
+            <button type="button" className="l-btn l-btn--sm l-btn--ghost" onClick={skip} style={{ visibility: animating && !gathering ? "visible" : "hidden" }} aria-hidden={!(animating && !gathering)} tabIndex={animating && !gathering ? 0 : -1}>{copy.skip}</button>
           </div>
           <p className="l-small">{copy.demoNote}</p>
-          {gathering && (
-            // The words of the message fly into the light at the seal button (700 ms), laid over the sealed view.
-            <div className="l-gather" aria-hidden="true">
-              <p className="l-gather__words">
-                {words.map((w, i) => (
-                  <span key={i} style={{ "--i": i / Math.max(1, words.length - 1) } as React.CSSProperties}>{w} </span>
-                ))}
-              </p>
-              <div className="l-actions l-gather__actions">
-                <span className="l-btn l-btn--primary l-gather__seal">{copy.seal}</span>
-                <button type="button" className="l-btn l-btn--sm l-btn--ghost" onClick={skip} aria-hidden="false">{copy.skip}</button>
-              </div>
-            </div>
-          )}
         </div>
       ) : (
         <form
@@ -250,5 +281,43 @@ export function Composer({ copy, locale }: { copy: ComposerCopy; locale: string 
         </form>
       )}
     </section>
+    {gathering && gatherFrom.current && (
+      // The words of the message fly, each on its own, into the light at the seal button (700 ms) — laid over the
+      // card, not in it, from where they stood.
+      <div ref={gatherRef} className="l-gather" aria-hidden="true">
+        <p
+          className="l-gather__words"
+          style={{
+            left: gatherFrom.current.words.left - gatherFrom.current.card.left,
+            top: gatherFrom.current.words.top - gatherFrom.current.card.top,
+            width: gatherFrom.current.words.width,
+          }}
+        >
+          {words.map((w, i) => (
+            <span key={i} style={{ "--i": i / Math.max(1, words.length - 1) } as React.CSSProperties}>{w}</span>
+          ))}
+        </p>
+        <span
+          className="l-btn l-btn--primary l-gather__seal"
+          style={{
+            left: gatherFrom.current.button.left - gatherFrom.current.card.left,
+            top: gatherFrom.current.button.top - gatherFrom.current.card.top,
+            width: gatherFrom.current.button.width,
+            height: gatherFrom.current.button.height,
+          }}
+        >
+          {copy.seal}
+        </span>
+        <button
+          type="button"
+          className="l-btn l-btn--sm l-btn--ghost l-gather__skip"
+          style={{ left: gatherFrom.current.button.right - gatherFrom.current.card.left + 14, top: gatherFrom.current.button.top - gatherFrom.current.card.top + 6 }}
+          onClick={skip}
+        >
+          {copy.skip}
+        </button>
+      </div>
+    )}
+    </div>
   );
 }
