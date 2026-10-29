@@ -885,7 +885,8 @@
       "start": "Start for free",
       "menu": "Menu",
       "closeMenu": "Close menu",
-      "language": "Language"
+      "language": "Language",
+      "sound": "Sound"
     },
     "hero": {
       "kicker": "Messages for the future",

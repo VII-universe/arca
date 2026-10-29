@@ -885,7 +885,8 @@
       "start": "Začít zdarma",
       "menu": "Menu",
       "closeMenu": "Zavřít menu",
-      "language": "Jazyk"
+      "language": "Jazyk",
+      "sound": "Zvuk"
     },
     "hero": {
       "kicker": "Zprávy do budoucna",

@@ -245,7 +245,33 @@ export function CosmosStage() {
         if (disposed) return;
         const lenis = new Lenis({ autoRaf: true });
         lenisRef.current = lenis;
+        // The page's own links (the navigation, the footer) fly there: the camera travels the journey between, never
+        // a cut. Longer the further it goes, eased at both ends; the target gets the focus once it has arrived.
+        const onAnchor = (e: MouseEvent) => {
+          if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          const a = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('a[href^="#"]');
+          const id = a?.getAttribute("href")?.slice(1);
+          const target = id ? document.getElementById(id) : null;
+          if (!a || !target || id === "main") return;
+          e.preventDefault();
+          measure();
+          const from = progress();
+          const y = target.getBoundingClientRect().top + window.scrollY;
+          const to = progressAt(marks, y + window.innerHeight * READING_LINE);
+          const duration = Math.min(3.2, 1.1 + 0.28 * Math.abs(to - from));
+          lenis.scrollTo(y, {
+            duration,
+            easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+            onComplete: () => {
+              if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+              target.focus({ preventScroll: true });
+              history.replaceState(null, "", `#${id}`);
+            },
+          });
+        };
+        document.addEventListener("click", onAnchor);
         cleanups.push(() => {
+          document.removeEventListener("click", onAnchor);
           lenis.destroy();
           lenisRef.current = null;
         });
@@ -284,7 +310,11 @@ export function CosmosStage() {
     <>
       <div className="cosmos" data-state={state} data-still={still} aria-hidden="true">
         <div className="cosmos__still" />
-        {STILLS.map((s) => (
+        {/* The preloader is the Earth's still: fetched first, before the fonts and the scripts. */}
+        <link rel="preload" as="image" type="image/avif" href="/cosmos/stills/earth-tall.avif" media="(orientation: portrait)" fetchPriority="high" />
+        <link rel="preload" as="image" type="image/avif" href="/cosmos/stills/earth-wide.avif" media="(orientation: landscape)" fetchPriority="high" />
+        {/* The other stills are only needed without WebGL. */}
+        {STILLS.filter((s) => s === "earth" || state === "fallback").map((s) => (
           <picture key={s} className="cosmos__photo" data-still={s}>
             <source media="(orientation: portrait)" type="image/avif" srcSet={`/cosmos/stills/${s}-tall.avif`} />
             <source type="image/avif" srcSet={`/cosmos/stills/${s}-wide.avif`} />

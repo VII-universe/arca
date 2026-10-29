@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.71.0] - Web v3 „Oběhy“, milník M6: závěr, návrat k Zemi, zvuk, preloader, navigace
+### Přidáno
+- Návrat z Mléčné dráhy: kamera se hned po odletu od Galaxie natočí k cíli a drží ho v obraze — Slunce je nejdřív hvězda, pak jeho záře, vedle něj modrá tečka Země, která doroste v planetu. Dřív byl skoro celý návrat prázdné nebe a Země se objevila až na konci. Závěrečná Země je natočená k úsvitu (terminátor a světla měst jako v hero) místo plně osvětlené denní strany, která působila přepáleně.
+- Zvuk (volitelný, výchozí vypnuto, nepamatuje se mezi návštěvami): velmi tichý hluboký tón (nízká kvinta přes pomalu dýchající filtr), který se s cestou ven ztemňuje a ztišuje, a jemný dvoutónový zvuk při zapečetění zprávy. Syntetizovaný přes Web Audio, žádné soubory. Přepínač „Zvuk“ v navigaci (na telefonu v menu), `aria-pressed`; s ukrytou záložkou se pozastaví.
+- Navigace: odkazy na sekce (navigace i patička) letí plynule přes celou cestu mezi sekcemi (1,1–3,2 s podle vzdálenosti), po doletu dostane sekce fokus; pořadí odkazů odpovídá stránce (Pro koho, Jak to funguje, Bezpečnost, Ceník). Při scrollu dolů se navigace dál schovává.
+- Ceník a FAQ: obsidiánové karty mají jemné zrno a tlumený chladný odlesk, který sleduje kurzor (neprůhledné, bez rozostření — ne sklo). Odpovědi FAQ se otevírají plynulým rozbalením, „+“ se otočí v „×“.
+
+### Změněno
+- Preloader: snímek Země se stahuje jako první (preload s `fetchpriority=high`), přednačítá se jen písmo nadpisu (LCP); ostatní snímky scény se stahují jen bez WebGL. Na pomalém 4G se snímek Země ukáže za 2,0 s místo 3,8 s, LCP 2,2 s místo 2,6 s. Snímky přegenerované se současnou oblohou, takže výměna za živou scénu je bez skoku.
+- Prach Galaxie mizí, když je kamera blízko disku (zblízka to byly tmavé skvrny přes světlo); zůstávají tmavé pásy při pohledu zvenčí.
+
+### Opraveno
+- Na telefonu se stránka dala posouvat do strany (rozvržení 540 px místo 390 px): měkké ztmavení pod textem sahá daleko za slova. Stránka teď přesah ořízne (`overflow-x: clip`, piny zůstávají).
+- Jak to funguje na telefonu: trajektorie se nestavěla s nulovou šířkou (chyby v konzoli) a po otevření odpovědi FAQ už nepřeskočí stránka na začátek.
+
+### Ověřeno
+- Kontrast: 5 atmosfér × desktop/telefon, 2 005 měření, 0 pod hranicí. Světlo zprávy nekříží text (CS/EN × desktop/telefon, 0). Piny zastávek beze změny.
+
 ## [1.70.0] - Web v3 „Oběhy“, milník M5: zastávky připnuté, vlastní pohyb sekcí, atmosféry všude
 ### Přidáno
 - Zastávky: rok, štítek, ukázka a metadata stojí připnuté přesně po dobu, co kamera stojí u planety (110 svh; řádky vyjedou za 25 svh, pak text stojí celý 84 svh, odjede, když kamera odlétá). Stejně v CS i EN, desktop i telefon.

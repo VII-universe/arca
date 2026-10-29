@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import { LOCALES } from "@/i18n/config";
 import { marketingPathFor } from "@/lib/marketing/paths";
+import { SoundButton, useSound } from "./Sound";
 
+// In the page's order.
 const SECTIONS = [
-  ["#how-it-works", "howItWorks"],
   ["#for-whom", "forWhom"],
+  ["#how-it-works", "howItWorks"],
   ["#security", "security"],
   ["#pricing", "pricing"],
 ] as const;
 
 export type NavCopy = Record<
-  "primary" | "skip" | "home" | "howItWorks" | "forWhom" | "security" | "pricing" | "signIn" | "start" | "menu" | "closeMenu" | "language",
+  "primary" | "skip" | "home" | "howItWorks" | "forWhom" | "security" | "pricing" | "signIn" | "start" | "menu" | "closeMenu" | "language" | "sound",
   string
 >;
 
@@ -21,6 +23,7 @@ export type NavCopy = Record<
 export function Nav({ copy, locale }: { copy: NavCopy; locale: string }) {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [sound, toggleSound] = useSound();
 
   useEffect(() => {
     let lastY = window.scrollY;
@@ -69,6 +72,7 @@ export function Nav({ copy, locale }: { copy: NavCopy; locale: string }) {
           ))}
         </ul>
         <div className="l-nav__end">
+          <SoundButton label={copy.sound} on={sound} onToggle={toggleSound} className="l-sound--bar" />
           {languages}
           <a href="/login" className="l-nav__signin">{copy.signIn}</a>
           <a href="/login?mode=signup" className="l-btn l-btn--primary l-btn--sm l-nav__cta">{copy.start}</a>
@@ -101,7 +105,10 @@ export function Nav({ copy, locale }: { copy: NavCopy; locale: string }) {
             <a href="/login?mode=signup" className="l-btn l-btn--primary">{copy.start}</a>
             <a href="/login" className="l-btn l-btn--ghost">{copy.signIn}</a>
           </div>
-          {languages}
+          <div className="l-nav__panel-end">
+            {languages}
+            <SoundButton label={copy.sound} on={sound} onToggle={toggleSound} />
+          </div>
         </div>
       )}
     </header>

@@ -28,12 +28,15 @@ const sans = Inter({
   axes: ["opsz"],
   variable: "--font-sans",
   display: "swap",
+  // Only the headline's face is preloaded (it is the LCP); the others swap in, so the Earth's still isn't kept waiting.
+  preload: false,
 });
 
 const mono = Geist_Mono({
   subsets: ["latin", "latin-ext"],
   variable: "--font-mono",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {

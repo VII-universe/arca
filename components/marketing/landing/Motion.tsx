@@ -33,6 +33,7 @@ export function Motion() {
     const capture = new URLSearchParams(window.location.search).has("capture");
     let disposed = false;
     let ctx: { revert(): void } | null = null;
+    const cleanups: (() => void)[] = [];
 
     (async () => {
       const [{ gsap }, { ScrollTrigger }, { SplitText }] = await Promise.all([
@@ -138,6 +139,7 @@ export function Motion() {
             let pxLen = 1;
             const place = () => {
               const box = svg.getBoundingClientRect();
+              if (box.width < 1 || box.height < 1) return;   // not laid out (hidden on narrow screens): nothing to place
               // The trajectory runs through the stops — each just left of its step's number, where nothing is written.
               const pts = steps.map((st) => {
                 const r = st.querySelector(".l-trajectory__n")!.getBoundingClientRect();
@@ -192,6 +194,7 @@ export function Motion() {
               end: "bottom 62%",
               scrub,
               onUpdate: (st) => {
+                if (stops.length < n) return;   // not placed (hidden on narrow screens)
                 // A staircase: travel between steps over 40 % of each interval, stand at each step for the rest.
                 const x = st.progress * (n - 1);
                 const k = Math.min(n - 2, Math.floor(x));
@@ -335,11 +338,35 @@ export function Motion() {
       });
       // Layout settles after the scene's stills and fonts: measure once more.
       requestAnimationFrame(() => ScrollTrigger.refresh());
+
+      // An answer opening (or closing) in the FAQ moves everything below it: measure again once it has eased open.
+      let refreshT = 0;
+      const onToggle = (e: Event) => {
+        if (!(e.target instanceof HTMLDetailsElement)) return;
+        clearTimeout(refreshT);
+        refreshT = window.setTimeout(() => ScrollTrigger.refresh(), 600);
+      };
+      document.addEventListener("toggle", onToggle, true);
+      // The obsidian cards' sheen follows the pointer (landing.css, .l-card::before).
+      const onPointer = (e: PointerEvent) => {
+        const card = (e.target as Element | null)?.closest?.<HTMLElement>(".l-card");
+        if (!card) return;
+        const r = card.getBoundingClientRect();
+        card.style.setProperty("--mx", `${(((e.clientX - r.left) / r.width) * 100).toFixed(1)}%`);
+        card.style.setProperty("--my", `${(((e.clientY - r.top) / r.height) * 100).toFixed(1)}%`);
+      };
+      if (window.matchMedia("(pointer: fine)").matches) document.addEventListener("pointermove", onPointer, { passive: true });
+      cleanups.push(() => {
+        clearTimeout(refreshT);
+        document.removeEventListener("toggle", onToggle, true);
+        document.removeEventListener("pointermove", onPointer);
+      });
     })().catch(() => { /* motion is an enhancement: the page stands without it */ });
 
     return () => {
       disposed = true;
       ctx?.revert();
+      cleanups.forEach((c) => c());
     };
   }, []);
   return null;

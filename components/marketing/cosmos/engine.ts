@@ -445,7 +445,8 @@ export class CosmosEngine {
     this.dustMat = new ShaderMaterial({
       vertexShader: GALAXY_VERT, fragmentShader: DUST_FRAG, transparent: true, depthTest: false, depthWrite: false,
       blending: CustomBlending, blendSrc: ZeroFactor, blendDst: SrcColorFactor,
-      uniforms: { uPx: { value: 1 }, uAlpha: { value: 0 }, uRef: { value: 40_000 * LY_AU }, uMaxScale: { value: 10 }, uNear: { value: 1500 * LY_AU } },
+      // Dust close by would be dark blots over the light: only the lanes seen from afar stay.
+      uniforms: { uPx: { value: 1 }, uAlpha: { value: 0 }, uRef: { value: 40_000 * LY_AU }, uMaxScale: { value: 6 }, uNear: { value: 5000 * LY_AU } },
     });
     this.galaxy = new Points(g.stars, this.galaxyMat);
     this.dust = new Points(g.dust, this.dustMat);
@@ -1276,7 +1277,12 @@ export class CosmosEngine {
     // out at the edge, the next one comes in from the other edge and grows into its place, and the view turns
     // just the few degrees between two framings. The one turn back (the Galaxy → home) goes by way of the Sun.
     const lookA = this.lookOf(A, pA), lookB = this.lookOf(B, pB);
-    const look = vdot(lookA, lookB) < -0.6
+    // Home from the Galaxy: the camera turns early toward where it is going and keeps it in frame — the Sun a
+    // star, then its glare, then the blue dot beside it growing into the Earth.
+    const home = A.anchor === "galaxy" && B.anchor === "earthNow";
+    const look = home
+      ? slerp(lookA, this.lookOf(B, cam), smoothstep(0.02, 0.32, u))
+      : vdot(lookA, lookB) < -0.6
       ? (u < 0.5 ? slerp(lookA, vnorm(vscale(cam, -1)), u * 2) : slerp(vnorm(vscale(cam, -1)), lookB, u * 2 - 1))
       : slerp(lookA, lookB, u);
     const up = slerp(this.upOf(A), this.upOf(B), u);
@@ -1453,7 +1459,8 @@ export class CosmosEngine {
     // ── the Galaxy ──
     this.galaxy.visible = this.dust.visible = galaxyOn > 0.001;
     this.galaxyMat.uniforms.uAlpha.value = galaxyOn * p.dim;
-    this.dustMat.uniforms.uAlpha.value = galaxyOn;
+    // The dark lanes belong to the view from outside; nearer the disc single dust clouds would be blots.
+    this.dustMat.uniforms.uAlpha.value = galaxyOn * smoothstep(Math.log10(24_000 * LY_AU), Math.log10(42_000 * LY_AU), camLog);
     this.galaxy.position.set(-p.cam[0], -p.cam[1], -p.cam[2]);
     this.dust.position.copy(this.galaxy.position);
 
