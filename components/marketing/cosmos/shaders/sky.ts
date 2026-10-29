@@ -65,7 +65,9 @@ precision highp float;
 varying vec3 vDir;
 uniform samplerCube uCubeA; uniform samplerCube uCubeB; uniform float uMix; uniform float uCubeFlip;
 uniform float uMilky; uniform float uBand; uniform float uDim; uniform float uPx;
+uniform vec3 uTintA; uniform vec3 uTintB; uniform float uWash;   // the atmosphere's two tints, a broad wash at any distance
 ${NOISE3}
+float wfbm(vec3 p){ return 0.5 * n3(p) + 0.25 * n3(p * 2.03 + 11.7) + 0.125 * n3(p * 4.1 + 23.1); }   // cheap: 3 octaves
 void main(){
   vec3 d = normalize(vDir);
   vec3 cd = vec3(d.x * uCubeFlip, d.yz);
@@ -74,6 +76,11 @@ void main(){
   float density = mix(a.a, b.a, uMix) * uBand;
 
   vec3 col = vec3(0.0196, 0.0275, 0.051) + light;   // #05070D, never pure black
+  // The atmosphere far from home: soft clouds of its two tints across the whole sky (the band and its dust fade
+  // with distance, this does not), so a chosen atmosphere shows wherever the camera is.
+  float w1 = wfbm(d * 1.7 + 3.1) / 0.875, w2 = wfbm(d * 3.4 + 11.0) / 0.875;
+  vec3 wash = uTintA * smoothstep(0.35, 0.9, w1 * 0.5 + 0.5) + uTintB * smoothstep(0.45, 0.95, w2 * 0.5 + 0.5) * 0.6;
+  col += wash * uWash * 0.34;
 
   float grain = 0.0;
   for (int k = 0; k < 2; k++) {

@@ -417,7 +417,18 @@
 
 /* ── sections after the orbits ────────────────────────────────────────── */
 
-.l-section > .l-wrap { padding-block: clamp(96px, 15svh, 180px); row-gap: clamp(36px, 4vw, 64px); }
+.l-section > .l-wrap, .l-section > .l-pin > .l-wrap { padding-block: clamp(96px, 15svh, 180px); row-gap: clamp(36px, 4vw, 64px); }
+
+/* Pinned sections (Pro koho on wide screens, the statement everywhere): a sticky 100 svh frame inside a container
+   --pin longer, so the section stands while its motion plays (Motion.tsx). */
+.l-pin { --pin: 80svh; height: calc(var(--pin) + 100svh); }
+.l-pin > .l-wrap { position: sticky; top: 0; height: 100svh; align-content: center; }
+.l-section > .l-pin > .l-wrap { padding-block: 10svh; }
+@media (max-width: 900px), (max-height: 700px) {
+  .l-pin[data-pin="forWhom"] { height: auto; }
+  .l-pin[data-pin="forWhom"] > .l-wrap { position: static; height: auto; }
+  .l-section > .l-pin[data-pin="forWhom"] > .l-wrap { padding-block: clamp(96px, 15svh, 180px); }
+}
 
 /* Pro koho: the headline across, the lead to the right, five points on one orbit. */
 .l-wrap > .l-forwhom__lead { grid-column: 8 / span 5; margin-top: -8px !important; }
@@ -431,8 +442,8 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   column-gap: var(--gap);
 }
-/* The orbit: one thin line the points sit on. */
-.l-points-orbit::before {
+/* The orbit: one thin line the points sit on (a real element, so it can fade with the points). */
+.l-points-orbit__line {
   content: "";
   position: absolute;
   left: 0;
@@ -441,7 +452,21 @@
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--line-2) 8%, var(--line-2) 92%, transparent);
 }
-.l-points-orbit li { position: relative; max-width: 34ch; }
+.l-points-orbit li { position: relative; max-width: 34ch; transition: opacity 0.5s var(--ease-out); }
+/* Joined as you scroll: the orbit's lit part grows from the first point to the active one (Motion.tsx sets
+   --progress 0…1); the active point glows and its words are full, the others a little back (still ≥ 4.5 : 1). */
+.l-points-orbit__progress {
+  position: absolute;
+  inset: 0 6px;
+  height: 1px;
+  background: rgb(255 217 160 / 0.7);
+  transform-origin: left center;
+  transform: scaleX(var(--progress, 0));
+  pointer-events: none;
+}
+.l-points-orbit li:not([data-active="true"]) { opacity: 0.72; }
+.l-points-orbit li[data-active="true"] .l-points-orbit__dot { transform: scale(1.35); box-shadow: 0 0 0 7px rgb(220 230 255 / 0.16), 0 0 26px rgb(220 230 255 / 0.75); }
+.l-points-orbit__dot { transition: transform 0.5s var(--ease-out), box-shadow 0.5s var(--ease-out); }
 .l-points-orbit__dot {
   position: absolute;
   top: -44px;
@@ -468,7 +493,27 @@
   row-gap: clamp(28px, 4svh, 56px);
 }
 .l-trajectory__line { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* Room left of the first step's number for the light to stand on the path. */
+.l-wrap > .l-trajectory { padding-left: 44px; }
 .l-trajectory__line path { fill: none; stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 2 7; }
+/* The drawn part of the trajectory and the light travelling along it, stopping at each step (Motion.tsx). */
+.l-trajectory__line .l-trajectory__drawn { stroke: rgb(255 217 160 / 0.75); stroke-width: 1.5; stroke-dasharray: 0 99999; }
+.l-trajectory__light {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 0 6px rgb(255 217 160 / 0.14), 0 0 28px 6px rgb(255 217 160 / 0.55);
+  transform: translate(var(--lx, 0px), var(--ly, 0px));
+  pointer-events: none;
+  z-index: 1;
+}
+.l-trajectory__step { transition: opacity 0.5s var(--ease-out); }
+.l-trajectory__step:not([data-active="true"]) { opacity: 0.72; }
 .l-trajectory__step {
   position: relative;
   grid-column: calc(1 + var(--i) * 2) / span 5;
@@ -507,9 +552,17 @@
 .l-ui__avatar { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line-2); font: 400 0.75rem/1 var(--f-mono); }
 
 /* Strážci: the figure large on the left, the mechanics numbered on the right. */
-.l-wrap > .l-guardians__figure { grid-column: 1 / span 6; width: 100%; max-width: 560px; align-self: center; }
+/* The figure stays in view beside the mechanics while they are read (wide screens). */
+.l-wrap > .l-guardians__figure { grid-column: 1 / span 6; width: 100%; max-width: 560px; align-self: start; position: sticky; top: 18svh; }
 .l-wrap > .l-guardians__text { grid-column: 8 / span 5; }
 .l-thread { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 2 6; }
+.l-g-ring-track { fill: none; stroke: rgb(255 217 160 / 0.14); stroke-width: 2; }
+.l-g-ring { fill: none; stroke: var(--amber); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 0; stroke-linecap: round; }
+.l-g-pulse { fill: var(--cool); opacity: 0; }
+.l-g-pulse--back { fill: var(--cool); }
+.l-g-ray { stroke: var(--amber); stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0.8; }
+.l-mech li { transition: opacity 0.5s var(--ease-out); }
+.l-mech[data-active] li:not([data-current="true"]) { opacity: 0.72; }
 .l-light { fill: var(--amber); }
 .l-figure-label { fill: var(--ink-2); font: 400 13px var(--f-mono); letter-spacing: 0.1em; }
 .l-mech { list-style: none; margin: 8px 0 26px; padding: 0; display: grid; gap: 18px; }
@@ -518,7 +571,7 @@
 .l-mech p { color: var(--ink-2); }
 
 /* One sentence across the whole width. */
-.l-statement .l-wrap { min-height: 90svh; align-content: center; }
+.l-statement .l-pin { --pin: 60svh; }
 .l-statement__text {
   font-family: var(--f-display);
   font-weight: 300;
@@ -663,14 +716,16 @@
   .l-footer__grid > * { grid-column: 1 / -1 !important; }
   .l-wrap > .l-plans { grid-template-columns: 1fr; }
   .l-wrap > .l-points { columns: 1; }
-  .l-wrap > .l-guardians__figure { max-width: 420px; }
+  .l-wrap > .l-guardians__figure { max-width: 420px; position: static; }
   /* The five points down one line on the left. */
   .l-wrap > .l-points-orbit { grid-template-columns: 1fr; row-gap: 28px; padding: 0 0 0 36px; }
-  .l-points-orbit::before { top: 6px; bottom: 6px; left: 6px; right: auto; width: 1px; height: auto; background: linear-gradient(180deg, transparent, var(--line-2) 6%, var(--line-2) 94%, transparent); }
+  .l-points-orbit__line { top: 6px; bottom: 6px; left: 6px; right: auto; width: 1px; height: auto; background: linear-gradient(180deg, transparent, var(--line-2) 6%, var(--line-2) 94%, transparent); }
+  .l-points-orbit__progress { inset: 0; width: 1px; height: 100%; transform-origin: center top; transform: scaleY(var(--progress, 0)); }
   .l-points-orbit__dot { top: 6px; left: -36px; }
   /* The four points down one line, too. */
   .l-trajectory__step { grid-column: 1 / -1 !important; }
-  .l-trajectory__line { display: none; }
+  .l-wrap > .l-trajectory { padding-left: 0; }
+  .l-trajectory__line, .l-trajectory__light { display: none; }
   /* Phones: the year and the message at the top, the planet below them. */
   .l-stop__frame { align-content: start; padding-top: 13svh; }
   .l-stop[data-side="left"] .l-wrap > .l-stop__text { grid-column: 1 / -1 !important; }

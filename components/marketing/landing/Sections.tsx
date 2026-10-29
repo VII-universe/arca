@@ -22,6 +22,8 @@ export async function ForWhom() {
   const cards = raw<Card[]>("cards");
   return (
     <Waypoint waypoint="forWhom" id="for-whom" className="l-section l-forwhom" aria-labelledby="l-for-whom-title">
+      {/* Pinned on wide screens while the five points are joined one by one (Motion.tsx). */}
+      <div className="l-pin" data-pin="forWhom">
       <div className="l-wrap">
         <div className="l-head l-shade">
           <p className="l-kicker">{t("label")}</p>
@@ -29,8 +31,9 @@ export async function ForWhom() {
         </div>
         <p className="l-lead l-forwhom__lead l-shade">{t("lead")}</p>
         <ol className="l-points-orbit">
+          <span className="l-points-orbit__line" aria-hidden="true"><span className="l-points-orbit__progress" /></span>
           {cards.map((c, i) => (
-            <li key={c.key} className="l-shade" data-gone={c.key === "gone"}>
+            <li key={c.key} className="l-shade" data-gone={c.key === "gone"} data-active={i === 0}>
               <span className="l-points-orbit__dot" aria-hidden="true" />
               <span className="l-index" aria-hidden="true">{two(i)}</span>
               <h3>{c.title}</h3>
@@ -38,6 +41,7 @@ export async function ForWhom() {
             </li>
           ))}
         </ol>
+      </div>
       </div>
     </Waypoint>
   );
@@ -83,10 +87,12 @@ export async function HowItWorks() {
         </div>
         <ol className="l-trajectory">
           <svg className="l-trajectory__line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M 6 4 C 30 30, 40 40, 52 50 S 80 80, 94 97" vectorEffect="non-scaling-stroke" />
+            <path className="l-trajectory__base" d="M 1 3 C 28 30, 40 40, 52 50 S 80 80, 94 97" vectorEffect="non-scaling-stroke" />
+            <path className="l-trajectory__drawn" d="M 1 3 C 28 30, 40 40, 52 50 S 80 80, 94 97" vectorEffect="non-scaling-stroke" pathLength={1} />
           </svg>
+          <span className="l-trajectory__light" aria-hidden="true" />
           {steps.map((step, i) => (
-            <li key={step.title} className="l-trajectory__step" style={{ "--i": i } as React.CSSProperties}>
+            <li key={step.title} className="l-trajectory__step" style={{ "--i": i } as React.CSSProperties} data-active={i === 0}>
               <span className="l-trajectory__n" aria-hidden="true">{two(i)}</span>
               <div className="l-shade">
                 <h3>{step.title}</h3>
@@ -101,8 +107,13 @@ export async function HowItWorks() {
   );
 }
 
-// The message is a point of light; the guardians are two calm planets beside it.
+// The message is a point of light; the guardians are two calm planets beside it. The figure plays the
+// mechanism exactly as the text tells it (Motion.tsx drives it with the scroll, step by step):
+// 1 the countdown ring round the light drains (days without activity), 2 two pulses go out to the guardians
+// (the e-mail with two links), 3 one guardian answers — a pulse comes back and the ring refills, 4 nobody
+// answers — the guardians stay quiet and, after the grace period, the light goes out on its way, calmly.
 function GuardiansFigure({ you, label }: { you: string; label: string }) {
+  const L = { x: 150, y: 226 }, G1 = { x: 372, y: 118 }, G2 = { x: 402, y: 318 };
   return (
     <svg className="l-guardians__figure" viewBox="0 0 520 420" role="img" aria-label={label}>
       <defs>
@@ -117,13 +128,22 @@ function GuardiansFigure({ you, label }: { you: string; label: string }) {
           <stop offset="1" stopColor="#ffd9a0" stopOpacity="0" />
         </radialGradient>
       </defs>
-      <line x1="150" y1="226" x2="372" y2="118" className="l-thread" />
-      <line x1="150" y1="226" x2="402" y2="318" className="l-thread" />
-      <circle cx="150" cy="226" r="96" fill="url(#l-g-glow)" />
-      <circle cx="150" cy="226" r="7" className="l-light" />
-      <circle cx="372" cy="118" r="34" fill="url(#l-g-planet)" />
-      <circle cx="402" cy="318" r="26" fill="url(#l-g-planet)" />
-      <text x="150" y="282" textAnchor="middle" className="l-figure-label">{you}</text>
+      <line x1={L.x} y1={L.y} x2={G1.x} y2={G1.y} className="l-thread" />
+      <line x1={L.x} y1={L.y} x2={G2.x} y2={G2.y} className="l-thread" />
+      <circle cx={L.x} cy={L.y} r="96" fill="url(#l-g-glow)" className="l-g-glow" />
+      {/* The countdown: a ring that drains (pathLength 1, dashoffset 0 → 1). */}
+      <circle cx={L.x} cy={L.y} r="30" className="l-g-ring-track" />
+      <circle cx={L.x} cy={L.y} r="30" className="l-g-ring" pathLength={1} transform={`rotate(-90 ${L.x} ${L.y})`} />
+      <circle cx={L.x} cy={L.y} r="7" className="l-light" />
+      {/* The light on its way (step 4). */}
+      <line x1={L.x} y1={L.y} x2={L.x - 140} y2={L.y + 150} className="l-g-ray" pathLength={1} />
+      <circle cx={G1.x} cy={G1.y} r="34" fill="url(#l-g-planet)" className="l-g-planet l-g-planet--a" />
+      <circle cx={G2.x} cy={G2.y} r="26" fill="url(#l-g-planet)" className="l-g-planet l-g-planet--b" />
+      {/* The pulses: out to both guardians (step 2), back from one (step 3). */}
+      <circle r="5" className="l-g-pulse l-g-pulse--a" cx={L.x} cy={L.y} data-x1={L.x} data-y1={L.y} data-x2={G1.x} data-y2={G1.y} />
+      <circle r="5" className="l-g-pulse l-g-pulse--b" cx={L.x} cy={L.y} data-x1={L.x} data-y1={L.y} data-x2={G2.x} data-y2={G2.y} />
+      <circle r="5" className="l-g-pulse l-g-pulse--back" cx={G1.x} cy={G1.y} data-x1={G1.x} data-y1={G1.y} data-x2={L.x} data-y2={L.y} />
+      <text x={L.x} y={L.y + 66} textAnchor="middle" className="l-figure-label">{you}</text>
     </svg>
   );
 }
@@ -145,7 +165,7 @@ export async function Guardians() {
           <p className="l-lead">{t("lead")}</p>
           <ol className="l-mech">
             {steps.map((s, i) => (
-              <li key={s}>
+              <li key={s} data-step={i + 1}>
                 <span className="l-mech__n" aria-hidden="true">{two(i)}</span>
                 <p>{s}</p>
               </li>
@@ -253,8 +273,11 @@ export async function Statement() {
   const { t } = await getCopy("Marketing.timeline");
   return (
     <Waypoint waypoint="statement" className="l-statement" aria-label={t("finale")}>
-      <div className="l-wrap">
-        <p className="l-statement__text l-shade">{t("finale")}</p>
+      {/* Pinned in the middle while the camera holds, like a stop. */}
+      <div className="l-pin" data-pin="statement">
+        <div className="l-wrap">
+          <p className="l-statement__text l-shade">{t("finale")}</p>
+        </div>
       </div>
     </Waypoint>
   );

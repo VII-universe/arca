@@ -370,6 +370,7 @@ export class CosmosEngine {
       uniforms: {
         uViewDir: { value: new Matrix4() }, uCubeA: { value: firstCube.rt.texture }, uCubeB: { value: firstCube.rt.texture },
         uMix: { value: 0 }, uCubeFlip: { value: 1 }, uMilky: { value: atm.milky }, uBand: { value: 1 }, uDim: { value: 1 }, uPx: { value: 1 },
+        uTintA: { value: new Vector3(...atm.a) }, uTintB: { value: new Vector3(...atm.b) }, uWash: { value: 0 },
       },
     });
     this.skyScene.add(new Mesh(new PlaneGeometry(2, 2), this.skyMat));
@@ -1413,6 +1414,14 @@ export class CosmosEngine {
     su.uMilky.value = from.milky + (to.milky - from.milky) * mixv;
     su.uBand.value = neighbourhood;
     su.uDim.value = p.dim;
+    // The wash: the chosen atmosphere's tints (crossfaded with the cube), strong once the band has faded, none
+    // outside the Galaxy (there it is space, dark).
+    for (let k = 0; k < 3; k++) {
+      (su.uTintA.value as Vector3).setComponent(k, from.a[k] + (to.a[k] - from.a[k]) * mixv);
+      (su.uTintB.value as Vector3).setComponent(k, from.b[k] + (to.b[k] - from.b[k]) * mixv);
+    }
+    const outside = smoothstep(Math.log10(20_000 * LY_AU), Math.log10(50_000 * LY_AU), camLog);
+    su.uWash.value = (from.amt + (to.amt - from.amt) * mixv) * (0.35 + 0.65 * (1 - neighbourhood)) * (1 - outside);
 
     // ── stars ──
     const st = this.starMat.uniforms;

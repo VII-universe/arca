@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.70.0] - Web v3 „Oběhy“, milník M5: zastávky připnuté, vlastní pohyb sekcí, atmosféry všude
+### Přidáno
+- Zastávky: rok, štítek, ukázka a metadata stojí připnuté přesně po dobu, co kamera stojí u planety (110 svh; řádky vyjedou za 25 svh, pak text stojí celý 84 svh, odjede, když kamera odlétá). Stejně v CS i EN, desktop i telefon.
+- Pro koho: pět bodů se při scrollu spojuje jantarovou drahou, aktivní bod svítí a jeho text je plný (ostatní ztlumené, stále ≥ 4,5 : 1); na širokých obrazovkách je sekce připnutá.
+- Jak to funguje: trajektorie prochází čtyřmi zastávkami vlevo od čísel kroků (měřeno z rozvržení), kreslí se se scrollem a světlo na ní u každého kroku stojí; mezi kroky zhasne a rozsvítí se u dalšího (nikdy nepřejede text, ověřeno).
+- Strážci: obrázek hraje mechaniku přesně podle textu — odpočet kolem světla se vyprázdní, dva impulzy jdou ke strážcům, jeden se vrátí a odpočet se obnoví; když nikdo nezareaguje, strážci zůstanou klidní a světlo odejde. Na desktopu obrázek stojí vedle kroků.
+- Výrok „Některá slova mají přijít později.“ připnutý uprostřed jako zastávka.
+- Atmosféry: odstíny zvolené atmosféry jsou jemným závojem přes celé nebe v jakékoli vzdálenosti (pás a prach Mléčné dráhy s odletem mizí, závoj ne; mimo Galaxii zmizí), přechod 1,2 s jako dřív. Dřív v místě sekce „Tvůj vlastní svět“ (2 500 ly) přepnutí nebylo vidět.
+
+### Ověřeno
+- Kontrast všech textů v klidu (reduced motion) nad vykreslenou scénou: 785 měření (CS/EN × desktop/telefon), 0 pod hranicí. Světlo zprávy ani světlo trajektorie nikdy nekříží text.
+
 ## [1.69.0] - Web v3 „Oběhy“, milník M4: pohyb textu se scrollem
 Slova přicházejí po řádcích zpoza masky, když jejich sekce vjede do obrazu, a odcházejí o něco později, než přišla; větší bloky (body na dráze, kroky, karty, otázky) vyjíždějí celé. Vše je svázané se scrollem (GSAP ScrollTrigger, scrub se zpožděním 0,8 s — stejným, jaké má kamera), takže text a scéna jedou spolu. U zastávek přichází rok a ukázka až s planetou na místě (horní okraj zastávky od 56 % do 34 % výšky obrazovky). Nadpis hero (LCP) se nehýbe; bez JS a při `prefers-reduced-motion` všechno stojí; v capture režimu je scrub okamžitý.
 
