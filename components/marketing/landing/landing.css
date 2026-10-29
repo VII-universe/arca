@@ -370,10 +370,16 @@
 
 .l-stops { list-style: none; margin: 0; padding: 0; }
 /* The year, enormous, on one side; the message under it in amber; the planet on the other side. */
-.l-stop__frame { min-height: 100svh; align-content: center; padding-block: 10svh; }
+/* The pin (Timeline.tsx): the stop holds the camera for --hold of scroll; its words are pinned for exactly that.
+   The container overhangs the stop by 50 svh at both ends (the camera arrives when the stop's top passes the
+   middle of the screen and leaves when the flight's top does); flow-root keeps the overhang from moving the
+   stop's own box, which the camera measures. */
+.l-stop { --hold: 110svh; display: flow-root; }
+.l-stop__pin { height: calc(var(--hold) + 100svh); margin-block: -50svh; }
+.l-stop__frame { position: sticky; top: 0; height: 100svh; align-content: center; padding-block: 10svh; }
 .l-wrap > .l-stop__text { grid-column: 1 / span 6; display: grid; justify-items: start; text-align: left; gap: 18px; }
 .l-stop[data-side="left"] .l-wrap > .l-stop__text { grid-column: 7 / span 6; }
-.l-stop[data-last="true"] .l-stop__frame { min-height: 112svh; }
+
 .l-stop__year {
   font-family: var(--f-display);
   font-weight: 300;
@@ -666,9 +672,9 @@
   .l-trajectory__step { grid-column: 1 / -1 !important; }
   .l-trajectory__line { display: none; }
   /* Phones: the year and the message at the top, the planet below them. */
-  .l-stop__frame { min-height: 100svh; align-content: start; padding-top: 13svh; }
+  .l-stop__frame { align-content: start; padding-top: 13svh; }
   .l-stop[data-side="left"] .l-wrap > .l-stop__text { grid-column: 1 / -1 !important; }
-  .l-stop[data-last="true"] .l-stop__frame { min-height: 108svh; }
+
   .l-stop__quote { max-width: 24ch; }
 }
 

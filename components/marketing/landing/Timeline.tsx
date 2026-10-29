@@ -34,6 +34,9 @@ export async function Timeline() {
           const orbits = Number(stop.year) - WRITTEN_IN;
           return (
             <Waypoint key={stop.year} waypoint={id} as="li" className="l-stop" data-last={i === stops.length - 1} data-side={STOP_SIDE[STOPS[i]]}>
+              {/* The pin: a container from 50 svh before the stop to 50 svh into the flight after it, holding a
+                  100 svh sticky frame — so the words stand still exactly while the camera stands at the planet. */}
+              <div className="l-stop__pin">
               <div className="l-wrap l-stop__frame">
                 <div className="l-stop__text">
                   <p className="l-stop__year l-shade" aria-hidden="true">{stop.year}</p>
@@ -50,6 +53,7 @@ export async function Timeline() {
                     <span className="l-stop__count">{stop.year} · {t("orbits", { count: orbits })}</span>
                   </p>
                 </div>
+              </div>
               </div>
             </Waypoint>
           );
