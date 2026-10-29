@@ -91,7 +91,7 @@ export const JOURNEY: JourneySection[] = [
   { id: "atmospheres", leg: 80, legPhone: 70 },
   { id: "security", leg: 70, legPhone: 60 },
   { id: "pricing", leg: 70, legPhone: 60 },
-  { id: "faq", leg: 100, legPhone: 90 },
+  { id: "faq", leg: 150, legPhone: 130 },
   { id: "galaxy", leg: 120, legPhone: 100 },
   { id: "home", leg: 0, legPhone: 0 },
 ];
@@ -133,9 +133,9 @@ export const KEYS: Key[] = [
     offset: [-0.46, -0.08], offsetPhone: [0, -0.48], up: "ecliptic", orbits: 18, trail: true, dim: 1, stars: 0.8 },
   { at: 4, label: "2051 · Saturn · 25 oběhů", anchor: "saturn", dist: 5.6 * radius("saturn"), dir: { frame: "bodySun", lat: 20, lon: 28 }, look: { at: "saturn" },
     offset: [0.42, -0.08], offsetPhone: [0, -0.46], up: "ecliptic", orbits: 25, trail: true, dim: 1, stars: 0.8 },
-  { at: 4.55, label: "Průlet · Uran", anchor: "uranus", dist: NEAR * radius("uranus"), dir: { frame: "bodySun", lat: 6, lon: -24 }, look: { at: "uranus" },
+  { at: 4.55, label: "Průlet · Uran", anchor: "uranus", dist: NEAR * radius("uranus"), dir: { frame: "bodySun", lat: 8, lon: 56 }, look: { at: "uranus" },
     offset: [-0.34, 0.04], offsetPhone: [0, 0.3], up: "ecliptic", orbits: 25, dim: 1, stars: 0.85 },
-  { at: 5, label: "2070 · Neptun · 44 oběhů", anchor: "neptune", dist: NEAR * radius("neptune"), dir: { frame: "bodySun", lat: 8, lon: -26 }, look: { at: "neptune" },
+  { at: 5, label: "2070 · Neptun · 44 oběhů", anchor: "neptune", dist: 4.2 * radius("neptune"), dir: { frame: "bodySun", lat: 8, lon: 54 }, look: { at: "neptune" },
     offset: [-0.46, -0.08], offsetPhone: [0, -0.48], up: "ecliptic", orbits: 44, trail: true, dim: 1, stars: 0.85 },
   // The finale: out of the system, the Sun behind becoming a star; one way, no turning back until the Galaxy.
   { at: 6, label: "Pro koho · Slunce se stává hvězdou", anchor: "sun", dist: 1800, dir: OUT(-36, 140), look: { at: "sun" },

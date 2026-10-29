@@ -4,6 +4,7 @@
 Každá sekce prošla ve čtyřech kombinacích (čeština a angličtina, 1440×900 a 390×844) a kontrast textu nad skutečně vykresleným pozadím je měřený skriptem (text se skryje, snímek se změří pod každým textovým prvkem, 95. percentil jasu): 0 textů pod 4,5:1 (velké pod 3:1) ve všech 720 měřeních.
 
 ### Změněno
+- Podmínky k M2: světlo zprávy má po celé stránce stejnou tloušťku i délku stopy (stopa rovná, podle směru proudění scény, jen za letu); v sekcích s textem se stopa složí a jádro stojí na místě, které stránka vybere mimo všechna slova (měřeno rámečky glyfů, s předstihem 240 px před okrajem); když se slova blíží, světlo mrkne na jiné místo, a není-li žádné, zhasne. Průnik rámečku světla s rámečky textu přes všechny snímky sekcí: 0 (`filament-check.mjs`, desktop i telefon). Uran a Neptun: terminátor (kamera z boku), procedurální pásy (Neptun výrazné + tmavá skvrna), Uranu tenké tmavé prstence; Neptun u zastávky větší. Rok zastávky se objeví až s planetou na místě (view timeline, entry 48–72 %). Polohy těles se počítají každý snímek (dřív jednou za minutu, což dělalo skoky kamery u Měsíce).
 - Závěr: Země vpravo, poslední otázka a CTA vlevo (na telefonu Země níž pod textem), aby text neležel přes Zemi; patička má neprůhledné pozadí od 140 px.
 - Světlo zprávy v letu stojí vpravo dole (telefon vpravo nahoře), mimo sloupce textu; „začátky vět“ v ukázce mají světlejší tón (ink-2).
 

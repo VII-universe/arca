@@ -65,6 +65,7 @@ const SPARKS = 90;                 // sparks around the message's light
 const SPARK_LIFE = 0.8;            // seconds
 const RIBBON = 56;                 // the trail: this many frames of history, one strip
 const RIBBON_WIDTH = 9;            // px at the core
+const RIBBON_LEN = 0.3;            // of the screen's height, everywhere
 const AMBER: RGB = [1.0, 0.85, 0.63];
 
 // IAU north poles (RA, Dec, J2000) → the axis each globe spins on.
@@ -85,6 +86,23 @@ const SATURN_EQ_KM = 60_268;
 const SATURN_FLAT = 0.098;
 const SATURN_RING_IN_KM = 74_658;
 const SATURN_RING_OUT_KM = 136_775;
+const URANUS_RING_IN_KM = 41_800;    // ring 6 … epsilon: thin, dark, nearly edge-on from the ecliptic
+const URANUS_RING_OUT_KM = 51_200;
+/** Uranus's rings: a handful of narrow dark lanes (epsilon the widest, outermost), as a 1-D texture. */
+function uranusRings(): DataTexture {
+  const n = 512;
+  const d = new Uint8Array(n * 4);
+  const lanes: [number, number, number][] = [[0.02, 0.01, 0.25], [0.09, 0.008, 0.2], [0.17, 0.008, 0.22], [0.3, 0.01, 0.28], [0.44, 0.012, 0.3], [0.62, 0.015, 0.32], [0.96, 0.03, 0.75]];
+  for (let i = 0; i < n; i++) {
+    const r = i / n;
+    let a = 0;
+    for (const [c, w, s] of lanes) a = Math.max(a, s * Math.exp(-Math.pow((r - c) / w, 2)));
+    d.set([70, 70, 78, Math.round(a * 255)], i * 4);   // dark: the rings' albedo is a few percent
+  }
+  const t = new DataTexture(d, n, 1, RGBAFormat);
+  t.needsUpdate = true;
+  return t;
+}
 const JUPITER_FLAT = 0.065;
 
 const poleVector = ([ra, dec]: [number, number]): Vec3 => {
@@ -254,6 +272,15 @@ export class CosmosEngine {
   private readonly ring: LineLoop;
   private readonly ringMat: ShaderMaterial;
   private ringT = 9;
+  private readonly tailDir: [number, number] = [-1, 0];
+  private textOn = 0;
+  private blinkT = 9;
+  private pendingNdc: [number, number] | null = null;
+  private lastAnchor: [number, number] | null = null;
+  private coreVis = 1;
+  private hideT = 0;
+  private tailLen = 0;
+  private tailPx: [number, number] = [0, 0];
   private flash = 0;
   private wasSettled = false;
   private readonly lightScene = new Scene();
@@ -473,6 +500,7 @@ export class CosmosEngine {
           uHasRing: { value: 0 }, uCentre: { value: new Vector3() }, uRingNormal: { value: new Vector3(0, 0, 1) }, uRingInner: { value: 0 }, uRingOuter: { value: 0 },
           uRing: { value: placeholder(0, 0, 0) }, uHaze: { value: HAZE[id][0] }, uHazeColor: { value: HAZE[id][1] },
           uCaster: { value: new Vector3(1e9, 0, 0) }, uCasterR: { value: 0 },
+          uBands: { value: id === "neptune" ? 0.9 : id === "uranus" ? 0.3 : 0 }, uSpot: { value: id === "neptune" ? 1 : 0 },
         },
       });
       const mesh = isEarth ? earthMesh : new Mesh(planetGeo, mat);
@@ -499,8 +527,8 @@ export class CosmosEngine {
       body.orbit.frustumCulled = false;
       body.orbitMat = omat;
       this.world.add(body.orbit);
-      if (p.id === "saturn") {
-        const rin = SATURN_RING_IN_KM / AU_KM, rout = SATURN_RING_OUT_KM / AU_KM;
+      if (p.id === "saturn" || p.id === "uranus") {
+        const rin = (p.id === "saturn" ? SATURN_RING_IN_KM : URANUS_RING_IN_KM) / AU_KM, rout = (p.id === "saturn" ? SATURN_RING_OUT_KM : URANUS_RING_OUT_KM) / AU_KM;
         const rg = new RingGeometry(rin, rout, 180, 1);
         // uv.x = radius 0..1 (RingGeometry's uv is planar by default).
         const uv = rg.attributes.uv as BufferAttribute;
@@ -513,7 +541,7 @@ export class CosmosEngine {
           vertexShader: RING_VERT, fragmentShader: RING_FRAG, transparent: true, depthWrite: false, side: DoubleSide,
           blending: CustomBlending, blendSrc: OneFactor, blendDst: OneMinusSrcAlphaFactor,
           uniforms: {
-            uRing: { value: placeholder(0, 0, 0) }, uSun: { value: new Vector3(1, 0, 0) }, uCentre: { value: new Vector3() },
+            uRing: { value: p.id === "uranus" ? uranusRings() : placeholder(0, 0, 0) }, uSun: { value: new Vector3(1, 0, 0) }, uCentre: { value: new Vector3() },
             uPlanetRadius: { value: body.radius }, uNormal: { value: new Vector3(0, 0, 1) }, uExposure: { value: 1 },
           },
         });
@@ -693,6 +721,41 @@ export class CosmosEngine {
     this.sparkAt = null;
     this.ringT = 9;
     this.flash = 0;
+  }
+
+  private flightIdx = 0;
+  private flightSpot(portrait: boolean, tx: number, ty: number): [number, number] {
+    const spots: [number, number][] = portrait ? [[0.55, 0.62], [-0.55, 0.62], [0.55, -0.72], [-0.55, -0.72]] : [[0.58, -0.58], [-0.58, -0.58], [0.58, 0.55], [-0.58, 0.55]];
+    const ref = (portrait ? 9 / 16 : 16 / 9) / this.camera.aspect;
+    const W = this.width, H = this.height;
+    const clear = (ndc: [number, number]) => {
+      const px = ((ndc[0] * ref + 1) / 2) * W, py = ((1 - ndc[1]) / 2) * H;
+      for (const id of ["earth", "moon", "mars", "jupiter", "saturn", "uranus", "neptune"] as const) {
+        const q = this.project(id);
+        if (!q || q.px < 30) continue;
+        if (Math.hypot(q.x - px, q.y - py) < q.px * (id === "saturn" ? 2.3 : 1) + 70) return false;
+      }
+      return true;
+    };
+    if (!clear(spots[this.flightIdx])) {
+      const next = spots.findIndex((sp) => clear(sp));
+      if (next >= 0) this.flightIdx = next;
+    }
+    void tx; void ty;
+    return spots[this.flightIdx];
+  }
+
+  /** The light's footprint on screen (CSS px): the core's sprite and its tail, for the layout checks. */
+  lightBounds(): { x0: number; y0: number; x1: number; y1: number } {
+    if (this.coreVis < 0.05) return { x0: -1, y0: -1, x1: -1, y1: -1 };   // blinked out: nowhere
+    const r = (this.filamentMat.uniforms.uSize.value as number) / 2;
+    const [cx, cy] = this.tailPx;
+    let x0 = cx - r, y0 = cy - r, x1 = cx + r, y1 = cy + r;
+    if (this.tailLen > 0) {
+      const ex = cx + this.tailDir[0] * this.tailLen, ey = cy - this.tailDir[1] * this.tailLen;
+      x0 = Math.min(x0, ex - 5); x1 = Math.max(x1, ex + 5); y0 = Math.min(y0, ey - 5); y1 = Math.max(y1, ey + 5);
+    }
+    return { x0, y0, x1, y1 };
   }
 
   /** Captures: stop the clock, then advance it by hand with step(). */
@@ -989,9 +1052,9 @@ export class CosmosEngine {
   private updateEphemeris(orbits: number) {
     const now = this.liveClock ? this.baseJd + (performance.now() - this.t0) / 86_400_000 : this.baseJd;
     const earthJd = now + orbits * YEAR_DAYS;
-    // Planets, the Moon: today. (During the stops only the Earth goes round;
-    // at every whole orbit it is back where it is today.)
-    if (!(Math.abs(now - this.planetJd) < 1 / 24 / 60)) {
+    // Planets, the Moon: today — recomputed every frame the clock moves, so nothing the camera is anchored to
+    // ever jumps (a minute of the Earth's motion is a sixth of the camera's distance from the Moon).
+    if (now !== this.planetJd) {
       this.planetJd = now;
       this.earthNow = planetPosition("earth", now);
       const earthLon = Math.atan2(this.earthNow[1], this.earthNow[0]);
@@ -1438,10 +1501,32 @@ export class CosmosEngine {
     const f = this.fil;
     const settled = Math.abs(this.target - this.smooth) < 1e-3;
     // In flight the light rides low on the right (desktop) or high on the right (phone), clear of the text columns.
-    const want: [number, number] = this.anchorNdc && settled ? this.anchorNdc : portrait ? [0.55, 0.62] : [0.58, -0.58];
-    const k = 1 - Math.exp(-dt / 0.7);
-    f.ndc[0] += (want[0] - f.ndc[0]) * k;
-    f.ndc[1] += (want[1] - f.ndc[1]) * k;
+    // Text on screen: the light rests where the page says it is clear of every word, and its tail is folded away.
+    // A spot that moves far (the words have scrolled into it) is reached by a blink — out, across, in — so the
+    // light's path never crosses the words either.
+    const raw = this.anchorNdc;
+    const hidden = raw !== null && Number.isNaN(raw[0]);   // words everywhere: no place for the light
+    const a = raw && !hidden ? raw : null;
+    this.textOn += ((raw ? 1 : 0) - this.textOn) * (1 - Math.exp(-dt / 0.15));
+    if (a && (!this.lastAnchor || Math.hypot(a[0] - this.lastAnchor[0], a[1] - this.lastAnchor[1]) > 0.04)) {
+      if (this.blinkT >= 0.11) this.blinkT = 0;   // out again at once (if already on the way out, carry on)
+      this.pendingNdc = a;
+    }
+    if (a) this.lastAnchor = a;
+    this.blinkT += dt;
+    if (this.pendingNdc && this.blinkT >= 0.07) { f.ndc[0] = this.pendingNdc[0]; f.ndc[1] = this.pendingNdc[1]; this.pendingNdc = null; }
+    const blinkVis = this.blinkT < 0.07 ? 1 - this.blinkT / 0.07 : this.blinkT < 0.11 ? 0 : Math.min(1, (this.blinkT - 0.11) / 0.25);
+    this.hideT += ((hidden ? 1 : 0) - this.hideT) * (1 - Math.exp(-dt / (hidden ? 0.035 : 0.12)));
+    this.coreVis = blinkVis * (1 - this.hideT);
+    // In flight the light rides low on the right (phone: high on the right) — unless a planet is there: then the
+    // next corner, so it never sits on a disc.
+    // (Hidden: it stays where it faded out, so it never drifts across the words on its way to the flight spot.)
+    const want: [number, number] = a ?? (hidden ? [f.ndc[0], f.ndc[1]] : this.flightSpot(portrait, tx, ty));
+    const k = 1 - Math.exp(-dt / 0.35);
+    if (!this.pendingNdc) {
+      f.ndc[0] += (want[0] - f.ndc[0]) * k;
+      f.ndc[1] += (want[1] - f.ndc[1]) * k;
+    }
     // Ahead by a few seconds of flight, but always within the local scale (never beyond the nearest body).
     const wantDepth = Math.min(Math.max(this.speed * 2.5, 0.015 * nearD), 0.3 * nearD);
     f.depth = f.depth <= 0 ? wantDepth : Math.exp(Math.log(f.depth) + (Math.log(wantDepth) - Math.log(f.depth)) * (1 - Math.exp(-dt / 0.8)));
@@ -1464,7 +1549,7 @@ export class CosmosEngine {
     this.wasSettled = atStop;
     this.flash *= Math.exp(-dt / 0.5);
     this.ringT += dt;
-    this.filamentMat.uniforms.uAlpha.value = (0.9 + 0.1 * still + 1.3 * this.flash) * p.dim;
+    this.filamentMat.uniforms.uAlpha.value = (0.9 + 0.1 * still + 1.3 * this.flash) * p.dim * this.coreVis;
     const ref2 = ref / this.camera.aspect;
     this.ringMat.uniforms.uCentre.value.set(f.ndc[0] * ref2, f.ndc[1]);
     const ringR = (16 + 150 * smoothstep(0, 0.9, this.ringT)) / this.height * 2;
@@ -1493,57 +1578,57 @@ export class CosmosEngine {
     }
     spos.needsUpdate = sage.needsUpdate = true;
 
-    // ── the ribbon: the light's past places, projected into this frame and drawn as one strip about a third of
-    // the screen long (longer through the stars), so it bends with every turn and never scatters ──
+    // ── the ribbon: one strip of fixed length and width (the Mars fly-by is the reference everywhere), trailing
+    // from the core along the direction the scene streams (the light's past places projected into this frame,
+    // low-passed), straight — so it never hooks on a turn — and only while the camera really flies ──
     {
       const h = this.history;
       for (let k = Math.min(this.historyLen, RIBBON - 1); k > 0; k--) { h[k * 3] = h[(k - 1) * 3]; h[k * 3 + 1] = h[(k - 1) * 3 + 1]; h[k * 3 + 2] = h[(k - 1) * 3 + 2]; }
       h[0] = f.world[0]; h[1] = f.world[1]; h[2] = f.world[2];
       this.historyLen = Math.min(this.historyLen + 1, RIBBON);
       const W = this.width, H = this.height;
-      const pts: [number, number][] = [];
       const v = new Vector3();
-      for (let k = 0; k < this.historyLen; k++) {
+      const fwd = new Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+      const proj = (k: number): [number, number] | null => {
         v.set(h[k * 3] - p.cam[0], h[k * 3 + 1] - p.cam[1], h[k * 3 + 2] - p.cam[2]);
-        // Keep the direction only (any depth will do for the screen position), so nothing sits behind the camera.
-        const z = v.dot(new Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion));
-        if (z <= 0) break;
+        if (v.dot(fwd) <= 0) return null;
         v.project(this.camera);
-        pts.push([v.x * W / 2, v.y * H / 2]);                   // px from the centre
+        return [v.x * W / 2, v.y * H / 2];
+      };
+      const o = proj(0) ?? [0, 0];
+      const back = this.historyLen > 8 ? proj(8) : null;
+      const flight = smoothstep(0.012, 0.05, this.speed / Math.max(nearD, 1e-12)) * (1 - this.textOn) * this.coreVis;
+      if (back) {
+        let dx = back[0] - o[0], dy = back[1] - o[1];
+        const dl = Math.hypot(dx, dy);
+        if (dl > 0.5) {
+          dx /= dl; dy /= dl;
+          const k = 1 - Math.exp(-dt / 0.35);
+          this.tailDir[0] += (dx - this.tailDir[0]) * k;
+          this.tailDir[1] += (dy - this.tailDir[1]) * k;
+        }
       }
-      const camLog2 = Math.log10(Math.max(vlen(p.cam), 1e-9));
-      const starBoost = smoothstep(Math.log10(0.3 * LY_AU), Math.log10(30 * LY_AU), camLog2);
-      const targetLen = (H / 3) * (1 + 0.8 * starBoost);
-      let raw = 0;
-      for (let k = 1; k < pts.length; k++) raw += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
-      const scale = raw > 1e-6 ? Math.min(targetLen / raw, 4) : 0;
-      const alpha = scale > 0 ? (0.95 * Math.min(1, (raw * scale) / targetLen)) * (1 - still * 0.85) * p.dim : 0;
+      const tl = Math.hypot(this.tailDir[0], this.tailDir[1]) || 1;
+      const tx = this.tailDir[0] / tl, ty = this.tailDir[1] / tl;
+      const len = RIBBON_LEN * H;
+      const alpha = 0.95 * flight * p.dim;
       const rp = this.ribbon.geometry.attributes.position as BufferAttribute;
       const ra = this.ribbon.geometry.attributes.aA as BufferAttribute;
-      const n = pts.length;
-      const o = pts[0] ?? [0, 0];
       for (let k = 0; k < RIBBON; k++) {
-        const kk = Math.min(k, n - 1);
-        const q = pts[kk] ?? o;
-        const x = o[0] + (q[0] - o[0]) * scale, y = o[1] + (q[1] - o[1]) * scale;
-        const prev = pts[Math.max(0, kk - 1)] ?? o, next = pts[Math.min(n - 1, kk + 1)] ?? o;
-        let tx = next[0] - prev[0], ty = next[1] - prev[1];
-        const tl = Math.hypot(tx, ty) || 1;
-        tx /= tl; ty /= tl;
-        const t = n > 1 ? kk / (n - 1) : 1;
-        const width = RIBBON_WIDTH * Math.pow(1 - t, 0.8) * (1 + 0.8 * starBoost) * 0.5;
+        const t = k / (RIBBON - 1);
+        const x = o[0] + tx * len * t, y = o[1] + ty * len * t;
+        const width = RIBBON_WIDTH * Math.pow(1 - t, 0.8) * 0.5;
         const nx = -ty * width, ny = tx * width;
         rp.setXYZ(k * 2, (x + nx) / (W / 2), (y + ny) / (H / 2), 0);
         rp.setXYZ(k * 2 + 1, (x - nx) / (W / 2), (y - ny) / (H / 2), 0);
-        const a = k < n ? Math.pow(1 - t, 1.6) : 0;
+        const a = Math.pow(1 - t, 1.6);
         ra.setX(k * 2, a); ra.setX(k * 2 + 1, a);
       }
       rp.needsUpdate = ra.needsUpdate = true;
       this.ribbonMat.uniforms.uAlpha.value = alpha;
       this.ribbon.visible = alpha > 0.002;
-      // Through the stars the light pulls ahead: a little nearer the centre of the view.
-      f.ndc[0] *= 1 - 0.35 * starBoost;
-      f.ndc[1] *= 1 - 0.35 * starBoost;
+      this.tailLen = alpha > 0.002 ? len : 0;
+      this.tailPx = [o[0] + W / 2, H / 2 - o[1]];
     }
 
     // ── the dust ──

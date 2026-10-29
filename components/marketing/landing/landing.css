@@ -378,6 +378,19 @@
   text-wrap: pretty;
   margin-top: 8px !important;
 }
+/* The year and its words appear only once the camera has arrived — when the stop's top reaches the reading
+   line (half the viewport), where the planet is in its place. */
+@supports (animation-timeline: view()) {
+  .l-stop__text {
+    animation: l-arrive linear both;
+    animation-timeline: view();
+    animation-range: entry 48% entry 72%;
+  }
+}
+@keyframes l-arrive {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
 /* The words flow out of the message's light (the amber point the scene parks beside the quote):
    a scroll-driven reveal, left to right, as the stop comes into view. Browsers without view
    timelines simply show the quote. */

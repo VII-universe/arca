@@ -71,21 +71,68 @@ export function CosmosStage() {
     };
     const readingY = () => window.scrollY + window.innerHeight * READING_LINE;
     const progress = () => progressAt(marks, readingY());
-    // At a stop the message's light settles where the sample's words begin (just left of the quote's first line).
-    const anchorFor = (s: number): [number, number] | null => {
-      if (!Number.isInteger(s)) return null;
-      const el = waypoints[s];
-      if (!el || !(el.dataset.waypoint! in STOP_YEARS)) return null;
-      const quote = el.querySelector<HTMLElement>(".l-stop__quote");
-      if (!quote) return null;
-      const r = quote.getBoundingClientRect();
-      const portrait = window.innerWidth < window.innerHeight;
-      const x = portrait ? r.left + r.width / 2 : r.left - 22;
-      const y = portrait ? r.top - 26 : r.top + 18;
+    // The message's light never crosses the words. Whenever text is on screen it rests at a spot clear of every
+    // text box (at a stop, by preference just left of the sample's first line); between sections it leads the flight.
+    const TEXT = "h1,h2,h3,p,li,dt,dd,summary,blockquote,a,button,label,textarea,.l-kicker,.l-badge,.l-index";
+    const LIGHT_R = 44;   // the sprite's bloom, px
+    const toNdc = (x: number, y: number): [number, number] => {
       // NDC in the engine's reference frame (16:9 landscape, 9:16 portrait): the scene is fitted to the height.
+      const portrait = window.innerWidth < window.innerHeight;
       const ref = portrait ? 9 / 16 : 16 / 9;
-      const nx = ((x / window.innerWidth) * 2 - 1) * ((window.innerWidth / window.innerHeight) / ref);
-      return [nx, 1 - (y / window.innerHeight) * 2];
+      return [((x / window.innerWidth) * 2 - 1) * ((window.innerWidth / window.innerHeight) / ref), 1 - (y / window.innerHeight) * 2];
+    };
+    let lastSpot: [number, number] | null = null;
+    const anchorFor = (s: number): [number, number] | null => {
+      const W = window.innerWidth, H = window.innerHeight;
+      // The words themselves (the glyphs' box of each innermost text element), not their layout boxes.
+      const rects: DOMRect[] = [];
+      const range = document.createRange();
+      for (const el of document.querySelectorAll<HTMLElement>(`main :is(${TEXT})`)) {
+        if (el.closest("details:not([open])") && el.tagName !== "SUMMARY") continue;
+        if (el.querySelector(TEXT)) continue;                    // a container: its children are measured
+        if (!(el.textContent ?? "").trim()) continue;
+        range.selectNodeContents(el);
+        const r = range.getBoundingClientRect();
+        // Words just outside the viewport count too: they are about to scroll in, and the light must be gone by then.
+        if (r.width < 2 || r.height < 2 || r.bottom < -240 || r.top > H + 240) continue;
+        rects.push(r);
+      }
+      if (rects.length === 0) { lastSpot = null; return null; }
+      // How far the light's box is from the nearest word (negative: overlapping).
+      const clearance = (x: number, y: number) => {
+        let m = Infinity;
+        for (const r of rects) {
+          const dx = Math.max(r.left - (x + LIGHT_R), (x - LIGHT_R) - r.right, 0);
+          const dy = Math.max(r.top - (y + LIGHT_R), (y - LIGHT_R) - r.bottom, 0);
+          const overlap = dx === 0 && dy === 0;
+          m = Math.min(m, overlap ? -1 : Math.hypot(dx, dy));
+        }
+        return m;
+      };
+      const inside = (x: number, y: number) => x > LIGHT_R && x < W - LIGHT_R && y > LIGHT_R + 60 && y < H - LIGHT_R;
+      const KEEP = 170, NEED = 200;   // leave a spot before the words come within KEEP px (the blink takes a few frames); a new spot needs NEED
+      // At a stop: beside the sample's first line, if that stays clear.
+      const el = Number.isInteger(s) ? waypoints[s] : undefined;
+      if (el && el.dataset.waypoint! in STOP_YEARS) {
+        const quote = el.querySelector<HTMLElement>(".l-stop__quote");
+        if (quote) {
+          const r = quote.getBoundingClientRect();
+          const portrait = W < H;
+          const x = portrait ? r.left + r.width / 2 : r.left - LIGHT_R - 10, y = portrait ? r.top - LIGHT_R - 12 : r.top + 18;
+          if (inside(x, y) && clearance(x, y) > 8) { lastSpot = [x, y]; return toNdc(x, y); }
+        }
+      }
+      // Otherwise a spot far from every word, kept while the words stay away; gone when there is none.
+      if (lastSpot && inside(...lastSpot) && clearance(...lastSpot) >= KEEP) return toNdc(...lastSpot);
+      let best: [number, number] | null = null, bestC = NEED;
+      for (let gy = 0.1; gy <= 0.92; gy += 0.04) for (let gx = 0.05; gx <= 0.95; gx += 0.05) {
+        const x = gx * W, y = gy * H;
+        if (!inside(x, y)) continue;
+        const c = clearance(x, y);
+        if (c > bestC) { bestC = c; best = [x, y]; }
+      }
+      lastSpot = best;
+      return best ? toNdc(best[0], best[1]) : [NaN, NaN];
     };
     const apply = (engine: CosmosEngine, s: number) => {
       engine.setProgress(s);

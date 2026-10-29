@@ -22,7 +22,9 @@ uniform sampler2D uMap; uniform vec3 uSun; uniform float uExposure; uniform floa
 uniform float uHasRing; uniform vec3 uCentre; uniform vec3 uRingNormal; uniform float uRingInner; uniform float uRingOuter; uniform sampler2D uRing;
 uniform float uHaze; uniform vec3 uHazeColor;
 uniform vec3 uCaster; uniform float uCasterR;   // another body that can shadow this one (body-centred), e.g. the Earth over the Moon
+uniform float uBands; uniform float uSpot;      // ice giants: latitude bands (and Neptune's dark spot) the flat maps lack
 ${LOGDEPTH_FRAG_PARS}
+${NOISE3}
 ${TONEMAP}
 void main(){
   ${LOGDEPTH_FRAG}
@@ -30,6 +32,17 @@ void main(){
   vec3 V = normalize(-vWorld);
   vec3 L = normalize(uSun);
   vec3 albedo = texture2D(uMap, vUv).rgb;
+  if (uBands > 0.0) {
+    float lat = vUv.y * 2.0 - 1.0;
+    float band = sin(lat * 14.0 + 0.6 * sin(lat * 31.0)) * 0.5 + 0.5;
+    float wisps = fbm3(vec3(vUv.x * 12.0, lat * 20.0, 1.7)) * 0.5 + 0.5;
+    albedo *= 1.0 - uBands * (0.35 * band + 0.25 * wisps - 0.3);
+    if (uSpot > 0.0) {
+      vec2 d = vec2((fract(vUv.x - 0.32 + 0.5) - 0.5) * 2.6, (lat + 0.36) * 4.0);
+      float spot = exp(-dot(d, d) * 2.2);
+      albedo *= 1.0 - uSpot * 0.55 * spot;
+    }
+  }
   float ndl = dot(N, L);
   float lit = max(ndl, 0.0);
   // A crisp terminator with a short soft band.
