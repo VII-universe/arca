@@ -6,7 +6,7 @@ import { Waypoint } from "./Waypoint";
 // seven columns on the left, the Earth filling the right of the screen, the
 // interactive sample below.
 export async function Hero() {
-  const { t, raw, rich } = await getCopy("Marketing.hero");
+  const { t, raw, rich, locale } = await getCopy("Marketing.hero");
   return (
     <Waypoint waypoint="hero" className="l-hero" aria-labelledby="l-hero-title">
       <div className="l-wrap l-hero__grid">
@@ -18,7 +18,7 @@ export async function Hero() {
         </div>
         <p className="l-lead l-hero__lead l-shade">{t("lead")}</p>
         <div className="l-hero__composer">
-          <Composer copy={raw<ComposerCopy>("composer")} />
+          <Composer copy={raw<ComposerCopy>("composer")} locale={locale} />
         </div>
       </div>
     </Waypoint>

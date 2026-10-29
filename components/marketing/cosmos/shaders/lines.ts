@@ -54,3 +54,30 @@ void main(){
   gl_FragColor = vec4(uColor * vA, vA);
   ${OUTPUT}
 }`;
+
+// The hero's year rings: one thin orbit line around the Earth per year of
+// waiting; aRing = 1, 2, 3… The lines come in one by one as the year moves
+// (uCount) and dissolve together for "when I'm gone" (uGone).
+export const YEARS_VERT = /* glsl */ `
+attribute float aRing;
+uniform float uCount; uniform float uGone; uniform float uAlpha;
+varying float vA;
+${LOGDEPTH_VERT_PARS}
+void main(){
+  float on = clamp(uCount - (aRing - 1.0), 0.0, 1.0);
+  vA = on * uAlpha * (1.0 - uGone) * (0.55 + 0.45 / aRing);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  if (vA <= 0.002) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+  ${LOGDEPTH_VERT}
+}`;
+
+export const YEARS_FRAG = /* glsl */ `
+precision highp float;
+uniform vec3 uColor;
+varying float vA;
+${LOGDEPTH_FRAG_PARS}
+void main(){
+  ${LOGDEPTH_FRAG}
+  gl_FragColor = vec4(uColor * vA, vA);
+  ${OUTPUT}
+}`;

@@ -205,6 +205,22 @@ export function CosmosStage() {
       ro.observe(document.body);
       cleanups.push(() => ro.disconnect());
 
+      // The hero's composer: rings per year, and the sealing of a message.
+      const onYears = (e: Event) => { const d = (e as CustomEvent<{ years: number; gone: boolean }>).detail; engine.setHeroYears(d.years, d.gone); };
+      const onSeal = (e: Event) => { const d = (e as CustomEvent<{ from: [number, number] }>).detail; engine.sealMessage(toNdc(d.from[0], d.from[1])); };
+      const onSkip = () => engine.skipSeal();
+      const onUnseal = () => engine.unseal();
+      window.addEventListener("arca:years", onYears);
+      window.addEventListener("arca:seal", onSeal);
+      window.addEventListener("arca:seal-skip", onSkip);
+      window.addEventListener("arca:unseal", onUnseal);
+      cleanups.push(() => {
+        window.removeEventListener("arca:years", onYears);
+        window.removeEventListener("arca:seal", onSeal);
+        window.removeEventListener("arca:seal-skip", onSkip);
+        window.removeEventListener("arca:unseal", onUnseal);
+      });
+
       if (window.matchMedia("(pointer: fine)").matches && !reducedMotion && !capture) {
         const onMove = (e: PointerEvent) => engine.setPointer((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
         window.addEventListener("pointermove", onMove, { passive: true });

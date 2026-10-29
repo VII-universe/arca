@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.68.0] - Web v3 „Oběhy“, milník M3: posuvník roku a zapečetění
+Hero odpovídá na formulář. S každým rokem na posuvníku se nad Zemí vykreslí další oběžná linka (jedna rovina, každý rok o kousek dál, jako prsteny stopy); u „Až tu nebudu“ se linky rozplynou a kamera se jemně oddálí. Zapečetění: slova z karty se sbíhají do světla u tlačítka (700 ms), světlo zprávy se objeví na noční straně Země, odlepí se od povrchu (záblesk a kruh), vystoupá na nízkou dráhu a obíhá přes noční stranu, kamera ho chvíli sleduje; po 2,9 s pokračuje v obíhání, dokud se neodscrolluje. Karta drží výšku (bez posunu rozvržení), čtečce se oznámí „Tvoje zpráva počká. Na cestě do roku 2044. 18 oběhů.“, fokus jde na „Ulož ji doopravdy“, animaci jde přeskočit; při `prefers-reduced-motion` se skočí rovnou na výsledek. Předání konceptu do editoru zůstává.
+
+### Přidáno
+- `engine.ts` — `setHeroYears`, `sealMessage`, `skipSeal`, `unseal`; prstence let (`YEARS_VERT/FRAG` v `shaders/lines.ts`).
+- `landing/plural.ts` — malý formátovač ICU plurálu pro „{count, plural, …}“ na klientu (rok se volí v prohlížeči); test.
+- `Composer.tsx` vysílá `arca:years`, `arca:seal`, `arca:seal-skip`, `arca:unseal`; `CosmosStage` je předává scéně.
+
 ## [1.67.0] - Web v3 „Oběhy“, milník M2: typografie všech sekcí, CS i EN, desktop i mobil
 Každá sekce prošla ve čtyřech kombinacích (čeština a angličtina, 1440×900 a 390×844) a kontrast textu nad skutečně vykresleným pozadím je měřený skriptem (text se skryje, snímek se změří pod každým textovým prvkem, 95. percentil jasu): 0 textů pod 4,5:1 (velké pod 3:1) ve všech 720 měřeních.
 

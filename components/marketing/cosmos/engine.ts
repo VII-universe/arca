@@ -11,7 +11,7 @@
 
 import {
   AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CompressedTexture, CubeCamera, CustomBlending, DataTexture, DoubleSide,
-  LinearFilter, LinearMipmapLinearFilter, Line, LineLoop, Matrix4, Mesh, NormalBlending, OneFactor,
+  LinearFilter, LinearMipmapLinearFilter, Line, LineLoop, LineSegments, Matrix4, Mesh, NormalBlending, OneFactor,
   OneMinusSrcAlphaFactor, OrthographicCamera, PerspectiveCamera, PlaneGeometry, Points, Quaternion, RGBAFormat,
   RepeatWrapping, RingGeometry, Scene, ShaderMaterial, SphereGeometry, SrcColorFactor, SRGBColorSpace, Texture, Vector2,
   Vector3, WebGLCubeRenderTarget, WebGLRenderer, ZeroFactor,
@@ -30,7 +30,7 @@ import { SKYGEN_FRAG, SKYGEN_VERT, SKY_FRAG, SKY_VERT } from "./shaders/sky";
 import { STAR_FRAG, STAR_VERT } from "./shaders/stars";
 import { ATMO_FRAG, ATMO_VERT, CLOUDS_FRAG, CLOUDS_VERT, EARTH_FRAG, EARTH_VERT } from "./shaders/earth";
 import { CORONA_FRAG, CORONA_VERT, MARKER_FRAG, MARKER_VERT, PLANET_FRAG, PLANET_VERT, RING_FRAG, RING_VERT, SUN_FRAG, SUN_VERT } from "./shaders/bodies";
-import { ORBIT_FRAG, ORBIT_VERT, TRAIL_FRAG, TRAIL_VERT } from "./shaders/lines";
+import { ORBIT_FRAG, ORBIT_VERT, TRAIL_FRAG, TRAIL_VERT, YEARS_FRAG, YEARS_VERT } from "./shaders/lines";
 import { DUST_FRAG, GALAXY_FRAG, GALAXY_VERT } from "./shaders/galaxy";
 import { FILAMENT_FRAG, FILAMENT_VERT, FLOW_FRAG, FLOW_VERT, RIBBON_FRAG, RIBBON_VERT, RING_FRAG as LRING_FRAG, RING_VERT as LRING_VERT, SPARK_FRAG, SPARK_VERT } from "./shaders/light";
 import { TEXTURES, type TextureName } from "./textures";
@@ -66,6 +66,10 @@ const SPARK_LIFE = 0.8;            // seconds
 const RIBBON = 56;                 // the trail: this many frames of history, one strip
 const RIBBON_WIDTH = 9;            // px at the core
 const RIBBON_LEN = 0.3;            // of the screen's height, everywhere
+// The sealing's beats, seconds: while the words gather in the card the light is gone; it reappears on the Earth's
+// night side, lifts off into a low orbit, and keeps going round.
+const SEAL_GATHER = 0.7, SEAL_ARRIVE = 0.95, SEAL_LIFT = 1.8, SEAL_ORBIT = 2.9;
+const SEAL_ORBIT_R = 1.32;         // Earth radii
 const AMBER: RGB = [1.0, 0.85, 0.63];
 
 // IAU north poles (RA, Dec, J2000) → the axis each globe spins on.
@@ -284,6 +288,15 @@ export class CosmosEngine {
   private flash = 0;
   private wasSettled = false;
   private readonly lightScene = new Scene();
+  // The hero: a ring per year of waiting, and the sealing of a message.
+  private readonly years: LineSegments;
+  private readonly yearsMat: ShaderMaterial;
+  private yearsWant = 0;
+  private yearsNow = 0;
+  private goneWant = 0;
+  private gone = 0;
+  private seal: { t: number; from: [number, number]; n: Vec3; e: Vec3; theta: number; done: boolean } | null = null;
+  private sealLook: [number, number] = [0, 0];
   private anchorNdc: [number, number] | null = null;
   // The message's light and its trail.
   private readonly filament: Points;
@@ -597,6 +610,44 @@ export class CosmosEngine {
     this.trail.renderOrder = 3;
     this.world.add(this.trail);
 
+    // ── the hero's year rings: up to 50 thin orbits around the Earth, inclined like a low orbit ──
+    {
+      const N = 50, SEG = 128;
+      const pos = new Float32Array(N * SEG * 2 * 3);
+      const ring = new Float32Array(N * SEG * 2);
+      let k = 0;
+      for (let i = 0; i < N; i++) {
+        const r = 1.18 + i * 0.032;                                  // Earth radii: each year a hair further out, like the trail's rings
+        const inc = 34 * (Math.PI / 180);                            // one inclined plane, like a low orbit seen from the hero
+        const node = 0.6;
+        for (let j = 0; j < SEG; j++) {
+          for (const jj of [j, (j + 1) % SEG]) {
+            const a = (jj / SEG) * 2 * Math.PI;
+            const x = Math.cos(a) * r, y = Math.sin(a) * r;
+            // Rotate by inclination about x, then by the node about the pole (local +y is the pole in the Earth's mesh frame).
+            const yy = y * Math.cos(inc), zz = y * Math.sin(inc);
+            pos[k * 3] = x * Math.cos(node) - zz * Math.sin(node);
+            pos[k * 3 + 1] = yy;
+            pos[k * 3 + 2] = x * Math.sin(node) + zz * Math.cos(node);
+            ring[k] = i + 1;
+            k++;
+          }
+        }
+      }
+      const g = new BufferGeometry();
+      g.setAttribute("position", new BufferAttribute(pos, 3));
+      g.setAttribute("aRing", new BufferAttribute(ring, 1));
+      this.yearsMat = new ShaderMaterial({
+        vertexShader: YEARS_VERT, fragmentShader: YEARS_FRAG, transparent: true, depthTest: true, depthWrite: false, blending: AdditiveBlending,
+        uniforms: { uCount: { value: 0 }, uGone: { value: 0 }, uAlpha: { value: 0.5 }, uColor: { value: AMBER } },
+      });
+      this.years = new LineSegments(g, this.yearsMat);
+      this.years.frustumCulled = false;
+      this.years.renderOrder = 4;
+      this.years.visible = false;
+      this.world.add(this.years);
+    }
+
     // ── the message's light: the filament, its sparks, and the dust streaming past ──
     this.filamentMat = new ShaderMaterial({
       vertexShader: FILAMENT_VERT, fragmentShader: FILAMENT_FRAG, transparent: true, depthTest: true, depthWrite: false, blending: AdditiveBlending,
@@ -743,6 +794,39 @@ export class CosmosEngine {
     }
     void tx; void ty;
     return spots[this.flightIdx];
+  }
+
+  /** The hero's year slider: one ring around the Earth per year of waiting; "when I'm gone" dissolves them and eases the camera back. */
+  setHeroYears(years: number, gone: boolean) {
+    this.yearsWant = Math.max(0, Math.min(50, years));
+    this.goneWant = gone ? 1 : 0;
+  }
+
+  /**
+   * Sealing: the message's light gathers at `from` (CSS px, where the words converged), flies to the Earth's
+   * night side, lifts off into a low orbit and keeps going round while the camera follows it a little.
+   */
+  sealMessage(from: [number, number]) {
+    const toCam = vnorm(vsub(this.lastPose?.cam ?? [1, 0, 0], this.earth.pos));
+    const night = vnorm(this.earth.pos);                              // away from the Sun
+    const n = vnorm(vadd(toCam, vscale(night, 0.6)));                 // on the visible night side
+    // The orbit's plane holds the lift-off point and the screen's leftward direction, so the light crosses the
+    // night side in view (then passes behind the Earth and comes round again) instead of leaving the frame.
+    const right = new Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
+    const left: Vec3 = [-right.x, -right.y, -right.z];
+    const e = vnorm(vsub(left, vscale(n, vdot(left, n))));
+    this.seal = { t: 0, from, n, e, theta: 0, done: false };
+    this.sparkBirth.fill(-1e9);
+  }
+
+  /** The sealing cuts to its end: the light already in orbit. */
+  skipSeal() {
+    if (this.seal) { this.seal.t = Math.max(this.seal.t, SEAL_ORBIT); this.seal.done = true; }
+  }
+
+  unseal() {
+    this.seal = null;
+    this.sealLook = [0, 0];
   }
 
   /** The light's footprint on screen (CSS px): the core's sprite and its tail, for the layout checks. */
@@ -1164,7 +1248,8 @@ export class CosmosEngine {
     const heroH = s > 1e-4 ? 1 : this.hold;
     const drift = (k: Key): Key => {
       const lon = k.dir.lon + this.time * (k.at === 0 ? 0.08 : 0.02) + (k.at === 0 ? heroH * 6 : 0);
-      return { ...k, dir: { ...k.dir, lon }, dist: k.dist * (k.at === 0 ? 1 + 0.12 * heroH : 1) };
+      // "When I'm gone": the hero's camera eases back a little as the rings dissolve.
+      return { ...k, dir: { ...k.dir, lon }, dist: k.dist * (k.at === 0 ? (1 + 0.12 * heroH) * (1 + 0.15 * this.gone) : 1) };
     };
     const pA = this.camOf(drift(A)), pB = this.camOf(drift(B));
     const L = vlen(vsub(pB, pA));
@@ -1291,7 +1376,7 @@ export class CosmosEngine {
     // Offsets are given for a 16:9 (landscape) or 9:16 (portrait) frame; other aspects see the same
     // picture cropped at the sides, exactly like the stills (fitted to the height, centred).
     const ref = this.width < this.height ? 9 / 16 : 16 / 9;
-    const d = new Vector3(p.offset[0] * (ref / cam.aspect) * tx, p.offset[1] * ty, -1).normalize();
+    const d = new Vector3((p.offset[0] + this.sealLook[0]) * (ref / cam.aspect) * tx, (p.offset[1] + this.sealLook[1]) * ty, -1).normalize();
     q.multiply(new Quaternion().setFromUnitVectors(d, new Vector3(0, 0, -1)));
     // Pointer: a slow turn of at most 1.5°; at rest a breath.
     const settled = Math.abs(this.target - this.smooth) < 1e-3 && !this.opts.reducedMotion;
@@ -1489,6 +1574,19 @@ export class CosmosEngine {
    */
   private updateLights(p: Pose, q: Quaternion, tx: number, ty: number, pxAngle: number) {
     const dt = Math.max(1e-3, this.lastDt);
+    // ── the year rings (hero only) ──
+    this.yearsNow += (this.yearsWant - this.yearsNow) * (1 - Math.exp(-dt / 0.25));
+    this.gone += (this.goneWant - this.gone) * (1 - Math.exp(-dt / 0.6));
+    const inHero = 1 - smoothstep(0.05, 0.35, this.smooth);
+    this.yearsMat.uniforms.uCount.value = this.yearsNow;
+    this.yearsMat.uniforms.uGone.value = this.gone;
+    this.yearsMat.uniforms.uAlpha.value = 0.5 * inHero * p.dim;
+    this.years.visible = inHero > 0.01 && this.yearsNow > 0.02;
+    this.years.position.copy(this.earth.mesh.position);
+    this.years.quaternion.copy(this.earth.mesh.quaternion);
+    this.years.scale.setScalar(this.earth.radius);
+    // The seal ends when the hero is left behind.
+    if (this.seal && this.smooth > 0.35) this.seal = null;
     const moved = this.prevCam ? vsub(p.cam, this.prevCam) : [0, 0, 0] as Vec3;
     const v = vlen(moved) / dt;                          // au per second
     this.speed += (v - this.speed) * (1 - Math.exp(-dt / 0.25));
@@ -1496,6 +1594,7 @@ export class CosmosEngine {
     let nearD = vlen(p.cam);
     for (const b of this.bodies) nearD = Math.min(nearD, vlen(vsub(b.pos, p.cam)));
     const portrait = this.width < this.height;
+    const ref = portrait ? 9 / 16 : 16 / 9;
 
     // ── the filament ──
     const f = this.fil;
@@ -1504,7 +1603,7 @@ export class CosmosEngine {
     // Text on screen: the light rests where the page says it is clear of every word, and its tail is folded away.
     // A spot that moves far (the words have scrolled into it) is reached by a blink — out, across, in — so the
     // light's path never crosses the words either.
-    const raw = this.anchorNdc;
+    const raw = this.seal ? null : this.anchorNdc;
     const hidden = raw !== null && Number.isNaN(raw[0]);   // words everywhere: no place for the light
     const a = raw && !hidden ? raw : null;
     this.textOn += ((raw ? 1 : 0) - this.textOn) * (1 - Math.exp(-dt / 0.15));
@@ -1528,11 +1627,53 @@ export class CosmosEngine {
       f.ndc[1] += (want[1] - f.ndc[1]) * k;
     }
     // Ahead by a few seconds of flight, but always within the local scale (never beyond the nearest body).
+    // ── the sealing: the light's place is scripted ──
+    let sealWorld: Vec3 | null = null;
+    let sealScreen: [number, number] | null = null;
+    if (this.seal) {
+      const S = this.seal;
+      S.t += this.opts.reducedMotion && !S.done ? SEAL_ORBIT : dt;
+      const E = this.earth.pos, R = this.earth.radius;
+      const surface = vadd(E, vscale(S.n, R * 1.01));
+      const toNdc = (w: Vec3): [number, number] => {
+        const v = new Vector3(w[0] - p.cam[0], w[1] - p.cam[1], w[2] - p.cam[2]).project(this.camera);
+        return [v.x / (ref / this.camera.aspect), v.y];
+      };
+      let appear = 1;
+      if (S.t < SEAL_GATHER) {
+        appear = 0;                                                      // the words are gathering in the card
+      } else if (S.t < SEAL_ARRIVE) {
+        appear = (S.t - SEAL_GATHER) / (SEAL_ARRIVE - SEAL_GATHER);      // it shows on the ground
+        sealWorld = surface;
+      } else if (S.t < SEAL_LIFT) {
+        const u = easeInOut((S.t - SEAL_ARRIVE) / (SEAL_LIFT - SEAL_ARRIVE));
+        sealWorld = vadd(E, vscale(S.n, R * (1.01 + (SEAL_ORBIT_R - 1.01) * u)));
+        if (this.ringT > 5 && S.t - dt < SEAL_ARRIVE) { this.ringT = 0; this.flash = 1; }   // lift-off: a flash and a ring
+      } else {
+        const u = S.t < SEAL_ORBIT ? easeInOut((S.t - SEAL_LIFT) / (SEAL_ORBIT - SEAL_LIFT)) : 1;
+        S.theta = (Math.PI / 3) * u + (S.t > SEAL_ORBIT ? (S.t - SEAL_ORBIT) * 0.22 : 0);
+        sealWorld = vadd(E, vscale(vadd(vscale(S.n, Math.cos(S.theta)), vscale(S.e, Math.sin(S.theta))), R * SEAL_ORBIT_R));
+        S.done = true;
+      }
+      if (sealWorld) sealScreen = toNdc(sealWorld);
+      if (sealScreen) {
+        f.ndc[0] = sealScreen[0]; f.ndc[1] = sealScreen[1];
+        this.pendingNdc = null; this.hideT = 0; this.blinkT = 9;
+      }
+      this.coreVis = appear;
+      void S.from;
+      // The camera follows the light a little once it has left the ground.
+      const follow = S.t > SEAL_ARRIVE ? smoothstep(SEAL_ARRIVE, SEAL_LIFT, S.t) : 0;
+      const target: [number, number] = sealScreen ? [sealScreen[0] * 0.08 * follow, sealScreen[1] * 0.08 * follow] : [0, 0];
+      this.sealLook[0] += (target[0] - this.sealLook[0]) * (1 - Math.exp(-dt / 0.8));
+      this.sealLook[1] += (target[1] - this.sealLook[1]) * (1 - Math.exp(-dt / 0.8));
+    } else {
+      this.sealLook[0] *= Math.exp(-dt / 0.8); this.sealLook[1] *= Math.exp(-dt / 0.8);
+    }
     const wantDepth = Math.min(Math.max(this.speed * 2.5, 0.015 * nearD), 0.3 * nearD);
     f.depth = f.depth <= 0 ? wantDepth : Math.exp(Math.log(f.depth) + (Math.log(wantDepth) - Math.log(f.depth)) * (1 - Math.exp(-dt / 0.8)));
-    const ref = portrait ? 9 / 16 : 16 / 9;
     const d = new Vector3(f.ndc[0] * (ref / this.camera.aspect) * tx, f.ndc[1] * ty, -1).normalize().applyQuaternion(q);
-    f.world = vadd(p.cam, vscale([d.x, d.y, d.z], f.depth));
+    f.world = sealWorld ?? vadd(p.cam, vscale([d.x, d.y, d.z], f.depth));
     const relF = vsub(f.world, p.cam);
     (this.filament.geometry.attributes.position as BufferAttribute).setXYZ(0, relF[0], relF[1], relF[2]);
     (this.filament.geometry.attributes.position as BufferAttribute).needsUpdate = true;
@@ -1597,7 +1738,8 @@ export class CosmosEngine {
       };
       const o = proj(0) ?? [0, 0];
       const back = this.historyLen > 8 ? proj(8) : null;
-      const flight = smoothstep(0.012, 0.05, this.speed / Math.max(nearD, 1e-12)) * (1 - this.textOn) * this.coreVis;
+      const orbiting = this.seal && this.seal.t >= SEAL_LIFT ? 0.8 : 0;
+      const flight = Math.max(orbiting, smoothstep(0.012, 0.05, this.speed / Math.max(nearD, 1e-12)) * (1 - this.textOn) * this.coreVis);
       if (back) {
         let dx = back[0] - o[0], dy = back[1] - o[1];
         const dl = Math.hypot(dx, dy);
